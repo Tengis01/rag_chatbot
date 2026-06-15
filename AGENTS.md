@@ -15,12 +15,14 @@ Before making code changes, read these files:
 3. `docs/TASKS.md`
 4. `docs/DECISIONS.md`
 5. `docs/SUPABASE_PLAN.md`
+6. `docs/ERRORS.md`
 
 After important work, update:
 
 - `docs/MEMORY.md`
 - `docs/TASKS.md`
 - `docs/DECISIONS.md` if an architecture decision changed
+- `docs/ERRORS.md` if a new error was encountered or fixed
 
 ## Tech Stack
 
@@ -108,6 +110,48 @@ Health:   http://localhost:4000/health
 - Do not silently swallow errors.
 - Return clear error messages.
 - Do not over-engineer before the core RAG flow works.
+
+## ERRORS.md Rules
+
+`docs/ERRORS.md` is the permanent record of every problem hit in this project.
+
+### When to write an entry
+
+Write a new entry in `docs/ERRORS.md` whenever any of the following happens:
+
+- A command fails and you had to investigate why.
+- A service does not start, connect, or respond as expected.
+- A build or typecheck fails.
+- A Docker, networking, or environment issue blocks progress.
+- A library, API, or config behaves differently than documented.
+- You spend more than a few minutes debugging anything.
+- A workaround is used instead of a clean fix — document both.
+
+### What every entry must include
+
+Each entry must have all of the following fields. Do not skip any.
+
+1. **ERR-ID** — Sequential number (ERR-001, ERR-002, …). Never reuse an ID.
+2. **Date** — When it was encountered.
+3. **Status** — `✅ Fixed`, `⚠️ Workaround`, or `🔲 Open`.
+4. **What happened** — The exact symptom. What you saw, what command you ran, what the error message said.
+5. **Root cause** — Why it happened. Be specific. "It failed" is not a root cause.
+6. **Files changed** — Table of every file touched to fix it.
+7. **Fix** — The exact code change, command, or config that resolved it.
+8. **Lesson** — One sentence. What to remember so this never happens again.
+
+### After fixing an error
+
+- Set status to `✅ Fixed`.
+- Add a row to the **Quick Reference Gotchas** table at the bottom of `ERRORS.md`.
+- If the fix changes architecture or tooling decisions, also update `docs/DECISIONS.md`.
+
+### Rules
+
+- Never delete an entry, even if it seems trivial later.
+- If the same error happens again, add a note to the existing entry — do not create a duplicate.
+- Keep the ERR-IDs strictly sequential. Read the file before assigning a new ID.
+- Write entries in plain language. Future-you and other agents must understand them without extra context.
 
 ## Security Rules
 
