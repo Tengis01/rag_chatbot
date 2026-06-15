@@ -14,7 +14,7 @@ Before making code changes, read these files:
 2. `docs/MEMORY.md`
 3. `docs/TASKS.md`
 4. `docs/DECISIONS.md`
-5. `docs/SUPABASE_PLAN.md`
+5. `docs/DB_SCHEMA.md`
 6. `docs/ERRORS.md`
 
 After important work, update:
@@ -39,8 +39,9 @@ Backend:
 
 Database:
 
-- Supabase Postgres
+- Local Postgres (pgvector/pgvector:pg16) via Docker Compose
 - pgvector
+- `pg` npm package (no Supabase client)
 
 AI:
 
@@ -155,8 +156,7 @@ Each entry must have all of the following fields. Do not skip any.
 
 ## Security Rules
 
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to frontend.
-- Never expose `GEMINI_API_KEY` to frontend.
+- Never expose `DATABASE_URL` or `GEMINI_API_KEY` to the frontend.
 - Backend-only secrets must stay in `apps/api/.env`.
 - Frontend env vars must only use the `VITE_` prefix and must not contain secrets.
 - Scope documents, chunks, conversations, and messages by `user_id`.
@@ -171,7 +171,7 @@ RAG flow:
 1. Extract text from uploaded PDF or pasted text.
 2. Split text into chunks.
 3. Generate embeddings for chunks.
-4. Store chunks and embeddings in Supabase pgvector.
+4. Store chunks and embeddings in local Postgres (pgvector).
 5. Embed the user question.
 6. Retrieve relevant chunks using vector similarity.
 7. Apply a similarity threshold.
