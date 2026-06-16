@@ -23,7 +23,7 @@ services:
       - postgres
     environment:
       NODE_ENV: development
-      PORT: ${API_PORT:-4000}
+      PORT: 4000
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/rag_chatbot}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
@@ -46,7 +46,8 @@ services:
     depends_on:
       - api
     environment:
-      VITE_API_URL: http://localhost:4000
+      VITE_API_URL: http://localhost:${API_PORT:-4000}
+
     ports:
       - "5173:5173"
     volumes:
