@@ -8,7 +8,11 @@ The goal is to build a deployable chatbot where users can upload or paste docume
 
 ## Read These First
 
-Before making code changes, read these files:
+> [!IMPORTANT]
+> The `docs/` directory is intentionally ignored in Git (`.gitignore` excludes it) so it remains local.
+> However, agents MUST read and update these local files to maintain workspace memory across turns.
+
+Before making code changes, read these local files:
 
 1. `docs/PROJECT_BRIEF.md`
 2. `docs/MEMORY.md`
@@ -17,12 +21,12 @@ Before making code changes, read these files:
 5. `docs/DB_SCHEMA.md`
 6. `docs/ERRORS.md`
 
-After important work, update:
+After completing a task or important work, you MUST update the local files:
 
-- `docs/MEMORY.md`
-- `docs/TASKS.md`
-- `docs/DECISIONS.md` if an architecture decision changed
-- `docs/ERRORS.md` if a new error was encountered or fixed
+- `docs/MEMORY.md` — Update current status and next steps.
+- `docs/TASKS.md` — Check off completed tasks and add future items.
+- `docs/DECISIONS.md` — If an architecture, database, or library decision changed.
+- `docs/ERRORS.md` — If a new error or bug was encountered and solved.
 
 ## Tech Stack
 
@@ -224,11 +228,11 @@ curl http://localhost:4000/health
 When the task is complex:
 
 1. Inspect the repo.
-2. Read the docs listed above.
+2. Read the local docs listed in the "Read These First" section.
 3. Make a short plan.
 4. Implement in small steps.
-5. Run checks.
+5. Run checks (typecheck, build, and smoke tests).
 6. Summarize changed files.
-7. Update `docs/MEMORY.md` and `docs/TASKS.md`.
+7. Update local documentation (`docs/MEMORY.md`, `docs/TASKS.md`, and others if relevant).
 
 Do not make large unrelated changes.
