@@ -17,9 +17,11 @@ CREATE TABLE IF NOT EXISTS documents (
   user_id     UUID        NOT NULL,
   filename    TEXT,
   source_type TEXT        NOT NULL CHECK (source_type IN ('pdf', 'text')),
-  status      TEXT        NOT NULL DEFAULT 'processing'
-                CHECK (status IN ('processing', 'ready', 'error')),
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  status      TEXT        NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'processing', 'ready', 'failed', 'error')),
+  chunk_count INT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents (user_id);

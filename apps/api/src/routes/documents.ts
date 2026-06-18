@@ -1,8 +1,9 @@
 import { FastifyInstance } from "fastify";
 import { extractTextFromPDF } from "../lib/pdf-extractor.js";
-import { storeDocumentText } from "../lib/document-store.js";
+import { storeDocumentText, getDocumentById } from "../lib/document-store.js";
 import { db } from "../lib/db.js";
 import { DEMO_USER_ID } from "../lib/constants.js";
+import { processDocument } from "../lib/pipeline.js";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -42,26 +43,27 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
 
             const insertResult = await db.query(
                 `INSERT INTO documents (user_id, filename, source_type, status)
-                 VALUES ($1, $2, 'pdf_upload', 'processed') RETURNING id`,
+                 VALUES ($1, $2, 'pdf', 'pending') RETURNING id`,
                  [DEMO_USER_ID, data.filename]
             );
 
             const documentId: string = insertResult.rows[0].id;
 
-            await db.query(
-                `UPDATE documents SET status = 'ready' WHERE id = $1`,
-                [documentId]
-            );
-
             storeDocumentText(documentId, extractedText);
+
+            // Start pipeline in the background using setImmediate
+            setImmediate(() => {
+                processDocument(documentId, extractedText).catch((err) => {
+                    console.error("upload pipeline error:", err);
+                });
+            });
 
             return reply.status(201).send({
                 documentId,
                 filename: data.filename,
                 sourceType: "pdf",
-                status: "ready",
+                status: "pending",
                 extractedTextLength: extractedText.length,
-                textPreview: extractedText.slice(0, 300),
             });
         } catch (err) {
             req.log.error(err);
@@ -87,7 +89,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
         try {
             const insertResult = await db.query(
                 `INSERT INTO documents (user_id, filename, source_type, status)
-                 VALUES ($1, $2, 'text', 'ready')
+                 VALUES ($1, $2, 'text', 'pending')
                  RETURNING id`,
                 [DEMO_USER_ID, title]
             );
@@ -96,13 +98,19 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
 
             storeDocumentText(documentId, text);
 
+            // Start pipeline in the background using setImmediate
+            setImmediate(() => {
+                processDocument(documentId, text).catch((err) => {
+                    console.error("paste pipeline error:", err);
+                });
+            });
+
             return reply.status(201).send({
                 documentId,
                 filename: title,
                 sourceType: "text",
-                status: "ready",
+                status: "pending",
                 extractedTextLength: text.length,
-                textPreview: text.slice(0, 300),
             });
         } catch (err) {
             req.log.error(err);
@@ -132,6 +140,34 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
         } catch (err) {
             req.log.error(err);
             return reply.status(500).send({ error: "Баримт бичгийн мэдээллийг авах явцад алдаа гарлаа" });
+        }
+    });
+
+    app.get<{ Params: { id: string } }>("/documents/:id/status", async (req, reply) => {
+        try {
+            const { id } = req.params;
+            const doc = await getDocumentById(id);
+
+            if (!doc) {
+                return reply.status(404).send({ error: "document not found" });
+            }
+
+            // Ensure user owns this document
+            if (doc.user_id !== DEMO_USER_ID) {
+                return reply.status(403).send({ error: "forbidden" });
+            }
+
+            return reply.send({
+                id: doc.id,
+                status: doc.status,
+                chunkCount: doc.chunk_count ?? 0,
+                title: doc.filename,
+                filename: doc.filename,
+                updatedAt: doc.updated_at,
+            });
+        } catch (err) {
+            req.log.error(err);
+            return reply.status(500).send({ error: "Баримтын төлөвийг шалгахад алдаа гарлаа" });
         }
     });
 

@@ -35,7 +35,7 @@ services:
       - /app/apps/api/node_modules
       - /app/apps/web/node_modules
       - /app/packages/shared/node_modules
-    command: pnpm --filter api dev
+    command: npx tsx watch src/index.ts
 
   web:
     build:
@@ -56,7 +56,7 @@ services:
       - /app/apps/api/node_modules
       - /app/apps/web/node_modules
       - /app/packages/shared/node_modules
-    command: pnpm --filter web dev
+    command: npx vite
 
 volumes:
   postgres_data:

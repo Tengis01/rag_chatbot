@@ -16,6 +16,7 @@
     "@google/generative-ai": "latest",
     "dotenv": "latest",
     "fastify": "latest",
+    "js-tiktoken": "^1.0.21",
     "pdf-parse": "^2.4.5",
     "pg": "latest",
     "zod": "latest"

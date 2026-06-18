@@ -21,6 +21,7 @@ yarn-debug.log*
 .DS_Store
 .vscode/
 .idea/
+.pnpm-store
 
 # TypeScript
 *.tsbuildinfo
