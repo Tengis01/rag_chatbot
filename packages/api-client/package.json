@@ -1,0 +1,12 @@
+{
+  "name": "@rag-chatbot/api-client",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Reusable API client functions for web and mobile apps",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'placeholder — no build yet'",
+    "typecheck": "echo 'placeholder — no typecheck yet'"
+  }
+}

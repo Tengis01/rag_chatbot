@@ -8,7 +8,7 @@
 import { chunkText } from "./chunker.js";
 import { embedTexts } from "./embedder.js";
 import { storeChunks } from "./vector-store.js";
-import { deleteDocumentText, updateDocumentStatus } from "./document-store.js";
+import { deleteDocumentText, updateDocumentStatus } from "../documents/document-store.js";
 
 export async function processDocument(
   documentId: string,

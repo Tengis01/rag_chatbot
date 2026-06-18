@@ -1,18 +1,18 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 
-import { DEMO_USER_ID } from "../lib/constants.js";
-import { db } from "../lib/db.js";
-import { embedText } from "../lib/embedder.js";
-import { retrieveChunks } from "../lib/retrieval.js";
-import { generateAnswer } from "../lib/generator.js";
+import { DEMO_USER_ID } from "../../shared/constants.js";
+import { db } from "../../shared/db/db.js";
+import { embedText } from "../ingestion/embedder.js";
+import { retrieveChunks } from "../retrieval/retrieval.service.js";
+import { generateAnswer } from "./generator.js";
 import {
   conversationBelongsToUser,
   createConversation,
   linkDocuments,
   saveMessage,
   touchConversation,
-} from "../lib/conversation-store.js";
+} from "../conversations/conversation-store.js";
 
 const chatBodySchema = z.object({
   conversationId: z.string().uuid().optional(),

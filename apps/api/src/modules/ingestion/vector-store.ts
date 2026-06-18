@@ -5,7 +5,7 @@
  * and cast with $N::vector so pg doesn't need any special driver extension.
  */
 
-import { db } from "./db.js";
+import { db } from "../../shared/db/db.js";
 import type { Chunk } from "./chunker.js";
 
 const INSERT_BATCH = 50;

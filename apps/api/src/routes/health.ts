@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { db } from "../lib/db.js";
+import { db } from "../shared/db/db.js";
 
 export async function healthRoute(app: FastifyInstance): Promise<void> {
   app.get("/health", async (_req, reply) => {

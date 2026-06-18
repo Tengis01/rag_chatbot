@@ -1,4 +1,4 @@
-import type { RetrievedChunk } from "./retrieval.js";
+import type { RetrievedChunk } from "../retrieval/retrieval.service.js";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 

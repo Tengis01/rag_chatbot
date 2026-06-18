@@ -1,9 +1,9 @@
 import { FastifyInstance } from "fastify";
-import { extractTextFromPDF } from "../lib/pdf-extractor.js";
-import { storeDocumentText, getDocumentById } from "../lib/document-store.js";
-import { db } from "../lib/db.js";
-import { DEMO_USER_ID } from "../lib/constants.js";
-import { processDocument } from "../lib/pipeline.js";
+import { extractTextFromPDF } from "./pdf-extractor.js";
+import { storeDocumentText, getDocumentById } from "./document-store.js";
+import { db } from "../../shared/db/db.js";
+import { DEMO_USER_ID } from "../../shared/constants.js";
+import { processDocument } from "../ingestion/pipeline.js";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 

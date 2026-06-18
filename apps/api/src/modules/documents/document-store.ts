@@ -1,4 +1,4 @@
-import { db } from "./db.js";
+import { db } from "../../shared/db/db.js";
 
 const documentTextStore = new Map<string, string>();
 

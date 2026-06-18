@@ -1,10 +1,10 @@
 import { FastifyInstance } from "fastify";
 
-import { DEMO_USER_ID } from "../lib/constants.js";
+import { DEMO_USER_ID } from "../../shared/constants.js";
 import {
   getConversationMessages,
   getConversations,
-} from "../lib/conversation-store.js";
+} from "./conversation-store.js";
 
 export async function conversationsRoute(app: FastifyInstance): Promise<void> {
   app.get("/conversations", async (_req, reply) => {

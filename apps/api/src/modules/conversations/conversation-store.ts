@@ -1,5 +1,5 @@
-import { db } from "./db.js";
-import type { RetrievedChunk } from "./retrieval.js";
+import { db } from "../../shared/db/db.js";
+import type { RetrievedChunk } from "../retrieval/retrieval.service.js";
 
 export interface ConversationSummary {
   id: string;

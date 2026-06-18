@@ -5,9 +5,9 @@ import multipart from "@fastify/multipart";
 
 import { healthRoute } from "./routes/health.js";
 import { configRoute } from "./routes/config.js";
-import { documentsRoute } from "./routes/documents.js";
-import { chatRoute } from "./routes/chat.js";
-import { conversationsRoute } from "./routes/conversations.js";
+import { documentsRoute } from "./modules/documents/documents.routes.js";
+import { chatRoute } from "./modules/chat/chat.routes.js";
+import { conversationsRoute } from "./modules/conversations/conversations.routes.js";
 
 const app = Fastify({ logger: true });
 
