@@ -74,6 +74,7 @@ export async function storeChunks(
  */
 export async function matchChunks(
   queryEmbedding: number[],
+  userId: string,
   documentIds: string[],
   topK = 5,
   minScore = 0.5
@@ -83,17 +84,9 @@ export async function matchChunks(
   const embeddingStr = `[${queryEmbedding.join(",")}]`;
 
   const result = await db.query(
-    `SELECT
-       id,
-       document_id,
-       content,
-       1 - (embedding <=> $1::vector) AS score
-     FROM chunks
-     WHERE document_id = ANY($2)
-       AND 1 - (embedding <=> $1::vector) >= $3
-     ORDER BY embedding <=> $1::vector
-     LIMIT $4`,
-    [embeddingStr, documentIds, minScore, topK]
+    `SELECT id, document_id, content, similarity AS score
+     FROM match_chunks($1::vector, $2::uuid, $3::uuid[], $4, $5)`,
+    [embeddingStr, userId, documentIds, topK, minScore]
   );
 
   return result.rows.map((row) => ({

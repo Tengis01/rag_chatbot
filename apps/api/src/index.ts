@@ -6,6 +6,8 @@ import multipart from "@fastify/multipart";
 import { healthRoute } from "./routes/health.js";
 import { configRoute } from "./routes/config.js";
 import { documentsRoute } from "./routes/documents.js";
+import { chatRoute } from "./routes/chat.js";
+import { conversationsRoute } from "./routes/conversations.js";
 
 const app = Fastify({ logger: true });
 
@@ -21,6 +23,8 @@ await app.register(multipart);
 await app.register(healthRoute);
 await app.register(configRoute);
 await app.register(documentsRoute);
+await app.register(chatRoute);
+await app.register(conversationsRoute);
 
 // ─── Start ───────────────────────────────────────────────────────
 const port = Number(process.env.PORT ?? 4000);

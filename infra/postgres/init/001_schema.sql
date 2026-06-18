@@ -92,17 +92,18 @@ CREATE TABLE IF NOT EXISTS conversation_documents (
 
 -- ============================================================
 -- match_chunks
--- Vector similarity search scoped to a user + document
+-- Vector similarity search scoped to a user + documents
 -- ============================================================
 CREATE OR REPLACE FUNCTION match_chunks(
   query_embedding    VECTOR(768),
   match_user_id      UUID,
-  match_document_id  UUID,
-  match_count        INT   DEFAULT 8,
+  match_document_ids UUID[],
+  match_count        INT   DEFAULT 20,
   similarity_threshold FLOAT DEFAULT 0.7
 )
 RETURNS TABLE (
   id          UUID,
+  document_id UUID,
   content     TEXT,
   page        INT,
   chunk_index INT,
@@ -111,13 +112,14 @@ RETURNS TABLE (
 LANGUAGE SQL STABLE AS $$
   SELECT
     id,
+    document_id,
     content,
     page,
     chunk_index,
     1 - (embedding <=> query_embedding) AS similarity
   FROM chunks
   WHERE user_id      = match_user_id
-    AND document_id  = match_document_id
+    AND document_id  = ANY(match_document_ids)
     AND 1 - (embedding <=> query_embedding) > similarity_threshold
   ORDER BY embedding <=> query_embedding
   LIMIT match_count;

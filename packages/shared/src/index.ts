@@ -1,10 +1,14 @@
 export type MessageRole = "user" | "assistant";
 
 export type ChatSource = {
+  chunkId?: string;
   documentId: string;
-  filename: string;
+  filename?: string;
   page?: number | null;
-  snippet: string;
+  chunkIndex?: number | null;
+  content?: string;
+  snippet?: string;
+  similarity?: number;
 };
 
 export type ChatMessage = {
@@ -14,4 +18,16 @@ export type ChatMessage = {
   content: string;
   sources?: ChatSource[];
   createdAt: string;
+};
+
+export type ChatRequest = {
+  conversationId?: string;
+  documentIds: string[];
+  message: string;
+};
+
+export type ChatResponse = {
+  conversationId: string;
+  reply: string;
+  sources: ChatSource[];
 };

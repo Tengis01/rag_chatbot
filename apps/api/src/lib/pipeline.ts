@@ -8,7 +8,7 @@
 import { chunkText } from "./chunker.js";
 import { embedTexts } from "./embedder.js";
 import { storeChunks } from "./vector-store.js";
-import { updateDocumentStatus } from "./document-store.js";
+import { deleteDocumentText, updateDocumentStatus } from "./document-store.js";
 
 export async function processDocument(
   documentId: string,
@@ -41,5 +41,7 @@ export async function processDocument(
     // Best-effort status update; ignore secondary failure
     await updateDocumentStatus(documentId, "failed").catch(() => {});
     throw err;
+  } finally {
+    deleteDocumentText(documentId);
   }
 }
