@@ -11,11 +11,7 @@ export interface AppConfig {
   appName: string;
   maxUploadSizeMb: number;
   supportedFileTypes: string[];
-  supportedExtensions: string[];
-  maxChunkSize: number;
-  chunkOverlap: number;
-  similarityThreshold: number;
-  maxRetrievedChunks: number;
+  maxPasteLength: number;
 }
 
 interface ConfigState {
@@ -47,7 +43,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       })
       .then((config) => setState({ config, loading: false, error: null }))
       .catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = err instanceof Error ? err.message : "Тодорхойгүй алдаа";
         console.error("Failed to load app config:", message);
         setState({ config: null, loading: false, error: message });
       });
@@ -56,7 +52,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   if (state.loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", fontFamily: "sans-serif", color: "#888" }}>
-        Loading…
+        Ачаалж байна…
       </div>
     );
   }
@@ -64,7 +60,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   if (state.error) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", fontFamily: "sans-serif", color: "#c00" }}>
-        Failed to connect to backend: {state.error}
+        Backend сервертэй холбогдож чадсангүй: {state.error}
       </div>
     );
   }

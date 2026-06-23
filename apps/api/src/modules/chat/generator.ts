@@ -15,7 +15,7 @@ interface GeminiGenerateResponse {
 }
 
 const SYSTEM_INSTRUCTION =
-  "You are a document assistant. Answer the user's question using only the provided document context. If the answer cannot be found in the context, say so clearly. Be concise.";
+  "Та баримтын туслах. Хэрэглэгчийн асуултад зөвхөн өгөгдсөн баримтын context ашиглан монголоор хариул. Хариулт context дотор байхгүй бол тодорхой хэл. Товч, ойлгомжтой бай.";
 
 async function tryGenerate(
   modelName: string,
@@ -42,7 +42,7 @@ async function tryGenerate(
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Gemini generateContent for ${modelName} failed [${res.status}]: ${errText}`);
+    throw new Error(`Gemini generateContent ${modelName} model дээр амжилтгүй боллоо [${res.status}]: ${errText}`);
   }
 
   const data = (await res.json()) as GeminiGenerateResponse;
@@ -51,7 +51,7 @@ async function tryGenerate(
   const text = textPart?.text?.trim() || parts[0]?.text?.trim();
 
   if (!text) {
-    throw new Error(`Gemini generateContent for ${modelName} returned an empty response`);
+    throw new Error(`Gemini generateContent ${modelName} model дээр хоосон хариу буцаалаа`);
   }
 
   return text;
@@ -72,9 +72,9 @@ export async function generateAnswer(
     } catch (err) {
       lastError = err as Error;
       // Log to console for tracing but proceed to fallback
-      console.warn(`Failed to generate answer with ${model}:`, lastError.message);
+      console.warn(`${model} model-оор хариулт үүсгэж чадсангүй:`, lastError.message);
     }
   }
 
-  throw new Error(`All generation models failed. Last error: ${lastError?.message}`);
+  throw new Error(`Бүх generation model амжилтгүй боллоо. Сүүлийн алдаа: ${lastError?.message}`);
 }

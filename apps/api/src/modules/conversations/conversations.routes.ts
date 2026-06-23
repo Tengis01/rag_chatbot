@@ -26,7 +26,7 @@ export async function conversationsRoute(app: FastifyInstance): Promise<void> {
       const messages = await getConversationMessages(req.params.id, DEMO_USER_ID);
 
       if (!messages) {
-        return reply.status(404).send({ error: "conversation not found" });
+        return reply.status(404).send({ error: "чат олдсонгүй" });
       }
 
       return reply.send({

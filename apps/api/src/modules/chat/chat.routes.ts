@@ -21,7 +21,7 @@ const chatBodySchema = z.object({
 });
 
 const NO_CONTEXT_REPLY =
-  "I couldn't find relevant content in the selected documents.";
+  "Сонгосон баримтуудаас энэ асуултад хамаарах хангалттай мэдээлэл олдсонгүй.";
 
 async function getReadyDocumentIds(
   userId: string,
@@ -63,7 +63,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
     const parsed = chatBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({
-        error: "invalid chat request",
+          error: "chat хүсэлт буруу байна",
         details: parsed.error.flatten(),
       });
     }
@@ -75,7 +75,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       const readyDocumentIds = await getReadyDocumentIds(DEMO_USER_ID, documentIds);
       if (readyDocumentIds.length !== documentIds.length) {
         return reply.status(400).send({
-          error: "selected documents must exist, belong to the user, and be ready",
+          error: "сонгосон баримтууд байх ёстой, хэрэглэгчид хамаарах ёстой, мөн бэлэн төлөвтэй байх ёстой",
         });
       }
 
@@ -85,7 +85,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
           DEMO_USER_ID
         );
         if (!owned) {
-          return reply.status(404).send({ error: "conversation not found" });
+          return reply.status(404).send({ error: "чат олдсонгүй" });
         }
       }
 
@@ -105,7 +105,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
         );
 
         if (!conversationId) {
-          return reply.status(404).send({ error: "conversation not found" });
+          return reply.status(404).send({ error: "чат олдсонгүй" });
         }
 
         await saveMessage(conversationId, DEMO_USER_ID, "user", message);
@@ -134,7 +134,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       );
 
       if (!conversationId) {
-        return reply.status(404).send({ error: "conversation not found" });
+        return reply.status(404).send({ error: "чат олдсонгүй" });
       }
 
       await saveMessage(conversationId, DEMO_USER_ID, "user", message);
@@ -162,7 +162,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
     } catch (err) {
       req.log.error(err);
       const message =
-        err instanceof Error ? err.message : "chat request failed";
+        err instanceof Error ? err.message : "chat хүсэлт амжилтгүй боллоо";
       return reply.status(500).send({ error: message });
     }
   });

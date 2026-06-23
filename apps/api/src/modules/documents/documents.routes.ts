@@ -74,7 +74,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
     app.post("/documents/paste", async (req, reply) => {
         const body = req.body as { text?: string; title?: string };
         const text = body?.text?.trim() ?? "";
-        const title = body?.title?.trim() || "Pasted text";
+        const title = body?.title?.trim() || "Хуулсан текст";
 
         if (!text) {
             return reply.status(400).send({ error: "Текст хоосон байна"});
@@ -149,12 +149,12 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
             const doc = await getDocumentById(id);
 
             if (!doc) {
-                return reply.status(404).send({ error: "document not found" });
+                return reply.status(404).send({ error: "баримт олдсонгүй" });
             }
 
             // Ensure user owns this document
             if (doc.user_id !== DEMO_USER_ID) {
-                return reply.status(403).send({ error: "forbidden" });
+                return reply.status(403).send({ error: "хандах эрхгүй" });
             }
 
             return reply.send({

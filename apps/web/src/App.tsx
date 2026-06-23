@@ -1,20 +1,44 @@
-import { useConfig } from "./context/ConfigContext.tsx";
-import "./App.css";
+import { AnimatePresence } from "framer-motion";
+import { Route, Routes, useLocation } from "react-router-dom";
 
-function App() {
-  const config = useConfig();
+import { CursorSpotlight } from "@/components/layout/CursorSpotlight";
+import { PageTransition } from "@/components/layout/PageTransition";
+import { Landing } from "@/pages/Landing";
+import { WorkspacePage } from "@/pages/WorkspacePage";
+
+function AnimatedRoutes() {
+  const location = useLocation();
 
   return (
-    <div className="app-shell">
-      <h1>{config.appName}</h1>
-      <p>
-        Upload up to <strong>{config.maxUploadSizeMb} MB</strong> ·{" "}
-        Supported: <strong>{config.supportedExtensions.join(", ")}</strong>
-      </p>
-      <p style={{ color: "#888", fontSize: "0.85rem" }}>
-        UI coming soon — backend is connected ✅
-      </p>
-    </div>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route
+          path="/"
+          element={
+            <PageTransition variant="landing">
+              <Landing />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/workspace"
+          element={
+            <PageTransition variant="workspace">
+              <WorkspacePage />
+            </PageTransition>
+          }
+        />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <CursorSpotlight />
+      <AnimatedRoutes />
+    </>
   );
 }
 

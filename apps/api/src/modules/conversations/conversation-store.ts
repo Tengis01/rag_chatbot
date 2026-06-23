@@ -17,7 +17,7 @@ export interface StoredMessage {
 }
 
 function titleFrom(value?: string): string {
-  const title = value?.trim() || "New conversation";
+  const title = value?.trim() || "Шинэ чат";
   return title.length > 80 ? title.slice(0, 80) : title;
 }
 
@@ -134,7 +134,7 @@ export async function saveMessage(
   );
 
   if ((result.rowCount ?? 0) === 0) {
-    throw new Error("conversation not found");
+    throw new Error("чат олдсонгүй");
   }
 
   return { id: result.rows[0].id as string };
