@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "RAG Chatbot",
+    "slug": "rag-chatbot",
+    "version": "1.0.0",
+    "scheme": "ragchatbot",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#09090b"
+      },
+      "package": "com.tengis.ragchatbot"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
