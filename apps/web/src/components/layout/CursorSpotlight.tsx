@@ -20,7 +20,7 @@ export function CursorSpotlight() {
       aria-hidden="true"
       className="pointer-events-none fixed inset-0 z-30"
       style={{
-        background: `radial-gradient(280px circle at ${pos.x}px ${pos.y}px, hsl(var(--primary) / 0.12), transparent 75%)`,
+        background: `radial-gradient(280px circle at ${pos.x}px ${pos.y}px, hsl(var(--primary) / 0.12), transparent 90%`,
       }}
     />
   );

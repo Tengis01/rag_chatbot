@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Upload, FileText, ArrowRight } from "lucide-react";
+import { Upload, FileText } from "lucide-react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { FileCode, Database, BookOpen } from "lucide-react";
 
@@ -145,7 +145,7 @@ export function Hero() {
       />
 
       {/* Center content */}
-      <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
+      <div className="relative z-10 mx-auto max-w-5xl px-6 pb-28 text-center md:pb-0">
         {/* Pill badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -202,13 +202,6 @@ export function Hero() {
           >
             <FileText className="h-4 w-4" />
             Текст оруулах
-          </Link>
-          <Link
-            to="/workspace"
-            className="group inline-flex items-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Ажлын талбарыг нээх
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </motion.div>
       </div>

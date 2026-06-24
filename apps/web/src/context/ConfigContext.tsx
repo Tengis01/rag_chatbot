@@ -26,7 +26,9 @@ const ConfigContext = createContext<ConfigState>({
   error: null,
 });
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const API_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  `http://${window.location.hostname}:4000`;
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfigState>({

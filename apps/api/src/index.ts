@@ -13,7 +13,10 @@ const app = Fastify({ logger: true });
 
 // ─── Plugins ─────────────────────────────────────────────────────
 await app.register(cors, {
-  origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
+  // Allow any origin so the app works from a phone on the same WiFi.
+  // `true` tells @fastify/cors to reflect the request Origin back,
+  // which satisfies credentials mode without hardcoding an IP/hostname.
+  origin: true,
   credentials: true,
 });
 

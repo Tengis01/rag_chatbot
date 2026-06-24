@@ -20,7 +20,8 @@ const SYSTEM_INSTRUCTION =
 async function tryGenerate(
   modelName: string,
   userQuestion: string,
-  context: string
+  context: string,
+  attempt = 0
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -40,9 +41,16 @@ async function tryGenerate(
     }),
   });
 
+  if ((res.status === 429 || res.status === 503) && attempt < 1) {
+    await new Promise((r) => setTimeout(r, 2000));
+    return tryGenerate(modelName, userQuestion, context, attempt + 1);
+  }
+
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Gemini generateContent ${modelName} model дээр амжилтгүй боллоо [${res.status}]: ${errText}`);
+    throw new Error(
+      `Gemini generateContent ${modelName} model дээр амжилтгүй боллоо [${res.status}]: ${errText}`
+    );
   }
 
   const data = (await res.json()) as GeminiGenerateResponse;
@@ -51,7 +59,9 @@ async function tryGenerate(
   const text = textPart?.text?.trim() || parts[0]?.text?.trim();
 
   if (!text) {
-    throw new Error(`Gemini generateContent ${modelName} model дээр хоосон хариу буцаалаа`);
+    throw new Error(
+      `Gemini generateContent ${modelName} model дээр хоосон хариу буцаалаа`
+    );
   }
 
   return text;
@@ -63,7 +73,12 @@ export async function generateAnswer(
 ): Promise<string> {
   const context = contextChunks.map((chunk) => chunk.content).join("\n\n---\n\n");
 
-  const models = ["gemini-3.5-flash", "gemini-2.0-flash", "gemma-4-31b-it"];
+  const models = [
+  "gemini-3.5-flash",      // хамгийн шинэ, хамгийн сайн
+  "gemini-2.5-flash",      // stable GA, найдвартай fallback
+  "gemini-2.5-flash-lite", // хямд, хурдан гурав дахь fallback
+];
+
   let lastError: Error | null = null;
 
   for (const model of models) {

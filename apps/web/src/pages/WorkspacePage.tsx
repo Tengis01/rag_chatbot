@@ -99,6 +99,7 @@ export function WorkspacePage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showDocPopover, setShowDocPopover] = useState(false);
 
   // Import Modal States
@@ -415,46 +416,77 @@ export function WorkspacePage() {
           ? "lg:grid-cols-[48px_1fr_300px]"
           : "lg:grid-cols-[280px_1fr_300px]"
       )}>
-        {/* LEFT — Conversation sidebar */}
-        <div className={cn(
-          "hidden border-r border-border/40 lg:flex lg:flex-col bg-zinc-950/20 overflow-hidden transition-all duration-300",
-          isSidebarCollapsed ? "w-12 items-center py-4" : "w-full"
-        )}>
-          {isSidebarCollapsed ? (
-            <button
-              onClick={() => setIsSidebarCollapsed(false)}
-              title="Sidebar нээх"
-              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            >
-              <PanelLeftOpen className="h-4.5 w-4.5" />
-            </button>
-          ) : (
-            <>
-              {/* Sidebar Header with Collapse button */}
-              <div className="flex items-center justify-between border-b border-border/40 p-3">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Чатууд
-                </span>
-                <button
-                  onClick={() => setIsSidebarCollapsed(true)}
-                  title="Sidebar хураах"
-                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
-                  <PanelLeftClose className="h-3.5 w-3.5" />
-                </button>
-              </div>
-
-              {/* Conversation sidebar takes full height */}
-              <div className="flex-1 overflow-hidden">
-                <ConversationSidebar
-                  conversations={conversations}
-                  activeId={activeConversationId ?? ""}
-                  onSelect={handleSelectConversation}
-                  onNew={handleNewConversation}
-                />
-              </div>
-            </>
+        {/* Mobile Backdrop */}
+        <AnimatePresence>
+          {isMobileSidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm lg:hidden"
+            />
           )}
+        </AnimatePresence>
+
+        {/* LEFT — Conversation sidebar container */}
+        <div className={cn(
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-zinc-950 border-r border-border/40 overflow-hidden transition-all duration-300",
+          "lg:static lg:bg-zinc-950/20 lg:translate-x-0 lg:z-auto",
+          isMobileSidebarOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0",
+          isSidebarCollapsed ? "lg:w-12 lg:items-center lg:py-4" : "lg:w-full"
+        )}>
+          {/* On desktop when collapsed: show only the single Open button */}
+          <div className="hidden lg:block">
+            {isSidebarCollapsed && (
+              <button
+                onClick={() => setIsSidebarCollapsed(false)}
+                title="Sidebar нээх"
+                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <PanelLeftOpen className="h-4.5 w-4.5" />
+              </button>
+            )}
+          </div>
+
+          {/* If NOT collapsed, or if we are on mobile (where isMobileSidebarOpen is true): show full content */}
+          <div className={cn(
+            "flex-1 flex-col overflow-hidden",
+            isSidebarCollapsed ? "lg:hidden flex" : "flex"
+          )}>
+            {/* Sidebar Header with Close button */}
+            <div className="flex items-center justify-between border-b border-border/40 p-3">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Чатууд
+              </span>
+              <button
+                onClick={() => {
+                  setIsSidebarCollapsed(true);
+                  setIsMobileSidebarOpen(false);
+                }}
+                title="Sidebar хураах"
+                className="rounded p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Conversation sidebar takes full height */}
+            <div className="flex-1 overflow-hidden">
+              <ConversationSidebar
+                conversations={conversations}
+                activeId={activeConversationId ?? ""}
+                onSelect={(id) => {
+                  handleSelectConversation(id);
+                  setIsMobileSidebarOpen(false); // Close mobile drawer on selection
+                }}
+                onNew={() => {
+                  handleNewConversation();
+                  setIsMobileSidebarOpen(false); // Close mobile drawer on new conversation
+                }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* CENTER — Chat area */}
@@ -462,7 +494,16 @@ export function WorkspacePage() {
           {/* Chat header */}
           <div className="flex-shrink-0 border-b border-border/40 px-6 py-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-base font-semibold tracking-tight">
+              {/* Mobile Sidebar Toggle Button */}
+              <button
+                onClick={() => setIsMobileSidebarOpen(true)}
+                title="Цэс нээх"
+                className="rounded-xl border border-border/50 bg-secondary/40 p-2 text-muted-foreground hover:bg-secondary hover:text-foreground lg:hidden"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+
+              <h2 className="text-base font-semibold tracking-tight truncate max-w-[120px] sm:max-w-none">
                 {activeConversation?.title ?? "Шинэ чат"}
               </h2>
               <div className="relative">
@@ -471,9 +512,11 @@ export function WorkspacePage() {
                   className="flex items-center gap-1.5 rounded-full border border-border/50 bg-secondary/40 px-2.5 py-1 text-[10px] text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-150"
                 >
                   <FolderOpen className="h-3 w-3 text-primary-glow" />
-                  <span>{documents.length} баримт оруулсан</span>
+                  <span className="hidden sm:inline">{documents.length} баримт оруулсан</span>
+                  <span className="sm:hidden">{documents.length} баримт</span>
                   <span className="text-muted-foreground/40">·</span>
-                  <span className="text-primary-glow">{selectedDocumentIds.length} идэвхтэй</span>
+                  <span className="text-primary-glow hidden sm:inline">{selectedDocumentIds.length} идэвхтэй</span>
+                  <span className="text-primary-glow sm:hidden">{selectedDocumentIds.length} идэвхтэй</span>
                 </button>
 
                 {showDocPopover && (

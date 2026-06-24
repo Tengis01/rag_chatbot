@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-rag_chatbot}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init:/docker-entrypoint-initdb.d
@@ -24,7 +24,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4000
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/rag_chatbot}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
     ports:
@@ -45,8 +45,7 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    environment:
-      VITE_API_URL: http://localhost:${API_PORT:-4000}
+    # No VITE_API_BASE_URL set → api.ts fallback uses window.location.hostname:4000
 
     ports:
       - "5173:5173"
