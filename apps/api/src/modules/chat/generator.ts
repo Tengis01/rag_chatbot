@@ -15,7 +15,7 @@ interface GeminiGenerateResponse {
 }
 
 const SYSTEM_INSTRUCTION =
-  "Та баримтын туслах. Хэрэглэгчийн асуултад зөвхөн өгөгдсөн баримтын context ашиглан монголоор хариул. Хариулт context дотор байхгүй бол тодорхой хэл. Товч, ойлгомжтой бай.";
+  "Та баримтын туслах. Хэрэглэгчийн асуултад зөвхөн өгөгдсөн баримтын context ашиглан хариул. Хариулт бичихдээ баримтын хэл болон бичгийн системийг дагаж бич — баримт кирилл монгол бол кирилл монголоор, латин бол бас кирилл монголоор хариул. Харин англи бол англиар гэх мэтчилэн. Асуулт ямар ч хэлээр байсан хамаагүй. Хариулт context дотор байхгүй бол тодорхой хэл. Товч, ойлгомжтой бай.";
 
 async function tryGenerate(
   modelName: string,
@@ -74,7 +74,7 @@ export async function generateAnswer(
   const context = contextChunks.map((chunk) => chunk.content).join("\n\n---\n\n");
 
   const models = [
-  "gemini-3.5-flash",      // хамгийн шинэ, хамгийн сайн
+  "gemini-2.5-pro",
   "gemini-2.5-flash",      // stable GA, найдвартай fallback
   "gemini-2.5-flash-lite", // хямд, хурдан гурав дахь fallback
 ];

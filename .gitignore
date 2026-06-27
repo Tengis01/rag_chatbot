@@ -32,8 +32,6 @@ yarn-debug.log*
 # coverage
 coverage/
 
-docs/
-
 # Expo / Mobile
 .expo/
 web-build/

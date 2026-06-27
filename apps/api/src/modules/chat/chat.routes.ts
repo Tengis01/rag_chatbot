@@ -18,6 +18,7 @@ const chatBodySchema = z.object({
   conversationId: z.string().uuid().optional(),
   documentIds: z.array(z.string().uuid()).min(1),
   message: z.string().trim().min(1),
+  useMMR: z.boolean().optional().default(true),
 });
 
 const NO_CONTEXT_REPLY =
@@ -68,7 +69,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       });
     }
 
-    const { conversationId: requestedConversationId, documentIds, message } =
+    const { conversationId: requestedConversationId, documentIds, message, useMMR } =
       parsed.data;
 
     try {
@@ -93,7 +94,11 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       const chunks = await retrieveChunks(
         embedding,
         DEMO_USER_ID,
-        readyDocumentIds
+        readyDocumentIds,
+        5,
+        0.1,
+        0.5,
+        useMMR
       );
 
       if (chunks.length === 0) {

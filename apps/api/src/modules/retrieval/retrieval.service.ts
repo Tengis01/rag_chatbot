@@ -83,8 +83,9 @@ export async function retrieveChunks(
   userId: string,
   documentIds: string[],
   k = 5,
-  threshold = 0.7,
-  lambda = 0.7
+  threshold = 0.1,
+  lambda = 0.5,
+  useMMR = true
 ): Promise<RetrievedChunk[]> {
   if (documentIds.length === 0) return [];
 
@@ -103,6 +104,6 @@ export async function retrieveChunks(
     chunkIndex: row.chunk_index === null ? null : Number(row.chunk_index),
     similarity: Number(row.similarity),
   }));
-
+  if (!useMMR) return candidates.slice(0, k);
   return rerankWithMmr(candidates, k, lambda);
 }
