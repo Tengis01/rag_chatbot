@@ -1,19 +1,29 @@
-import { Link } from "expo-router";
-import { Text, View } from "react-native";
+import React, { useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
+import { router } from "expo-router";
+import { getOnboardingComplete } from "../lib/storage";
 
-export default function HomeScreen() {
+export default function RootIndex() {
+  useEffect(() => {
+    async function checkOnboarding() {
+      try {
+        const complete = await getOnboardingComplete();
+        if (complete) {
+          router.replace("/workspace");
+        } else {
+          router.replace("/onboarding" as any);
+        }
+      } catch (err) {
+        // If error, default to onboarding to be safe
+        router.replace("/onboarding" as any);
+      }
+    }
+    checkOnboarding();
+  }, []);
+
   return (
-    <View className="flex-1 items-center justify-center bg-background px-6">
-      <Text className="mb-2 text-3xl font-bold text-foreground">RAG Chatbot</Text>
-      <Text className="mb-8 text-center text-base text-muted-foreground">
-        Ask your documents. Get grounded answers.
-      </Text>
-      <Link
-        href="/workspace"
-        className="rounded-full bg-primary px-8 py-3 text-base font-semibold text-white"
-      >
-        Start Asking
-      </Link>
+    <View className="flex-1 items-center justify-center bg-background">
+      <ActivityIndicator size="large" color="#7c2bca" />
     </View>
   );
 }

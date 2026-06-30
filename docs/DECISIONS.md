@@ -194,3 +194,52 @@ Reason:
 - Initiated the Phase 2 mobile client integration.
 - Selected Expo Router for file-system based native routing and NativeWind (Tailwind CSS v3 for React Native) to share styling patterns and deep-dark aesthetic choices with the web frontend.
 - Configured as a pnpm workspace package `mobile` to share code/types in the monorepo.
+
+---
+
+## 2026-06-30 — Gemini Model Fallback Chain Corrected
+
+Reason:
+
+- `gemini-3.5-flash` was in the fallback chain but is **paid-tier only** as of May 2026; it caused silent failures on the free tier when primary models were quota-limited.
+- `gemma-4-31b-it` required special thought-block stripping and is no longer the best fallback choice.
+- New chain: `gemini-2.5-flash` → `gemini-2.5-flash-lite`. Both are free-tier, GA (not preview), and do not require special response parsing.
+- Considered `gemini-2.5-pro` but rejected: 5 RPM / 100 RPD quota is too restrictive for interactive chat usage.
+- Decision rationale: RAG generation only needs to synthesize already-retrieved context in Mongolian — complex reasoning is not needed. Retrieval quality matters more than generation model novelty.
+
+---
+
+## 2026-06-30 — Diagram File Convention: .md with Embedded Mermaid Blocks
+
+Reason:
+
+- GitHub automatically renders `mermaid` fenced code blocks inside `.md` files.
+- `.mmd` files do not render on GitHub and require extra tooling (Mermaid CLI, VS Code extension) to view.
+- Convention established: one `.md` file per diagram category (`sequence.md`, `class.md`, `use-case.md`, `er.md`) under `docs/diagrams/`, with multiple diagrams per file under `##` headings.
+
+---
+
+## 2026-06-30 — Cross-Lingual Retrieval: Interim Threshold Fix + SYSTEM_INSTRUCTION Rewrite
+
+Reason:
+
+- Two compounding bugs caused cross-lingual retrieval to fail entirely:
+  1. **Retrieval layer**: Cosine similarity between a Latin/English query embedding and Cyrillic Mongolian chunk embeddings is ~0.35 — well below the original `threshold=0.7`. All chunks were filtered out, producing empty context.
+  2. **Generation layer**: With empty context, the LLM fell back to its own parametric knowledge and responded in the query's language (English) instead of the document's language (Mongolian Cyrillic).
+- **Interim fix**: `threshold` lowered to `0.1`, `lambda` to `0.5` in `retrieval.service.ts`. Acknowledging this is permissive and may admit loosely related chunks.
+- **SYSTEM_INSTRUCTION rewrite**: The model is now explicitly instructed to always respond in the source document's language/script, regardless of the language of the user's question.
+- **Proper fix (planned)**: Query expansion / language-aware retrieval — see next decision entry.
+
+---
+
+## 2026-06-30 — Query Expansion Architecture: Document Language Detection + Single Query Translation (Planned)
+
+Reason:
+
+- Two approaches considered for solving cross-lingual retrieval structurally:
+  - **Approach A (Query Expansion)**: Translate query into 2–3 language variants, embed each, merge+dedupe results by highest score. Works for mixed-language docs but costs 3× embed + 3× search calls per request.
+  - **Approach B (Document Language Detection + Single Translation)**: At ingestion, detect document's primary language/script once, store as `documents.detected_language`. At query time, fetch that column for the target docs, translate the user's query into the document's language (single LLM call), embed once, single pgvector search.
+- **Decision**: Implement Approach B. Faster (1 embed vs 3), simpler backend logic, sufficient for documents with a dominant language (Mongolian Cyrillic).
+- Tradeoff accepted: weaker on genuinely mixed-language documents; can be upgraded to Approach A later if needed.
+- Once stable, `threshold` to be restored to `0.6–0.7` and `lambda` to `0.7`.
+- Action items: migration for `detected_language` column, language detection in `pipeline.ts`, `translateQuery()` helper in retrieval, pass detected language from `chat.routes.ts`.

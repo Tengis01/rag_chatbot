@@ -153,3 +153,79 @@ Date: 2026-06-16
 - **Hero CTA buttons**: Redundant 3 дахь товчийг хасч, дэлгэц дээрх байршлыг сайжруулсан.
 
 
+
+---
+
+## Retrieval & Generation Fixes — 2026-06-30 ✅
+
+### Хийгдсэн зүйлс
+
+**Cross-lingual retrieval bug — оношлогдож засагдсан:**
+
+- **Шалтгаан (2 давхарга):**
+  - Давхарга 1 (retrieval): Latin/English query нь Cyrillic Mongolian chunks-тай ~0.35 cosine similarity өгдөг. Хуучин `threshold=0.7` эдгээрийг бүгдийг шүүж хаядаг байсан → хоосон контекст.
+  - Давхарга 2 (generation): Хоосон контекстэд LLM өөрийн мэдлэгийг ашиглан query-н хэл дээр (Latin/English) хариулдаг байсан.
+- **Засвар:**
+  - `retrieval.service.ts`: `threshold` → `0.1`, `lambda` → `0.5` (завсрын утга)
+  - `generator.ts` SYSTEM_INSTRUCTION дахин бичигдсэн: query-н хэл ямар ч байсан баримт бичгийн хэл/бичгийн систем дээр хариулахыг тодорхой зааварласан
+- **Мэдэгдэж буй хязгаарлалт:** threshold=0.1 их зөвшөөрдөг — тохироогүй chunks оруулж ирж болно. Энэ нь query expansion хийгдэх хүртэлх завсрын шийдэл.
+
+**MMR toggle — хэрэгжүүлэгдсэн:**
+
+- `retrieveChunks()` функц: `useMMR: boolean = true` параметр нэмэгдсэн
+- `useMMR=false` үед: raw similarity-ээр top-k буцаана (MMR rerank байхгүй)
+- `useMMR=true` үед: top-20 candidate → MMR rerank (Jaccard word-overlap diversity, λ=0.5) → шилдэг 5
+- `chat.routes.ts`: `useMMR` Zod schema-д нэмэгдсэн (optional, default true), задалж, `retrieveChunks()`-д дамжуулсан
+- Frontend toggle (Composer component) — одоохондоо хэрэгжүүлэгдээгүй, дараагийн session-д хийгдэнэ
+
+**Model fallback chain — засагдсан:**
+
+- `gemini-3.5-flash`-ийг fallback chain-аас хасав — энэ model нь 2026 оны 5 сараас эхлэн **paid-tier only**; free tier дээр чимээгүй алдаатай байсан
+- Шинэ chain: `gemini-2.5-flash → gemini-2.5-flash-lite` (хоёулаа free-tier, GA/stable, preview биш)
+- `gemini-2.5-pro`-г авч үзсэн ч татгалзсан: 5 RPM / 100 RPD quota нь чат хэрэглэгч цагт хэт хязгаарлагдмал
+
+**Sequence diagram үүсгэгдсэн:**
+
+- Шинэ файл: `docs/diagrams/sequence.md` — бүрэн чат урсгалын Mermaid sequence diagram (embed → retrieve → MMR/no-MMR branch → generate → fallback → persist → respond)
+- Convention: `.md` files with embedded mermaid blocks (GitHub renders automatically); `.mmd` files abandoned.
+
+### Оношлогооны арга
+
+- Эхлээд `threshold=0`, `lambda=0` тавьж debugging хийсэн (root cause тусгаарлах: chunks огт хоосон уу эсвэл deduplication асуудал уу)
+- Чуулган олдоогүй тохиолдолд `Thinking...` зогссон болохыг ажигласан
+
+---
+
+## Mobile App Redesign & Onboarding — 2026-06-30 ✅
+
+### Хийгдсэн зүйлс
+
+**4-slide Onboarding Carousel:**
+- `app/onboarding.tsx`: Horizontal pager-view onboarding carousel with slide/fade and parallax effects on graphics.
+- Copy adapted from web landing page (`Hero.tsx`, `Capabilities.tsx`, `FinalCta.tsx`) to keep brand messaging uniform.
+- "Don't show this again" AsyncStorage persistence (`lib/storage.ts`) and "Skip" button.
+
+**Root Redirection Screen:**
+- `app/index.tsx`: Clean loader checking onboarding completed flag. Instantly routes to `/workspace` or `/onboarding`.
+
+**ChatGPT-style Chat Workspace:**
+- `app/workspace.tsx`: Rebuilt as the main app entry point after onboarding.
+- Greeting state (messages.length === 0): Logo mark, welcome text, large Ask bar card with text input, mic icon placeholder, and document selection pill.
+- Active state (messages.length > 0): Collapses Ask bar to composer at the bottom; renders scrollable conversation bubble log.
+- Document selection bottom sheet modal: Reuses existing `DocumentPicker` component inside a Modal overlay.
+
+**Swipe-to-Open Sidebar Drawer:**
+- `components/Sidebar.tsx`: Swipeable drawer sliding from left (`translateX(-280)` to `0`). Lists conversations using `api.listConversations()` and loads select chat's history. Dismissed by swiping left or clicking backdrop.
+- Edge-swipe detector in `workspace.tsx` lets users open the sidebar drawer by dragging right from the left screen edge.
+
+**App Branding and Name:**
+- Generated clean 1024x1024 branding PNG assets (`icon.png`, `adaptive-icon.png`, `splash-icon.png`) with gradient-square + sparkles glyph via Pillow script.
+- Configured `app.json` to change the app display name from "RAG Chatbot" to **"RAG"**, pointing all icon fields to the new assets.
+- Resolved build and TypeScript issues successfully.
+
+## Current Next Step
+
+1. **MMR toggle UI** — Add toggle button in `apps/web/src/components/workspace/Composer.tsx`; label as "Олон талт хариу" (diverse answers), not "MMR". Wire to `useMMR` in chat request body (backend already supports it).
+2. **Query Expansion / Language-Aware Retrieval** — Add `detected_language` column to `documents` table (new migration), detect language at ingestion, translate query at chat time, then restore `threshold` to `0.6–0.7`. See DECISIONS.md for full architecture.
+3. **Mobile app end-to-end testing** — Run and test the Expo app on physical device/emulator.
+4. **End-to-end smoke test** — Full Docker Compose test: upload → chat → sources → reload.

@@ -1,13 +1,19 @@
 {
   "expo": {
-    "name": "RAG Chatbot",
+    "name": "RAG",
     "slug": "rag-chatbot",
     "version": "1.0.0",
     "scheme": "ragchatbot",
+    "icon": "./assets/icon.png",
     "platforms": [
       "android",
       "ios"
     ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#09090b"
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

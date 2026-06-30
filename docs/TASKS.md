@@ -100,24 +100,58 @@ Build the RAG backend pipeline and real chat UI.
 - [ ] End-to-end smoke test with Docker Compose (upload → chat → sources → reload)
 - [x] Scaffold `apps/mobile` with Expo + Expo Router + NativeWind and configure pnpm workspace
 - [x] Merge `apps/mobile/.gitignore` into root `.gitignore`
+- [x] Fix swapped component files in `apps/mobile/components/` (`DocumentPicker.tsx` ↔ `MessageBubble.tsx`) — ERR-020
 
 ---
 
-## Phase 2: Mobile Client (Expo)
+## Retrieval & Generation Fixes ✅
 
-- [ ] Connect mobile client with live API base URL (LAN auto-discovery or manual entry)
-- [ ] Implement Mobile Home screen and transition animations
-- [ ] Implement Mobile Workspace screen layout (sidebar list + chat area)
-- [ ] Implement Document upload / paste interaction in mobile composer
-- [ ] Implement Persistent Chat messages with grounded sources presentation
+- [x] Diagnose cross-lingual retrieval failure (Latin query vs Cyrillic Mongolian chunks → ~0.35 cosine, below old 0.7 threshold)
+- [x] Lower `threshold` from `0.7` to `0.1` (interim) in `retrieval.service.ts`
+- [x] Lower `lambda` from `0.7` to `0.5` (interim) in `retrieval.service.ts`
+- [x] Rewrite `generator.ts` SYSTEM_INSTRUCTION: always respond in source document's language/script regardless of query language
+- [x] Add `useMMR: boolean = true` parameter to `retrieveChunks()`
+- [x] When `useMMR=false`: return top-k by raw similarity (no MMR rerank)
+- [x] Add `useMMR` to `/chat` Zod schema and pass through to retrieval
+- [x] Fix model fallback chain: remove `gemini-3.5-flash` (paid-tier only), new chain `gemini-2.5-flash → gemini-2.5-flash-lite`
+- [x] Create `docs/diagrams/sequence.md` — Mermaid chat workflow sequence diagram
+- [x] Establish diagram convention: `.md` files with embedded ```mermaid blocks, not `.mmd`
 
 ---
 
-## Upgrade ideas
-- [ ] Update question language type. example user import cyrillic mongolian text pdf and ask latin mongolian or english the answers should be cyrillic mongolian no matter what.
-- [ ] understanding threshold and lambda value
-- [ ] toggle rerank button. MMR toggle button default active and untoggle then ask question default top k similarity works. if toggle active then ask question current top 
-20 to find best 5 will work.
+## Phase 2: Mobile Client (Expo) ✅
+
+- [x] Connect mobile client to live API (`EXPO_PUBLIC_API_URL`, LAN-compatible)
+- [x] Implement Mobile Home screen (onboarding, greeting) and transition animations
+- [x] Implement Mobile Workspace screen layout (chat area + composer + modal picker)
+- [x] Implement Document upload / paste interaction in mobile composer (reused DocumentPicker modal)
+- [x] Implement Persistent Chat messages with grounded sources presentation (via MessageBubble)
+
+---
+
+## Upgrade Ideas (Prioritized)
+
+### Priority 1 — Query Expansion / Language-Aware Retrieval (architecture decided, NOT YET BUILT)
+- [ ] Add `detected_language` column to `documents` table (new DB migration)
+- [ ] Add language detection step to `apps/api/src/modules/ingestion/pipeline.ts`
+- [ ] Add `translateQuery()` helper in `retrieval.service.ts` or new `query-expansion.ts`
+- [ ] Pass `detected_language` from `chat.routes.ts` through to retrieval
+- [ ] Restore `threshold` to `0.6–0.7` and `lambda` to `0.7` once query expansion is stable
+
+### Priority 2 — MMR Toggle UI (backend done, frontend pending)
+- [ ] Add toggle button in `apps/web/src/components/workspace/Composer.tsx`
+- [ ] User-facing label: "Олон талт хариу" (diverse answers) — avoid "MMR" jargon
+- [ ] Wire to `useMMR` boolean in chat API request body
+
+### Priority 3 — Threshold/Lambda UI Controls (deferred)
+- [ ] Expose `threshold` as advanced/debug query param first
+- [ ] Lambda slider — power-user feature, not MVP-critical
+
+### Other upgrade ideas
+- [ ] Update question language type: user imports Cyrillic Mongolian PDF and asks in Latin/English → answer must always be Cyrillic Mongolian regardless.
+- [ ] Understanding threshold and lambda value tuning UI
+
+---
 
 ## Later (post-MVP)
 

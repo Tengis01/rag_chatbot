@@ -357,29 +357,6 @@ const result = await parser.getText();
 
 ---
 
-## Quick Reference — Known Gotchas
-
-| # | Area | Gotcha |
-|---|---|---|
-| 1 | Docker + Vite | Must set `host: '0.0.0.0'` in `vite.config.ts`, not just CLI args |
-| 2 | Docker + Linux | Must set `watch.usePolling: true` in Vite for HMR inside containers |
-| 3 | Docker networking | `VITE_API_URL` should be `http://localhost:4000` (browser hits host), NOT `http://api:4000` (that's container-to-container only) |
-| 4 | pnpm + Docker | Volume mounts must exclude `node_modules` per workspace with separate `/app/node_modules`, `/app/apps/api/node_modules`, etc. or installs get overwritten |
-| 5 | Docker + pgAdmin | Use direct container IP (`172.19.0.2`) or gateway (`172.19.0.1`) rather than `localhost`/`127.0.0.1` |
-| 6 | Docker + Postgres | If host port 5432 is in use, set `POSTGRES_PORT=5433` in `.env` |
-| 7 | Docker + API | If host port 4000 is in use, set `API_PORT=4001` in `.env` and make sure `VITE_API_URL` dynamically matches |
-| 8 | Dependency | When adding `@types/` package, verify implementation package is also added |
-| 9 | ESM + CommonJS | CommonJS packages (like `pdf-parse`) in ESM require `createRequire` pattern |
-| 10 | Route Path | Double check route parameters (e.g. accidental `:id`) when encountering 404s |
-| 11 | Docker + pnpm v11 | Create `.npmrc` with `network-timeout=300000` and `fetch-retries=5`; copy it in Dockerfile before `pnpm install` to prevent supply-chain verification timeouts |
-| 12 | pdf-parse v2 | `pdf-parse@2.x` is a full rewrite — use `new PDFParse({ data: buffer }).getText()`, NOT `pdfParse(buffer)`; the old v1 function call causes `pdfParse is not a function` at runtime |
-| 13 | Docker Env | If API key displays as placeholder, run `docker compose down` and `docker compose up -d` to load modified `.env` variables into the containers |
-| 14 | Gemini API | `text-embedding-004` is no longer supported in public API Studio; use `gemini-embedding-001` with `outputDimensionality: 768` as a replacement |
-| 15 | Gemini / Gemma Fallback | When `gemini-2.0-flash` or `gemini-3.5-flash` fail with quota/capacity limits, fallback to `gemma-4-31b-it` and clean thought structures |
-| 16 | Smoke Test Integration | Verify API return fields match smoke test expectations (`reply` instead of generic `answer` or `content`). Relax source verification for very short ingestion test files. |
-
----
-
 ### ERR-010 — Invalid/placeholder GEMINI_API_KEY inside container
 
 **Date**: 2026-06-17
@@ -761,7 +738,160 @@ Explicitly restricted the build targets in `apps/mobile/app.json`:
 
 ---
 
-## Quick Reference Gotchas
+### ERR-020 — Mobile component files swapped during scaffolding (DocumentPicker / MessageBubble)
+
+**Date**: 2026-06-30
+**Status**: ✅ Fixed
+
+#### What happened
+
+`apps/mobile/components/DocumentPicker.tsx` exported a `Composer` component (wrong file).
+`apps/mobile/components/MessageBubble.tsx` exported a `SourceCard` component (wrong file).
+Both `index.tsx` and `workspace.tsx` imported these components expecting the correct props, so the screens would fail to render with prop-type mismatches at runtime.
+
+#### Root cause
+
+Copy-paste error during scaffolding: the `Composer` code was pasted into `DocumentPicker.tsx`, and the `SourceCard` code was pasted into `MessageBubble.tsx`. The filenames did not match their exported component or their expected props.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/mobile/components/DocumentPicker.tsx` | Rewrote with correct implementation: renders a toggleable list of `DocumentItem[]` with status labels and selected-state highlight |
+| `apps/mobile/components/MessageBubble.tsx` | Rewrote with correct implementation: renders user/assistant chat bubbles with collapsible `SourceCard` source list |
+
+#### Fix
+
+Rewrote both files from scratch with the correct component logic matching the props consumed by their respective screens.
+
+#### Lesson
+
+**After scaffolding multiple component files, verify each exported component name matches the filename and matches the props interface consumed by the importing screen before running.**
+
+---
+
+### ERR-021 — Cross-lingual retrieval failure: Latin query returns empty context against Cyrillic chunks
+
+**Date**: 2026-06-30
+**Status**: ✅ Fixed (interim)
+
+#### What happened
+
+Users asking questions in English or Latin-script Mongolian against documents ingested in Cyrillic Mongolian received answers that:
+1. Did not come from the document at all (LLM used its own parametric knowledge), and
+2. Were in the wrong language (English instead of Cyrillic Mongolian).
+
+#### Root cause
+
+Two compounding layers:
+
+**Layer 1 — Retrieval:** Gemini `gemini-embedding-001` embeds Latin/English queries and Cyrillic Mongolian chunks into different regions of the embedding space. Cosine similarity between a Latin query and a Cyrillic chunk is approximately **0.35**, far below the original `threshold=0.7`. All retrieved candidates were filtered out, producing an empty context array.
+
+**Layer 2 — Generation:** With an empty context, the old `SYSTEM_INSTRUCTION` only said "answer from the document." With no document context present, the LLM silently fell back to its own training knowledge and responded in the language of the query (English), ignoring the required output language.
+
+These bugs mask each other: lowering the threshold alone without fixing the system prompt still allows the LLM to answer in the wrong language if context is thin; fixing the system prompt alone without lowering the threshold still produces empty context.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/api/src/modules/retrieval/retrieval.service.ts` | `threshold` default: `0.7` → `0.1`; `lambda` default: `0.7` → `0.5` |
+| `apps/api/src/modules/chat/generator.ts` | Rewrote `SYSTEM_INSTRUCTION`: explicitly instructs model to always respond in the source document's language/script regardless of query language |
+
+#### Fix
+
+```ts
+// retrieval.service.ts — interim permissive threshold
+export async function retrieveChunks(
+  query: string,
+  documentIds: string[],
+  userId: string,
+  k = 5,
+  threshold = 0.1,   // was 0.7
+  lambda = 0.5,      // was 0.7
+  useMMR = true,
+) { ... }
+```
+
+```ts
+// generator.ts — language-enforcing system instruction
+const SYSTEM_INSTRUCTION = `
+You are a precise document assistant.
+Answer ONLY using the retrieved context provided below.
+CRITICAL LANGUAGE RULE: Always respond in the same language and script as the source documents,
+regardless of the language the user's question is written in.
+If the documents are in Mongolian Cyrillic, respond in Mongolian Cyrillic — even if the question is in English.
+If no relevant context is found, state clearly that the document does not contain enough information.
+Never use your own knowledge outside the provided context.
+`;
+```
+
+#### Lesson
+
+**Cross-lingual RAG has two failure layers: retrieval (embedding distance) and generation (language instruction). Both must be fixed together. The proper long-term fix is query translation before embedding — not just a permissive threshold — see DECISIONS.md for the query expansion architecture.**
+
+---
+
+### ERR-022 — Mobile crash: `cannot read property 'filter' of undefined` on home screen
+
+**Date**: 2026-06-30
+**Status**: ✅ Fixed
+
+#### What happened
+
+Opening the mobile app on a physical Samsung phone caused an immediate crash on the Home screen with:
+
+```
+TypeError: Cannot read property 'filter' of undefined
+```
+
+The app white-screened immediately after launch.
+
+#### Root cause
+
+`app/index.tsx` destructured the API response directly inside `.then()`:
+
+```ts
+// ❌ Broken
+.then(({ documents: docs }) => {
+  setSelectedIds(docs.filter((d) => d.status === "ready").map((d) => d.id));
+})
+```
+
+If `res.documents` is `undefined` (backend not yet up, slow first connection, or unexpected response shape), the destructured `docs` is `undefined`. Calling `.filter()` on `undefined` throws immediately.
+
+The same risk existed in `DocumentPicker.tsx` — its `documents` prop had no default value, so passing `undefined` would crash `.length` checks and `.map()` calls inside the component.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/mobile/app/index.tsx` | Replaced destructuring `{ documents: docs }` with `Array.isArray(res?.documents)` guard and `?? []` fallback |
+| `apps/mobile/components/DocumentPicker.tsx` | Added default `= []` to `documents` prop in function signature |
+
+#### Fix
+
+```ts
+// apps/mobile/app/index.tsx — safe response handling
+.then((res) => {
+  const docs: DocumentItem[] = Array.isArray(res?.documents) ? res.documents : [];
+  setDocuments(docs);
+  setSelectedIds(docs.filter((d) => d.status === "ready").map((d) => d.id));
+})
+```
+
+```ts
+// apps/mobile/components/DocumentPicker.tsx — safe prop default
+export function DocumentPicker({ documents = [], selectedIds, onToggle, loading }: Props) {
+```
+
+#### Lesson
+
+**Never call array methods on a value destructured from an API response without first confirming it is actually an array. Use `Array.isArray()` + `?? []` fallback at the fetch boundary, and add `= []` default props in every component that renders a list.**
+
+---
+
+## Quick Reference Gotchas (updated)
 
 | Gotcha | Fix |
 |---|---|
@@ -784,5 +914,70 @@ Explicitly restricted the build targets in `apps/mobile/app.json`:
 | App crashes on mobile before render | Search ALL frontend files for `localhost:4000`; `ConfigContext.tsx` had its own copy that blocked the entire render tree (ERR-017) |
 | Expo export fails on missing web packages | Restrict platforms to `["android", "ios"]` in `app.json` (ERR-018) |
 | TS JSX errors & missing config extends | Extend local `node_modules` path; remove deprecated `baseUrl` to avoid `ignoreDeprecations` mismatches (ERR-019) |
+| Mobile component files swapped (DocumentPicker / MessageBubble) | Rewrite both files with their correct implementations — do not copy-paste between component files during scaffolding (ERR-020) |
+| Latin query returns empty context / wrong language against Cyrillic chunks | Lower `threshold` to `0.1` (interim); rewrite SYSTEM_INSTRUCTION to enforce document script; proper fix: query translation before embedding (ERR-021) |
+| Mobile crash: `filter` of undefined on home screen | Use `Array.isArray(res?.documents) ? res.documents : []` at fetch boundary; add `= []` default prop in list components (ERR-022) |
+| Mobile typecheck fails on process, startX, or onboarding route | Cast new routes as any; declare process globally in global.d.ts; track initial gesture coordinates via shared value in onStart (ERR-023) |
+
+---
+
+### ERR-023 — Mobile typecheck fails on missing `process`, `startX` gesture property, and `/onboarding` route type
+
+**Date**: 2026-06-30
+**Status**: ✅ Fixed
+
+#### What happened
+
+Running `pnpm --filter mobile typecheck` failed with multiple TS errors:
+1. `router.replace("/onboarding")` was not assignable since onboarding was a new file and the static route types were stale.
+2. `Cannot find name 'process'` in `app/workspace.tsx` and `lib/api.ts` since mobile environments lack standard Node types.
+3. `Property 'startX' does not exist on type 'GestureUpdateEvent<PanGestureHandlerEventPayload>'` in `app/workspace.tsx` gesture handler.
+
+#### Root cause
+
+1. Expo Router static route generation lags behind new file creation in pnpm workspaces.
+2. Mobile TS configurations (`tsconfig.base.json`) don't include `@types/node` by default, so references to NodeJS globals like `process.env` fail compilation.
+3. In `react-native-gesture-handler` v2, update event payloads (`GestureUpdateEvent`) do not contain `startX` or other initial touch coordinates.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/mobile/global.d.ts` | Created to declare `process` globally at top level |
+| `apps/mobile/app/index.tsx` | Cast new path string `/onboarding` as `any` |
+| `apps/mobile/app/workspace.tsx` | Added `useSharedValue` to track `startX` on gesture start; cast route imports |
+
+#### Fix
+
+```ts
+// apps/mobile/global.d.ts — declare process globally
+declare var process: {
+  env: {
+    EXPO_PUBLIC_API_URL?: string;
+    [key: string]: string | undefined;
+  };
+};
+```
+
+```ts
+// apps/mobile/app/workspace.tsx — track start touch coordinate
+const startX = useSharedValue(0);
+
+const swipeGesture = Gesture.Pan()
+  .onStart((event) => {
+    "worklet";
+    startX.value = event.x;
+  })
+  .onUpdate((event) => {
+    "worklet";
+    if (startX.value < 40 && event.translationX > 50) {
+      runOnJS(setSidebarOpen)(true);
+    }
+  });
+```
+
+#### Lesson
+
+**In mobile/native TS apps, resolve missing Node variables like `process` by creating a top-level `global.d.ts` file rather than polluting local files or adding unused devDependencies, and track initial gesture states explicitly with shared values rather than expecting them on update payloads.**
 
 
