@@ -118,7 +118,6 @@ Build the RAG backend pipeline and real chat UI.
 - [x] Establish diagram convention: `.md` files with embedded ```mermaid blocks, not `.mmd`
 
 ---
-
 ## Phase 2: Mobile Client (Expo) ✅
 
 - [x] Connect mobile client to live API (`EXPO_PUBLIC_API_URL`, LAN-compatible)
@@ -129,35 +128,101 @@ Build the RAG backend pipeline and real chat UI.
 
 ---
 
-## Upgrade Ideas (Prioritized)
+## Phase 3: Retrieval Quality
 
-### Priority 1 — Query Expansion / Language-Aware Retrieval (architecture decided, NOT YET BUILT)
+### 🔴 Priority 1 — Query Expansion / Language-Aware Retrieval
+> Architecture decided. Interim fix active (`threshold=0.1`, `lambda=0.5`). Not yet built.
+
 - [ ] Add `detected_language` column to `documents` table (new DB migration)
 - [ ] Add language detection step to `apps/api/src/modules/ingestion/pipeline.ts`
-- [ ] Add `translateQuery()` helper in `retrieval.service.ts` or new `query-expansion.ts`
-- [ ] Pass `detected_language` from `chat.routes.ts` through to retrieval
-- [ ] Restore `threshold` to `0.6–0.7` and `lambda` to `0.7` once query expansion is stable
+- [ ] Add `translateQuery()` helper — `retrieval.service.ts` or new `query-expansion.ts`
+- [ ] Pass `detected_language` from `chat.routes.ts` through to retrieval layer
+- [ ] Restore `threshold → 0.6–0.7` and `lambda → 0.7` once query expansion is stable
 
-### Priority 2 — MMR Toggle UI (backend done, frontend pending)
+### 🟡 Priority 2 — MMR Toggle UI
+> Backend fully done. Frontend toggle only remaining.
+
 - [ ] Add toggle button in `apps/web/src/components/workspace/Composer.tsx`
-- [ ] User-facing label: "Олон талт хариу" (diverse answers) — avoid "MMR" jargon
-- [ ] Wire to `useMMR` boolean in chat API request body
+- [ ] User-facing label: `"Олон талт хариу"` — avoid "MMR" jargon
+- [ ] Wire to `useMMR: boolean` in chat API request body
 
-### Priority 3 — Threshold/Lambda UI Controls (deferred)
-- [ ] Expose `threshold` as advanced/debug query param first
-- [ ] Lambda slider — power-user feature, not MVP-critical
+### 🔵 Priority 3 — Threshold / Lambda UI Controls
+> Deferred. Power-user feature, not MVP-critical.
 
-### Other upgrade ideas
-- [ ] Update question language type: user imports Cyrillic Mongolian PDF and asks in Latin/English → answer must always be Cyrillic Mongolian regardless.
-- [ ] Understanding threshold and lambda value tuning UI
+- [ ] Expose `threshold` as advanced/debug query param
+- [ ] Lambda slider in workspace UI
 
 ---
 
-## Later (post-MVP)
+## Phase 4: Auth
 
-- [ ] Add Supabase Auth (or JWT) for real user_id
-- [ ] Replace demo UUID with real auth user_id in all queries
-- [ ] Deploy frontend to Vercel
-- [ ] Deploy backend to Render or Railway
-- [ ] Switch DATABASE_URL to managed Postgres for production
-- [ ] Set `VITE_API_BASE_URL` to the production API URL on Vercel (the `window.location.hostname` fallback only works for local dev)
+### 🔴 Priority 1 — Better Auth Integration
+> Better Auth chosen: framework-agnostic, Fastify + Expo adapters, stores in own PostgreSQL. Replaces hardcoded `DEMO_USER_ID`.
+
+- [ ] Install `better-auth` in `apps/api`, configure Fastify plugin
+- [ ] Add `users` and `sessions` tables (Better Auth migration)
+- [ ] Implement email + password sign up / sign in endpoints
+- [ ] Replace `DEMO_USER_ID` constant with `session.user.id` in all routes
+  - `chat.routes.ts`
+  - `documents.routes.ts`
+  - `conversations.routes.ts`
+- [ ] Add auth middleware to protect all non-public routes
+- [ ] Install `better-auth/client` in `apps/web`, wire login/register pages
+- [ ] Install `better-auth/expo` in `apps/mobile`, wire auth flow
+
+---
+
+## Phase 5: Mobile Polish
+
+### 🟡 Priority 1 — UI Fixes
+- [ ] Remove voice record button from mobile Composer
+- [ ] Add document picker button to mobile Composer (mirror web workspace)
+
+### 🔵 Priority 2 — Native App Build (EAS)
+> Currently running via Expo Go. Goal: standalone APK installable without Expo Go.
+
+- [ ] Configure EAS Build (`eas.json`, `eas build:configure`)
+- [ ] Build Android APK via `eas build -p android --profile preview`
+- [ ] Test install on physical device
+- [ ] App Store / Google Play — post-MVP
+
+---
+
+## Phase 6: Infrastructure
+
+### 🔴 Priority 1 — Docker Build Optimization
+> Currently `pnpm install` runs from scratch on every build. Fix: layer cache.
+
+- [ ] Reorder `Dockerfile` — copy `pnpm-lock.yaml` + `package.json` first, then `pnpm install`, then `COPY . .`
+- [ ] Verify cache hit on second build (no code change → install layer skipped)
+
+### 🟡 Priority 2 — CI/CD (GitHub Actions)
+> Triggers on push to `main`. Backend deploy to Droplet, frontend auto-deploys via Vercel.
+
+- [ ] Create `.github/workflows/deploy.yml`
+  - `pnpm install` → `build` → `smoke-test.sh`
+  - Docker image build → push to GHCR
+  - SSH into Droplet → `docker compose pull` → `docker compose up -d`
+  - `/health` check after deploy
+- [ ] Set GitHub Secrets: `DROPLET_HOST`, `DROPLET_USER`, `DROPLET_SSH_KEY`, `GEMINI_API_KEY`, `DATABASE_URL`
+- [ ] Branch strategy: `main` (production) → `dev` (staging) → `feature/*` (PRs)
+
+### 🔵 Priority 3 — Deployment
+> GitHub Student Pack: DigitalOcean $200 credit + Namecheap free `.me` domain.
+
+- [ ] Provision DigitalOcean Droplet (1GB RAM, $6/mo)
+- [ ] Install Docker + Docker Compose on Droplet
+- [ ] Configure Nginx reverse proxy + SSL via Let's Encrypt
+- [ ] Set `DATABASE_URL` + `GEMINI_API_KEY` as Droplet environment variables
+- [ ] Connect GitHub repo to Vercel (frontend auto-deploy on push)
+- [ ] Set `VITE_API_URL=https://api.yourdomain.me` in Vercel env variables
+- [ ] Point Namecheap domain → Droplet IP (A record), `api.` subdomain
+
+---
+
+## Docs & Diagrams
+
+- [x] `docs/diagrams/sequence.md` — Chat workflow sequence diagram (Mermaid)
+- [ ] `docs/diagrams/sequence.md` — Add ingestion pipeline sequence diagram
+- [ ] `docs/diagrams/er.md` — Database ER diagram
+- [ ] `docs/diagrams/use-case.md` — User flow use case diagram
