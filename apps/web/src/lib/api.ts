@@ -9,6 +9,7 @@ export const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
+    credentials: "include", // session cookie-г хамт илгээнэ (Better Auth)
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
@@ -74,6 +75,7 @@ export const api = {
     form.append("file", file);
     return fetch(`${API_BASE}/documents/upload`, {
       method: "POST",
+      credentials: "include",
       body: form,
     }).then(async (res) => {
       if (!res.ok) {

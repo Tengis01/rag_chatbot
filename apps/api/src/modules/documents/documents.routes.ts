@@ -2,7 +2,7 @@ import { FastifyInstance } from "fastify";
 import { extractTextFromPDF } from "./pdf-extractor.js";
 import { storeDocumentText, getDocumentById } from "./document-store.js";
 import { db } from "../../shared/db/db.js";
-import { DEMO_USER_ID } from "../../shared/constants.js";
+import { requireUser } from "../../shared/session.js";
 import { processDocument } from "../ingestion/pipeline.js";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
@@ -10,6 +10,9 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024;
 export async function documentsRoute(app: FastifyInstance): Promise<void> {
 
     app.post("/documents/upload", async (req, reply) => {
+        const user = await requireUser(req, reply);
+        if (!user) return;
+
         try {
             const data = await req.file();
 
@@ -44,7 +47,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
             const insertResult = await db.query(
                 `INSERT INTO documents (user_id, filename, source_type, status)
                  VALUES ($1, $2, 'pdf', 'pending') RETURNING id`,
-                 [DEMO_USER_ID, data.filename]
+                 [user.id, data.filename]
             );
 
             const documentId: string = insertResult.rows[0].id;
@@ -72,6 +75,9 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
     });
 
     app.post("/documents/paste", async (req, reply) => {
+        const user = await requireUser(req, reply);
+        if (!user) return;
+
         const body = req.body as { text?: string; title?: string };
         const text = body?.text?.trim() ?? "";
         const title = body?.title?.trim() || "Хуулсан текст";
@@ -91,7 +97,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
                 `INSERT INTO documents (user_id, filename, source_type, status)
                  VALUES ($1, $2, 'text', 'pending')
                  RETURNING id`,
-                [DEMO_USER_ID, title]
+                [user.id, title]
             );
 
             const documentId: string = insertResult.rows[0].id;
@@ -119,13 +125,16 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
     });
 
     app.get("/documents", async (req, reply) => {
+        const user = await requireUser(req, reply);
+        if (!user) return;
+
         try {
             const result = await db.query(
                 `SELECT id, filename, source_type, status, created_at
                  FROM documents
                  WHERE user_id = $1
                  ORDER BY created_at DESC`,
-                [DEMO_USER_ID]
+                [user.id]
             );
 
             const documents = result.rows.map((row) => ({
@@ -144,6 +153,9 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
     });
 
     app.get<{ Params: { id: string } }>("/documents/:id/status", async (req, reply) => {
+        const user = await requireUser(req, reply);
+        if (!user) return;
+
         try {
             const { id } = req.params;
             const doc = await getDocumentById(id);
@@ -153,7 +165,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
             }
 
             // Ensure user owns this document
-            if (doc.user_id !== DEMO_USER_ID) {
+            if (doc.user_id !== user.id) {
                 return reply.status(403).send({ error: "хандах эрхгүй" });
             }
 

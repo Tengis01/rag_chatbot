@@ -182,3 +182,22 @@ CREATE INDEX ON messages (conversation_id);
 - No cross-user data access is allowed.
 - For MVP: use a fixed demo UUID as `user_id` until auth is added.
 - Demo UUID: `'00000000-0000-0000-0000-000000000001'`
+
+---
+
+## Auth Tables (Better Auth — `infra/postgres/init/002_auth.sql`)
+
+Better Auth manages these four tables itself (do not write to them from app code).
+Column names are camelCase and must stay quoted. IDs are UUIDs (generated app-side
+via `advanced.database.generateId`), so they are compatible with the `user_id UUID`
+columns on the app tables above.
+
+| Table | Purpose |
+|---|---|
+| `"user"` | One row per account — `email` (unique), `name`, `emailVerified` |
+| `"session"` | Active login sessions — unique `token` (cookie), `expiresAt`, `userId` FK |
+| `"account"` | Credentials per provider — for email+password, the **scrypt-hashed** password is in `"password"` |
+| `"verification"` | Short-lived tokens (email verification / password reset) |
+
+- `documents.user_id`, `chunks.user_id`, `conversations.user_id`, `messages.user_id` now hold real `"user"."id"` values (the `DEMO_USER_ID` constant is no longer used by routes).
+- Applying this schema follows the same rule as `001_schema.sql`: init scripts only run on a fresh volume (`docker compose down -v && docker compose up --build`).

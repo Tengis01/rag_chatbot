@@ -918,6 +918,8 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 | Latin query returns empty context / wrong language against Cyrillic chunks | Lower `threshold` to `0.1` (interim); rewrite SYSTEM_INSTRUCTION to enforce document script; proper fix: query translation before embedding (ERR-021) |
 | Mobile crash: `filter` of undefined on home screen | Use `Array.isArray(res?.documents) ? res.documents : []` at fetch boundary; add `= []` default prop in list components (ERR-022) |
 | Mobile typecheck fails on process, startX, or onboarding route | Cast new routes as any; declare process globally in global.d.ts; track initial gesture coordinates via shared value in onStart (ERR-023) |
+| Mobile: uploaded file never selectable, no processing status, chat reply blank | `lib/api.ts` drifted from backend: add `getDocumentStatus` + polling, parse `/chat`'s `.reply`/`.sources` (not `.message`), map source shape, don't auto-select pending docs (ERR-024) |
+| `expo export` fails: "Chunk containing module not found: undefined" | A lazily-imported peer dep is missing — `@better-auth/expo` dynamically imports `expo-network` and `expo-web-browser`; `npx expo install` both (ERR-025) |
 
 ---
 
@@ -981,3 +983,108 @@ const swipeGesture = Gesture.Pan()
 **In mobile/native TS apps, resolve missing Node variables like `process` by creating a top-level `global.d.ts` file rather than polluting local files or adding unused devDependencies, and track initial gesture states explicitly with shared values rather than expecting them on update payloads.**
 
 
+---
+
+### ERR-024 — Mobile client can't add files, no processing status, chat replies blank (api.ts drifted from backend)
+
+**Date**: 2026-07-02
+**Status**: ✅ Fixed
+
+#### What happened
+
+On the mobile app (Expo):
+1. After uploading a PDF or pasting text, the new document could never be selected in the DocumentPicker — it stayed greyed out as "Хүлээгдэж байна" (pending) forever, so files effectively "could not be added".
+2. There was no way to see ingestion progress (pending → processing → ready) on the phone.
+3. Sending a chat message showed the user bubble, then nothing — the assistant reply never appeared (and rendering could crash on `message.role` of `undefined`).
+4. Source cards under assistant replies rendered blank titles.
+
+#### Root cause
+
+`apps/mobile/lib/api.ts` was written against an assumed API and drifted from the real backend responses (the web client `apps/web/src/lib/api.ts` was correct):
+
+1. **Missing `getDocumentStatus`** — the backend exposes `GET /documents/:id/status` and the web app polls it every 3s; the mobile client never called it, so local document state was frozen at `pending`. `DocumentPicker` disables non-ready documents (`disabled={!isReady}`), making new uploads unselectable.
+2. **`sendMessage` response shape wrong** — mobile typed the `/chat` response as `{ conversationId, message: ChatMessage }`, but the backend returns `{ conversationId, reply, sources }`. `res.message` was `undefined`, so the appended assistant message was undefined (same class of bug as ERR-013's `.answer` vs `.reply`).
+3. **Source shape mismatch** — backend sources are `{ chunkId, documentId, content, page, chunkIndex, similarity }`; the mobile `SourceChunk` type expected `{ documentTitle, preview }`, so `SourceCard` rendered blanks.
+4. **Compounding bug in `workspace.tsx`** — `handleDocumentAdded` auto-selected the still-`pending` document; `/chat` requires every selected document to be `ready` and returned 400.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/mobile/lib/api.ts` | Added `getDocumentStatus()`; fixed `sendMessage` to return `ChatResponse { conversationId, reply, sources }`; added `DocumentStatusResponse` type; removed stray `userId` body/form fields |
+| `apps/mobile/types/index.ts` | Added `RawSourceChunk` (backend shape); made `SourceChunk.documentTitle`/`preview` optional, added `chunkId`/`page`/`chunkIndex` |
+| `apps/mobile/app/workspace.tsx` | Added 3s status polling effect (mirrors web `WorkspacePage`); auto-select docs only when they turn `ready`; `mapSources()` resolves document titles + builds previews; builds assistant `ChatMessage` from `res.reply`/`res.sources`; maps sources on conversation-history load; empty-selection guard opens picker |
+| `apps/mobile/components/SourceCard.tsx` | Fallback title ("Баримт бичиг") and 2-line content preview |
+
+#### Fix
+
+```ts
+// lib/api.ts — poll ingestion status (was missing entirely)
+getDocumentStatus: (id: string) =>
+  request<DocumentStatusResponse>(`/documents/${id}/status`),
+
+// lib/api.ts — /chat returns reply + sources, not a ChatMessage
+sendMessage: (params) =>
+  request<ChatResponse>("/chat", { method: "POST", body: JSON.stringify(params) }),
+```
+
+```ts
+// app/workspace.tsx — poll pending/processing docs every 3s, auto-select on ready
+useEffect(() => {
+  const hasPending = documents.some((d) => d.status === "pending" || d.status === "processing");
+  if (!hasPending) return;
+  const interval = setInterval(() => { /* getDocumentStatus per pending doc */ }, 3000);
+  return () => clearInterval(interval);
+}, [documents]);
+
+// app/workspace.tsx — build the assistant message from the real response
+const assistantMsg: ChatMessage = {
+  id: `${Date.now()}-assistant`,
+  role: "assistant",
+  content: res.reply,
+  sources: mapSources(res.sources),
+  createdAt: new Date().toISOString(),
+};
+```
+
+Verified with `pnpm --filter mobile typecheck` (passes). Full on-device e2e check (upload → ready → chat → sources) still pending on the emulator.
+
+#### Lesson
+
+**When two clients consume the same API, never hand-write response types twice — mirror the proven client (web `api.ts`) or share types via `packages/api-client`; response-shape drift (`.message` vs `.reply`) is the same failure as ERR-013 and will keep recurring until types are shared.**
+
+---
+
+### ERR-025 — `expo export` fails with "Chunk containing module not found: undefined" after adding @better-auth/expo
+
+**Date**: 2026-07-02
+**Status**: ✅ Fixed
+
+#### What happened
+
+After installing `better-auth` + `@better-auth/expo` in `apps/mobile`, `pnpm --filter mobile build` (`expo export`) failed:
+
+1. First run: `Unable to resolve module expo-network from @better-auth/expo/dist/client.js`.
+2. After installing `expo-network`: `AssertionError [ERR_ASSERTION]: Chunk containing module not found: undefined` from `@expo/metro-config/src/serializer/serializeChunks.ts` — with no module name in the message. Clearing the Metro cache did not help.
+
+#### Root cause
+
+`@better-auth/expo`'s client **lazily imports** (dynamic `import()`) two Expo peer packages it doesn't declare as hard deps: `expo-network` (offline detection) and `expo-web-browser` (OAuth flows). Missing dynamic imports don't fail resolution loudly — Metro records the async dependency as unresolved and the export-time chunk serializer then asserts with the unhelpful "Chunk containing module not found: undefined". The `EXPO_DEBUG=1` log revealed the real cause: `FailedToResolveNameError (module: expo-web-browser, origin: @better-auth/expo/dist/client.js)`.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/mobile/package.json` | Added `expo-secure-store`, `expo-network`, `expo-web-browser` via `npx expo install` (SDK-matched versions) |
+
+#### Fix
+
+```bash
+cd apps/mobile
+npx expo install expo-secure-store expo-network expo-web-browser
+npx expo export   # succeeds
+```
+
+#### Lesson
+
+**When Metro's export serializer says "Chunk containing module not found: undefined", run with `EXPO_DEBUG=1` and look for `FailedToResolveNameError` — the real culprit is usually a missing lazily-imported peer dependency, not a cache or serializer bug.**

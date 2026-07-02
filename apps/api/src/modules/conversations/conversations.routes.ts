@@ -1,14 +1,17 @@
 import { FastifyInstance } from "fastify";
 
-import { DEMO_USER_ID } from "../../shared/constants.js";
+import { requireUser } from "../../shared/session.js";
 import {
   getConversationMessages,
   getConversations,
 } from "./conversation-store.js";
 
 export async function conversationsRoute(app: FastifyInstance): Promise<void> {
-  app.get("/conversations", async (_req, reply) => {
-    const conversations = await getConversations(DEMO_USER_ID);
+  app.get("/conversations", async (req, reply) => {
+    const user = await requireUser(req, reply);
+    if (!user) return;
+
+    const conversations = await getConversations(user.id);
 
     return reply.send({
       conversations: conversations.map((conversation) => ({
@@ -23,7 +26,10 @@ export async function conversationsRoute(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string } }>(
     "/conversations/:id/messages",
     async (req, reply) => {
-      const messages = await getConversationMessages(req.params.id, DEMO_USER_ID);
+      const user = await requireUser(req, reply);
+      if (!user) return;
+
+      const messages = await getConversationMessages(req.params.id, user.id);
 
       if (!messages) {
         return reply.status(404).send({ error: "чат олдсонгүй" });

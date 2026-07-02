@@ -8,7 +8,7 @@ export function SourceCard({ source }: { source: SourceChunk }) {
     <View className="mb-2 rounded-xl border border-border bg-card p-3">
       <View className="flex-row items-center justify-between">
         <Text className="flex-1 text-sm font-medium text-foreground" numberOfLines={1}>
-          {source.documentTitle}
+          {source.documentTitle ?? "Баримт бичиг"}
         </Text>
         <Text className="ml-2 text-xs font-semibold text-primary-light">
           {percent}%
@@ -21,6 +21,12 @@ export function SourceCard({ source }: { source: SourceChunk }) {
           style={{ width: `${percent}%` }}
         />
       </View>
+
+      {source.preview && (
+        <Text className="mt-2 text-xs text-muted-foreground" numberOfLines={2}>
+          {source.preview}
+        </Text>
+      )}
     </View>
   );
 }

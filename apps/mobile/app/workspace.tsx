@@ -8,10 +8,9 @@ import {
   Pressable,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
 } from "react-native";
-import { Menu, Mic, Sparkles, FileText, Send, X, ArrowLeft, Plus } from "lucide-react-native";
+import { Menu, Sparkles, FileText, Send, X, Plus } from "lucide-react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { api } from "../lib/api";
@@ -20,7 +19,7 @@ import { Composer } from "../components/Composer";
 import { DocumentPicker } from "../components/DocumentPicker";
 import { Sidebar } from "../components/Sidebar";
 import { UploadModal } from "../components/UploadModal";
-import type { ChatMessage, DocumentItem } from "../types";
+import type { ChatMessage, DocumentItem, RawSourceChunk, SourceChunk } from "../types";
 
 export default function WorkspaceScreen() {
   // Sidebar State
@@ -66,6 +65,49 @@ export default function WorkspaceScreen() {
     fetchDocuments(true);
   }, []);
 
+  // Poll processing documents until they become ready/failed (mirrors web workspace)
+  useEffect(() => {
+    const hasPending = documents.some(
+      (d) => d.status === "pending" || d.status === "processing"
+    );
+    if (!hasPending) return;
+
+    const interval = setInterval(() => {
+      documents.forEach((doc) => {
+        if (doc.status !== "pending" && doc.status !== "processing") return;
+        api
+          .getDocumentStatus(doc.id)
+          .then((res) => {
+            if (res.status === doc.status) return;
+            setDocuments((prev) =>
+              prev.map((d) => (d.id === doc.id ? { ...d, status: res.status } : d))
+            );
+            // Auto-select documents once they finish processing
+            if (res.status === "ready") {
+              setSelectedIds((prev) =>
+                prev.includes(doc.id) ? prev : [...prev, doc.id]
+              );
+            }
+          })
+          .catch((err) => console.error(`Poll error for doc ${doc.id}:`, err));
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [documents]);
+
+  // Backend sources -> UI sources (resolve document titles, build previews)
+  const mapSources = (sources?: RawSourceChunk[] | null): SourceChunk[] =>
+    (Array.isArray(sources) ? sources : []).map((s) => ({
+      chunkId: s.chunkId,
+      documentId: s.documentId,
+      documentTitle: documents.find((d) => d.id === s.documentId)?.title,
+      preview: s.content ? s.content.slice(0, 160) : undefined,
+      page: s.page,
+      chunkIndex: s.chunkIndex,
+      similarity: s.similarity,
+    }));
+
   const handleOpenPicker = () => {
     setPickerVisible(true);
     fetchDocuments(false);
@@ -87,9 +129,10 @@ export default function WorkspaceScreen() {
     );
   };
 
+  // New documents start as "pending" — selection happens automatically
+  // once polling sees them become "ready" (chat rejects non-ready docs).
   const handleDocumentAdded = (newDoc: DocumentItem) => {
     setDocuments((prev) => [newDoc, ...prev]);
-    setSelectedIds((prev) => [...prev, newDoc.id]);
   };
 
   // Switch or load conversation from Sidebar
@@ -105,13 +148,14 @@ export default function WorkspaceScreen() {
     setMessagesLoading(true);
     setError(null);
     try {
-      const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
-      const res = await fetch(`${API_BASE}/conversations/${id}/messages`);
-      if (!res.ok) {
-        throw new Error(`API error ${res.status}`);
-      }
-      const data = await res.json();
-      setMessages(Array.isArray(data?.messages) ? data.messages : []);
+      const data = await api.listConversationMessages(id);
+      const loaded: ChatMessage[] = (Array.isArray(data?.messages) ? data.messages : []).map(
+        (msg) => ({
+          ...msg,
+          sources: mapSources(msg.sources),
+        })
+      );
+      setMessages(loaded);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -122,6 +166,13 @@ export default function WorkspaceScreen() {
   // Send message handler
   async function handleSend(text: string) {
     if (!text.trim() || isSending) return;
+
+    // Chat requires at least one ready document — guide the user to the picker
+    if (selectedIds.length === 0) {
+      setError("Эхлээд баримт бичиг сонгоно уу.");
+      setPickerVisible(true);
+      return;
+    }
     setError(null);
 
     const userMsg: ChatMessage = {
@@ -140,7 +191,14 @@ export default function WorkspaceScreen() {
         message: text,
       });
       setConversationId(res.conversationId);
-      setMessages((prev) => [...prev, res.message]);
+      const assistantMsg: ChatMessage = {
+        id: `${Date.now()}-assistant`,
+        role: "assistant",
+        content: res.reply,
+        sources: mapSources(res.sources),
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -154,14 +212,6 @@ export default function WorkspaceScreen() {
     if (!trimmed) return;
     handleSend(trimmed);
     setGreetingText("");
-  };
-
-  // Voice input TODO alert
-  const handleVoicePress = () => {
-    Alert.alert(
-      "Дуут оролт / Voice Input",
-      "Дуут оролт одоогоор дэмжигдээгүй байна.\nVoice input is not yet implemented."
-    );
   };
 
   const startX = useSharedValue(0);
@@ -257,9 +307,6 @@ export default function WorkspaceScreen() {
                       returnKeyType="send"
                       multiline={false}
                     />
-                    <Pressable onPress={handleVoicePress} className="p-2 rounded-lg bg-muted/40">
-                      <Mic size={18} color="#a1a1aa" />
-                    </Pressable>
                   </View>
 
                   <View className="flex-row items-center justify-between mt-4 pt-3 border-t border-border/40">
@@ -319,7 +366,7 @@ export default function WorkspaceScreen() {
               </ScrollView>
 
               {/* Composer */}
-              <Composer onSend={handleSend} disabled={isSending} />
+              <Composer onSend={handleSend} onOpenPicker={handleOpenPicker} disabled={isSending} />
             </View>
           )}
 

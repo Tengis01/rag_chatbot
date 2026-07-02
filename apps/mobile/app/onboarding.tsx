@@ -80,7 +80,9 @@ export default function OnboardingScreen() {
 
   const handleStart = async () => {
     await setOnboardingComplete(true);
-    router.replace("/workspace");
+    // Back through the root index: it routes to /login or /workspace
+    // depending on whether a Better Auth session exists.
+    router.replace("/");
   };
 
   return (

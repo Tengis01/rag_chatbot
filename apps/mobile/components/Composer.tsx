@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { View, TextInput, Pressable, Text, ActivityIndicator } from "react-native";
+import { Plus } from "lucide-react-native";
 
 interface Props {
   onSend: (text: string) => void;
+  onOpenPicker?: () => void;
   disabled?: boolean;
 }
 
-export function Composer({ onSend, disabled }: Props) {
+export function Composer({ onSend, onOpenPicker, disabled }: Props) {
   const [text, setText] = useState("");
 
   function handleSend() {
@@ -18,6 +20,15 @@ export function Composer({ onSend, disabled }: Props) {
 
   return (
     <View className="flex-row items-center gap-2 border-t border-border bg-background px-4 py-3">
+      {onOpenPicker && (
+        <Pressable
+          onPress={onOpenPicker}
+          className="h-10 w-10 items-center justify-center rounded-full bg-muted/40"
+        >
+          <Plus size={18} color="#a1a1aa" />
+        </Pressable>
+      )}
+
       <TextInput
         className="flex-1 rounded-full border border-border bg-card px-4 py-2.5 text-sm text-foreground"
         placeholder="Ask anything..."

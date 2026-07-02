@@ -11,9 +11,11 @@
     "lint": "echo \"lint not configured yet\""
   },
   "dependencies": {
+    "@better-auth/expo": "^1.6.23",
     "@fastify/cors": "latest",
     "@fastify/multipart": "latest",
     "@google/generative-ai": "latest",
+    "better-auth": "^1.6.23",
     "dotenv": "latest",
     "fastify": "latest",
     "js-tiktoken": "^1.0.21",

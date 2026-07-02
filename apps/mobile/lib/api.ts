@@ -1,4 +1,5 @@
-import type { ChatMessage, Conversation, DocumentItem } from "../types";
+import type { ChatMessage, Conversation, DocumentItem, RawSourceChunk } from "../types";
+import { authClient } from "./auth-client";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
 // Physical device (USB or WiFi): use your machine's LAN IP (192.168.1.10)
@@ -7,9 +8,19 @@ const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
 
+/** Session cookie stored in SecureStore by the Better Auth expo plugin. */
+function authHeaders(): Record<string, string> {
+  const cookie = authClient.getCookie();
+  return cookie ? { Cookie: cookie } : {};
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+      ...(init?.headers ?? {}),
+    },
     ...init,
   });
   if (!res.ok) {
@@ -17,6 +28,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(`API error ${res.status}: ${text}`);
   }
   return res.json() as Promise<T>;
+}
+
+export interface ChatResponse {
+  conversationId: string;
+  reply: string;
+  sources: RawSourceChunk[];
+}
+
+export interface DocumentStatusResponse {
+  id: string;
+  status: DocumentItem["status"];
+  chunkCount: number;
+  title: string;
+  filename: string;
+  updatedAt: string;
 }
 
 export const api = {
@@ -34,15 +60,25 @@ export const api = {
   listConversations: () =>
     request<{ conversations: Conversation[] }>("/conversations"),
 
+  listConversationMessages: (conversationId: string) =>
+    request<{
+      messages: (Omit<ChatMessage, "sources"> & { sources?: RawSourceChunk[] | null })[];
+    }>(`/conversations/${conversationId}/messages`),
+
+  /**
+   * Poll a document's ingestion status (pending -> processing -> ready/failed).
+   */
+  getDocumentStatus: (id: string) =>
+    request<DocumentStatusResponse>(`/documents/${id}/status`),
+
   sendMessage: (params: {
     conversationId?: string;
     documentIds: string[];
     message: string;
   }) =>
-    request<{ conversationId: string; message: ChatMessage }>("/chat", {
+    request<ChatResponse>("/chat", {
       method: "POST",
       body: JSON.stringify({
-        userId: DEMO_USER_ID,
         conversationId: params.conversationId,
         documentIds: params.documentIds,
         message: params.message,
@@ -61,10 +97,10 @@ export const api = {
       name: fileName,
       type: "application/pdf",
     } as any);
-    formData.append("userId", DEMO_USER_ID);
 
     const res = await fetch(`${API_BASE}/documents/upload`, {
       method: "POST",
+      headers: authHeaders(),
       body: formData,
     });
     if (!res.ok) {
@@ -87,7 +123,6 @@ export const api = {
     const data = await request<any>("/documents/paste", {
       method: "POST",
       body: JSON.stringify({
-        userId: DEMO_USER_ID,
         title: params.title,
         text: params.content,
       }),

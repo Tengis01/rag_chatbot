@@ -243,3 +243,28 @@ Reason:
 - Tradeoff accepted: weaker on genuinely mixed-language documents; can be upgraded to Approach A later if needed.
 - Once stable, `threshold` to be restored to `0.6–0.7` and `lambda` to `0.7`.
 - Action items: migration for `detected_language` column, language detection in `pipeline.ts`, `translateQuery()` helper in retrieval, pass detected language from `chat.routes.ts`.
+
+---
+
+## 2026-07-02 — Better Auth for email+password authentication (API + Web + Expo)
+
+Reason:
+
+- Framework-agnostic TypeScript auth that runs **inside the Fastify process** — no external auth service, no vendor lock-in.
+- All auth data lives in the existing local Postgres: `"user"` (email), `"account"` (scrypt-hashed password), `"session"` (cookie tokens), `"verification"`. Schema in `infra/postgres/init/002_auth.sql` with quoted camelCase columns (Better Auth's default mapping).
+- `advanced.database.generateId = randomUUID()` so auth ids are UUIDs, compatible with the existing `user_id UUID` columns on documents/chunks/conversations/messages — no app-table migration needed.
+- Fastify has no first-party plugin; the official recipe bridges Fastify requests to Better Auth's Fetch-API handler on `/api/auth/*` (see `apps/api/src/index.ts`).
+- `trustedOrigins` reflects the request origin in dev (matches the CORS `origin: true` posture so LAN phone testing keeps working) plus the `ragchatbot://` app scheme; tighten to an allowlist for production.
+- Web: `better-auth/react` client, httpOnly session cookie, `credentials: "include"` on all API fetches.
+- Expo: `@better-auth/expo` plugin stores the session cookie in SecureStore; our custom `lib/api.ts` attaches it via `authClient.getCookie()`. Requires peer deps `expo-secure-store`, `expo-network`, `expo-web-browser` (the last two are lazily imported by the plugin — missing ones break `expo export`, see ERR-025).
+- Route protection via `shared/session.ts` `requireUser()` (401 without session); `DEMO_USER_ID` fully removed from routes.
+
+---
+
+## 2026-07-02 — Add CLAUDE.md alongside AGENTS.md (supersedes 2026-06-15 "Codex only" decision)
+
+Reason:
+
+- The 2026-06-15 decision skipped `CLAUDE.md` because the workflow was Codex-only. The workflow now includes Claude Code, which auto-loads `CLAUDE.md`.
+- Division of labor: **AGENTS.md = the rules** (cross-tool standard read by Codex/Cursor/etc.: docs workflow, ERRORS.md format, security and RAG rules); **CLAUDE.md = the map** (architecture deep-dive, commands, known gotchas distilled from ERRORS.md). CLAUDE.md points to AGENTS.md and does not duplicate it.
+- Do not delete either file; keep both current. AGENTS.md staleness fixed at the same time (docs/ is git-tracked, mobile app + auth are built).

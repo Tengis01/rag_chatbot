@@ -128,75 +128,60 @@ Build the RAG backend pipeline and real chat UI.
 
 ---
 
-## Phase 3: Retrieval Quality
+## Priority Order (updated)
 
-### 🔴 Priority 1 — Query Expansion / Language-Aware Retrieval
-> Architecture decided. Interim fix active (`threshold=0.1`, `lambda=0.5`). Not yet built.
+### Priority 1 — Docker Build Optimization (Phase 6) ✅
+> Dockerfiles already had the correct layer order; the real cache-buster was missing workspace manifests (`apps/mobile/package.json`, `packages/api-client/package.json`) in the pre-install COPY layer.
 
-- [ ] Add `detected_language` column to `documents` table (new DB migration)
-- [ ] Add language detection step to `apps/api/src/modules/ingestion/pipeline.ts`
-- [ ] Add `translateQuery()` helper — `retrieval.service.ts` or new `query-expansion.ts`
-- [ ] Pass `detected_language` from `chat.routes.ts` through to retrieval layer
-- [ ] Restore `threshold → 0.6–0.7` and `lambda → 0.7` once query expansion is stable
-
-### 🟡 Priority 2 — MMR Toggle UI
-> Backend fully done. Frontend toggle only remaining.
-
-- [ ] Add toggle button in `apps/web/src/components/workspace/Composer.tsx`
-- [ ] User-facing label: `"Олон талт хариу"` — avoid "MMR" jargon
-- [ ] Wire to `useMMR: boolean` in chat API request body
-
-### 🔵 Priority 3 — Threshold / Lambda UI Controls
-> Deferred. Power-user feature, not MVP-critical.
-
-- [ ] Expose `threshold` as advanced/debug query param
-- [ ] Lambda slider in workspace UI
+- [x] Reorder `Dockerfile` — copy `pnpm-lock.yaml` + `package.json` first, then `pnpm install`, then `COPY . .` (was already correct)
+- [x] Add missing `apps/mobile/package.json` + `packages/api-client/package.json` to the pre-install COPY layer in both `apps/api/Dockerfile` and `apps/web/Dockerfile`
+- [x] Verify cache hit on second build (no code change → `RUN pnpm install --frozen-lockfile` shows CACHED for both api and web images)
 
 ---
 
-## Phase 4: Auth
+### Priority 2 — Mobile UI Fixes (Phase 5) ✅
+- [x] Remove voice record button (Mic + `handleVoicePress` Alert) from mobile greeting Ask bar in `app/workspace.tsx`
+- [x] Add document picker button to mobile Composer (`onOpenPicker` prop + `Plus` button in `components/Composer.tsx`, mirrors web Composer's `onPlusClick`), wired to the existing picker modal
+- [ ] Verify on physical device / emulator (typecheck passes; needs visual check in Expo Go)
 
-### 🔴 Priority 1 — Better Auth Integration
+---
+
+### Priority 2.5 — Mobile API Client Fixes (ERR-024) ✅
+> User report: could not add a file on mobile and could not see processing status. Root cause: `apps/mobile/lib/api.ts` drifted from actual backend responses.
+
+- [x] Fix `sendMessage` response type: backend `/chat` returns `{ conversationId, reply, sources }`, not `{ conversationId, message }` — assistant replies never rendered (same class as ERR-013)
+- [x] Add missing `getDocumentStatus()` to `lib/api.ts` (`GET /documents/:id/status`)
+- [x] Add 3s document status polling in `app/workspace.tsx` (pending/processing → ready/failed), mirroring web `WorkspacePage`
+- [x] Stop auto-selecting still-`pending` uploads in `handleDocumentAdded` — chat 400s on non-ready docs; auto-select now happens when polling sees `ready`
+- [x] Fix source shape mismatch: map backend `{ chunkId, documentId, content, … }` → UI `{ documentTitle, preview, … }` via `mapSources()` (titles resolved from documents list); `SourceCard` shows preview + fallback title
+- [x] Map sources when loading conversation history (`/conversations/:id/messages`) too
+- [x] Guard: sending with no document selected now opens the picker with a hint instead of a raw Zod 400
+- [x] Remove stray `userId` fields from request bodies (backend uses `DEMO_USER_ID` server-side)
+- [x] `pnpm --filter mobile typecheck` passes
+- [ ] End-to-end check on emulator (upload → status turns ready → chat → sources render)
+
+---
+
+### Priority 3 — Auth (Phase 4) ✅
 > Better Auth chosen: framework-agnostic, Fastify + Expo adapters, stores in own PostgreSQL. Replaces hardcoded `DEMO_USER_ID`.
 
-- [ ] Install `better-auth` in `apps/api`, configure Fastify plugin
-- [ ] Add `users` and `sessions` tables (Better Auth migration)
-- [ ] Implement email + password sign up / sign in endpoints
-- [ ] Replace `DEMO_USER_ID` constant with `session.user.id` in all routes
+- [x] Install `better-auth` in `apps/api`, mount `/api/auth/*` handler in Fastify (`shared/auth.ts` + Request-bridge in `index.ts`)
+- [x] Add auth tables via `infra/postgres/init/002_auth.sql` (`user`, `session`, `account`, `verification` — camelCase quoted columns, UUID ids via `advanced.database.generateId = randomUUID`)
+- [x] Email + password sign up / sign in (scrypt-hashed password in `account.password`; verified hashed in DB)
+- [x] Replace `DEMO_USER_ID` with `session.user.id` in all routes (401 guard via `shared/session.ts` `requireUser()`)
   - `chat.routes.ts`
-  - `documents.routes.ts`
+  - `documents.routes.ts` (upload/paste/list/status)
   - `conversations.routes.ts`
-- [ ] Add auth middleware to protect all non-public routes
-- [ ] Install `better-auth/client` in `apps/web`, wire login/register pages
-- [ ] Install `better-auth/expo` in `apps/mobile`, wire auth flow
+- [x] Auth middleware protects all non-public routes (`/health`, `/config`, `/api/auth/*` stay public)
+- [x] `better-auth/react` in `apps/web`: `lib/auth-client.ts`, `/login` page (Mongolian, glass design), `RequireAuth` wrapper on `/workspace`, logout + email in `WorkspaceTopBar`, `credentials: "include"` in `api.ts`
+- [x] `@better-auth/expo` in `apps/mobile`: `lib/auth-client.ts` (SecureStore), `app/login.tsx`, session-based routing in `app/index.tsx`, Cookie header in `lib/api.ts`, logout in `Sidebar`; peer deps `expo-secure-store`, `expo-network`, `expo-web-browser` (ERR-025)
+- [x] `scripts/smoke-test.sh` updated: signs up throwaway user, asserts 401 unauthenticated, cookie jar for all protected calls — full suite passes
+- [x] `BETTER_AUTH_SECRET` in `apps/api/.env` + docker-compose (dev default)
+- [ ] Log in on real devices (web browser + Expo Go) to verify UI flows end-to-end
 
 ---
 
-## Phase 5: Mobile Polish
-
-### 🟡 Priority 1 — UI Fixes
-- [ ] Remove voice record button from mobile Composer
-- [ ] Add document picker button to mobile Composer (mirror web workspace)
-
-### 🔵 Priority 2 — Native App Build (EAS)
-> Currently running via Expo Go. Goal: standalone APK installable without Expo Go.
-
-- [ ] Configure EAS Build (`eas.json`, `eas build:configure`)
-- [ ] Build Android APK via `eas build -p android --profile preview`
-- [ ] Test install on physical device
-- [ ] App Store / Google Play — post-MVP
-
----
-
-## Phase 6: Infrastructure
-
-### 🔴 Priority 1 — Docker Build Optimization
-> Currently `pnpm install` runs from scratch on every build. Fix: layer cache.
-
-- [ ] Reorder `Dockerfile` — copy `pnpm-lock.yaml` + `package.json` first, then `pnpm install`, then `COPY . .`
-- [ ] Verify cache hit on second build (no code change → install layer skipped)
-
-### 🟡 Priority 2 — CI/CD (GitHub Actions)
+### Priority 4 — CI/CD (Phase 6)
 > Triggers on push to `main`. Backend deploy to Droplet, frontend auto-deploys via Vercel.
 
 - [ ] Create `.github/workflows/deploy.yml`
@@ -207,7 +192,9 @@ Build the RAG backend pipeline and real chat UI.
 - [ ] Set GitHub Secrets: `DROPLET_HOST`, `DROPLET_USER`, `DROPLET_SSH_KEY`, `GEMINI_API_KEY`, `DATABASE_URL`
 - [ ] Branch strategy: `main` (production) → `dev` (staging) → `feature/*` (PRs)
 
-### 🔵 Priority 3 — Deployment
+---
+
+### Priority 5 — Deployment (Phase 6)
 > GitHub Student Pack: DigitalOcean $200 credit + Namecheap free `.me` domain.
 
 - [ ] Provision DigitalOcean Droplet (1GB RAM, $6/mo)
@@ -217,6 +204,40 @@ Build the RAG backend pipeline and real chat UI.
 - [ ] Connect GitHub repo to Vercel (frontend auto-deploy on push)
 - [ ] Set `VITE_API_URL=https://api.yourdomain.me` in Vercel env variables
 - [ ] Point Namecheap domain → Droplet IP (A record), `api.` subdomain
+
+---
+
+### Priority 6 — Native App Build / EAS (Phase 5)
+> Currently running via Expo Go. Goal: standalone APK installable without Expo Go.
+
+- [ ] Configure EAS Build (`eas.json`, `eas build:configure`)
+- [ ] Build Android APK via `eas build -p android --profile preview`
+- [ ] Test install on physical device
+- [ ] App Store / Google Play — post-MVP
+
+---
+
+### Priority 7 — Retrieval Quality: Query Expansion / Language-Aware Retrieval (Phase 3) — Optional Future Improvement
+> Interim fix active (`threshold=0.1`, `lambda=0.5`). Deprioritized — not urgent, revisit later.
+
+- [ ] Add `detected_language` column to `documents` table (new DB migration)
+- [ ] Add language detection step to `apps/api/src/modules/ingestion/pipeline.ts`
+- [ ] Add `translateQuery()` helper — `retrieval.service.ts` or new `query-expansion.ts`
+- [ ] Pass `detected_language` from `chat.routes.ts` through to retrieval layer
+- [ ] Restore `threshold → 0.6–0.7` and `lambda → 0.7` once query expansion is stable
+
+### Priority 8 — MMR Toggle UI (Phase 3)
+> Backend fully done. Frontend toggle only remaining.
+
+- [ ] Add toggle button in `apps/web/src/components/workspace/Composer.tsx`
+- [ ] User-facing label: `"Олон талт хариу"` — avoid "MMR" jargon
+- [ ] Wire to `useMMR: boolean` in chat API request body
+
+### Priority 9 — Threshold / Lambda UI Controls (Phase 3)
+> Deferred. Power-user feature, not MVP-critical.
+
+- [ ] Expose `threshold` as advanced/debug query param
+- [ ] Lambda slider in workspace UI
 
 ---
 

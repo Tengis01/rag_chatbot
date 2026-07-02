@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 
-import { DEMO_USER_ID } from "../../shared/constants.js";
+import { requireUser } from "../../shared/session.js";
 import { db } from "../../shared/db/db.js";
 import { embedText } from "../ingestion/embedder.js";
 import { retrieveChunks } from "../retrieval/retrieval.service.js";
@@ -61,6 +61,9 @@ async function resolveConversationId(
 
 export async function chatRoute(app: FastifyInstance): Promise<void> {
   app.post("/chat", async (req, reply) => {
+    const user = await requireUser(req, reply);
+    if (!user) return;
+
     const parsed = chatBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -73,7 +76,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       parsed.data;
 
     try {
-      const readyDocumentIds = await getReadyDocumentIds(DEMO_USER_ID, documentIds);
+      const readyDocumentIds = await getReadyDocumentIds(user.id, documentIds);
       if (readyDocumentIds.length !== documentIds.length) {
         return reply.status(400).send({
           error: "сонгосон баримтууд байх ёстой, хэрэглэгчид хамаарах ёстой, мөн бэлэн төлөвтэй байх ёстой",
@@ -83,7 +86,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       if (requestedConversationId) {
         const owned = await conversationBelongsToUser(
           requestedConversationId,
-          DEMO_USER_ID
+          user.id
         );
         if (!owned) {
           return reply.status(404).send({ error: "чат олдсонгүй" });
@@ -93,7 +96,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       const embedding = await embedText(message);
       const chunks = await retrieveChunks(
         embedding,
-        DEMO_USER_ID,
+        user.id,
         readyDocumentIds,
         5,
         0.1,
@@ -103,7 +106,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
 
       if (chunks.length === 0) {
         const conversationId = await resolveConversationId(
-          DEMO_USER_ID,
+          user.id,
           requestedConversationId,
           message,
           readyDocumentIds
@@ -113,15 +116,15 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
           return reply.status(404).send({ error: "чат олдсонгүй" });
         }
 
-        await saveMessage(conversationId, DEMO_USER_ID, "user", message);
+        await saveMessage(conversationId, user.id, "user", message);
         await saveMessage(
           conversationId,
-          DEMO_USER_ID,
+          user.id,
           "assistant",
           NO_CONTEXT_REPLY,
           []
         );
-        await touchConversation(conversationId, DEMO_USER_ID);
+        await touchConversation(conversationId, user.id);
 
         return reply.send({
           conversationId,
@@ -132,7 +135,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
 
       const assistantReply = await generateAnswer(message, chunks);
       const conversationId = await resolveConversationId(
-        DEMO_USER_ID,
+        user.id,
         requestedConversationId,
         message,
         readyDocumentIds
@@ -142,15 +145,15 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
         return reply.status(404).send({ error: "чат олдсонгүй" });
       }
 
-      await saveMessage(conversationId, DEMO_USER_ID, "user", message);
+      await saveMessage(conversationId, user.id, "user", message);
       await saveMessage(
         conversationId,
-        DEMO_USER_ID,
+        user.id,
         "assistant",
         assistantReply,
         chunks
       );
-      await touchConversation(conversationId, DEMO_USER_ID);
+      await touchConversation(conversationId, user.id);
 
       return reply.send({
         conversationId,

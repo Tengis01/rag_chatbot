@@ -17,8 +17,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Plus, MessageSquare, X } from "lucide-react-native";
+import { router } from "expo-router";
+import { Plus, MessageSquare, X, LogOut } from "lucide-react-native";
 import { api } from "../lib/api";
+import { authClient } from "../lib/auth-client";
 import type { Conversation } from "../types";
 
 interface SidebarProps {
@@ -40,6 +42,12 @@ export function Sidebar({
   const { height } = useWindowDimensions();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const { data: session } = authClient.useSession();
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+    router.replace("/login" as any);
+  };
 
   const translateX = useSharedValue(-DRAWER_WIDTH);
   const backdropOpacity = useSharedValue(0);
@@ -209,6 +217,25 @@ export function Sidebar({
                 )}
               </ScrollView>
             )}
+
+            {/* User + Logout */}
+            <View className="mt-3 border-t border-border pt-3">
+              {session && (
+                <Text
+                  className="px-2 pb-2 text-xs text-muted-foreground"
+                  numberOfLines={1}
+                >
+                  {session.user.email}
+                </Text>
+              )}
+              <Pressable
+                onPress={handleLogout}
+                className="flex-row items-center gap-3 rounded-xl p-3.5 active:bg-muted"
+              >
+                <LogOut size={16} color="#a1a1aa" />
+                <Text className="text-sm text-muted-foreground">Гарах</Text>
+              </Pressable>
+            </View>
           </View>
         </Animated.View>
       </GestureDetector>

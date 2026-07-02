@@ -9,8 +9,10 @@ The goal is to build a deployable chatbot where users can upload or paste docume
 ## Read These First
 
 > [!IMPORTANT]
-> The `docs/` directory is intentionally ignored in Git (`.gitignore` excludes it) so it remains local.
-> However, agents MUST read and update these local files to maintain workspace memory across turns.
+> The `docs/` directory is tracked in Git and is the project's persistent workspace memory.
+> Agents MUST read these files before making changes and update them after completing work.
+>
+> Claude Code users: `CLAUDE.md` complements this file with architecture details and known gotchas — it does not replace the rules here.
 
 Before making code changes, read these local files:
 
@@ -41,11 +43,21 @@ Backend:
 - Fastify
 - TypeScript
 
+Mobile:
+
+- Expo + Expo Router
+- NativeWind
+- TypeScript
+
 Database:
 
 - Local Postgres (pgvector/pgvector:pg16) via Docker Compose
 - pgvector
 - `pg` npm package (no Supabase client)
+
+Auth:
+
+- Better Auth (email + password, runs inside the Fastify API, stores in local Postgres)
 
 AI:
 
@@ -64,13 +76,22 @@ apps/web
   React + Vite frontend
 
 apps/api
-  Fastify backend
+  Fastify backend (domain modules + Better Auth)
+
+apps/mobile
+  Expo + Expo Router + NativeWind mobile app
 
 packages/shared
   Shared TypeScript types
 
+packages/api-client
+  Placeholder for shared web/mobile API client
+
 docs
   Project planning, memory, tasks, and database plan
+
+infra/postgres/init
+  SQL schema applied on first container start (001_schema.sql, 002_auth.sql)
 ```
 
 ## Local Development
@@ -187,7 +208,7 @@ If no relevant context is found, return a clear answer saying the uploaded docum
 
 ## MVP Scope
 
-Build these first:
+Already built (do not rebuild, extend as needed):
 
 - PDF upload
 - Text paste
@@ -196,7 +217,9 @@ Build these first:
 - Persistent messages
 - RAG chat endpoint
 - Source snippets
-- Basic frontend chat UI
+- Web chat UI (React + Vite, Mongolian localization)
+- Mobile app (`apps/mobile` — Expo Router + NativeWind)
+- Email + password auth (Better Auth, all three apps)
 
 Do not build yet:
 
@@ -204,7 +227,6 @@ Do not build yet:
 - Payments
 - Team workspace
 - Admin dashboard
-- Mobile app
 - Complex analytics
 - Multi-agent workflow
 

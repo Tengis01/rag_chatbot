@@ -27,6 +27,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/rag_chatbot}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev-insecure-secret-change-me}
     ports:
       - "${API_PORT:-4000}:4000"
     volumes:
