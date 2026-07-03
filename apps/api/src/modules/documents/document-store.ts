@@ -45,6 +45,18 @@ export async function updateDocumentStatus(
 /**
  * Retrieves a document by its unique ID.
  */
+export async function setDocumentError(
+  documentId: string,
+  errorMessage: string
+): Promise<void> {
+  await db.query(
+    `UPDATE documents
+     SET status = 'failed', error_message = $2, updated_at = NOW()
+     WHERE id = $1`,
+    [documentId, errorMessage.slice(0, 1000)]
+  );
+}
+
 export async function getDocumentById(documentId: string) {
   const result = await db.query(
     "SELECT * FROM documents WHERE id = $1",

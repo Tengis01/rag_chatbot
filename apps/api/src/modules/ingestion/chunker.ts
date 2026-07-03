@@ -24,6 +24,12 @@ function detectCharsPerToken(text: string): number {
   return cyrillicCount / text.length > 0.5 ? 2.5 : 4;
 }
 
+/** Rough token estimate (Cyrillic-aware) \u2014 also used for embed batch budgeting. */
+export function estimateTokens(text: string): number {
+  if (text.length === 0) return 0;
+  return Math.ceil(text.length / detectCharsPerToken(text));
+}
+
 /**
  * Find the best break point at or before `maxEnd` in `text` starting from `start`.
  * Preference: sentence boundary > paragraph > newline > space.

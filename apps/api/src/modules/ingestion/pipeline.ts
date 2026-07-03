@@ -8,7 +8,7 @@
 import { chunkText } from "./chunker.js";
 import { embedTexts } from "./embedder.js";
 import { storeChunks } from "./vector-store.js";
-import { deleteDocumentText, updateDocumentStatus } from "../documents/document-store.js";
+import { deleteDocumentText, setDocumentError, updateDocumentStatus } from "../documents/document-store.js";
 
 export async function processDocument(
   documentId: string,
@@ -38,8 +38,9 @@ export async function processDocument(
     );
   } catch (err) {
     console.error(`[pipeline] document ${documentId} failed:`, err);
-    // Best-effort status update; ignore secondary failure
-    await updateDocumentStatus(documentId, "failed").catch(() => {});
+    // Best-effort status + reason update; ignore secondary failure
+    const message = err instanceof Error ? err.message : String(err);
+    await setDocumentError(documentId, message).catch(() => {});
     throw err;
   } finally {
     deleteDocumentText(documentId);

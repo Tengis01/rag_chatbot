@@ -88,6 +88,12 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading,
             <Text className={`mt-1 text-xs ${STATUS_COLORS[doc.status]}`}>
               {STATUS_LABELS[doc.status]}
             </Text>
+
+            {doc.status === "failed" && doc.errorMessage && (
+              <Text className="mt-1 text-xs text-red-400/80" numberOfLines={2}>
+                {doc.errorMessage}
+              </Text>
+            )}
           </Pressable>
         );
       })}

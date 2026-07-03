@@ -80,7 +80,11 @@ export default function WorkspaceScreen() {
           .then((res) => {
             if (res.status === doc.status) return;
             setDocuments((prev) =>
-              prev.map((d) => (d.id === doc.id ? { ...d, status: res.status } : d))
+              prev.map((d) =>
+                d.id === doc.id
+                  ? { ...d, status: res.status, errorMessage: res.errorMessage }
+                  : d
+              )
             );
             // Auto-select documents once they finish processing
             if (res.status === "ready") {

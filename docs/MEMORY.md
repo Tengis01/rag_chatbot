@@ -63,22 +63,27 @@ Status:      http://localhost:4000/documents/:id/status
 Chat:        http://localhost:4000/chat
 Conversations: http://localhost:4000/conversations
 
+## Deployment Target (2026-07-02): Azure VM "Monarch"
+
+Standard D4as v5 (4 vCPU / 16 GiB), Ubuntu 24.04, Korea Central, static IP **40.82.138.44**, user `monarch` (SSH alias `ssh monarch`). Docker CE installed. **Shared with game servers** (Necesse live at `~/necesse/`, 14159/udp; Valheim later) — RAG goes in `~/rag-chatbot/` with its own compose file. Rules: always `cd ~/rag-chatbot` before compose in deploy scripts; never `docker system prune -a` on the VM; NSG currently only allows SSH (22) — 80/443 to be opened for RAG. Azure trial credit $200, 30 days. See DECISIONS.md 2026-07-02.
+
+## Priorities A/B/C fixed (2026-07-02 evening)
+
+- **A — Mobile boot loop**: new `lib/api-base.ts` liveness-probes all candidate API addresses in parallel (`EXPO_PUBLIC_API_URLS` home/office list, Metro `hostUri` LAN IP, `10.0.2.2` emulator, localhost) via `/health` with 2s timeouts; first alive wins, cached, re-probed after network errors. `app/index.tsx`: 5s timeout on session check; failures route to `/login`, never back to `/onboarding`. Auth client rewrites request origin at call time (`customFetchImpl`). Physical-phone re-test still pending.
+- **B — Large-paste ingestion (ERR-027/028)**: `embedder.ts` rewritten — token-budgeted batches (≤15 items/~6k tokens), 3s pacing, 30s timeout, exponential backoff on 429 (free-tier embedding TPM ≈ 20–25k/min empirically). Fastify `bodyLimit` → 4MB (Cyrillic 500k chars ≈ 1MB UTF-8 exceeded 1MB default). Failure reason stored in `documents.error_message` and shown in both UIs. Verified: 50k → ready in ~95s riding out five 429s; 500k (492 chunks/41 batches) processes with pacing. ERR-028: Docker Desktop bind mount can serve stale code after inode-replacing writes — restart container + `docker exec grep` to verify.
+- **C — Migrations**: `apps/api/src/shared/db/migrate.ts` runs at API startup, applies `infra/postgres/migrations/NNN_*.sql` once each (tracked in `schema_migrations`, per-file transactions; verified idempotent). `init/` is frozen. pgAdmin compose service (`--profile tools`) with persistent volume. Production rule: NEVER `down -v`.
+
 ## Current Next Step
 
-1. **Device verification of auth flows** — Log in / register in a real browser (web `/login`) and in Expo Go (mobile `app/login.tsx`); verify session persists across app restarts (SecureStore) and logout works.
-2. **Mobile app end-to-end testing** — Run the Expo app on device/emulator (Composer picker button, document polling, chat with sources — ERR-024 fixes).
-3. **CI/CD + Deployment (Priorities 4–5)** — GitHub Actions deploy workflow, DigitalOcean Droplet, Vercel frontend. Set a strong `BETTER_AUTH_SECRET` and tighten `trustedOrigins` for production.
-4. **Native build (Priority 6)** — EAS Android APK.
+1. **Physical phone re-test (Priority A verification)** — onboarding → login → register → workspace → upload → chat on the real device.
+2. **Manual deploy to Azure VM (Priority 5)** — repo private → clone → prod `.env` → prod compose (static web behind Nginx, or Vercel for web) → SSL → NSG 80/443 → verify; add nightly `pg_dump` cron (Priority C leftover).
+3. **CI/CD (Priority 4, after manual deploy)**, then **EAS build (Priority 6)**.
 
 
 
-## Demo User ID (MVP)
+## Demo User ID (historical)
 
-Until auth is added, use this fixed UUID as `user_id` in all queries:
-
-```
-00000000-0000-0000-0000-000000000001
-```
+Auth is live (Better Auth, 2026-07-02) — routes now use `session.user.id` via `requireUser()`. The old fixed UUID `00000000-0000-0000-0000-000000000001` is no longer used by any route; the constant remains in `shared/constants.ts` only for reference/seeding.
 
 ## Important Constraints
 

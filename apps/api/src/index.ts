@@ -9,8 +9,14 @@ import { documentsRoute } from "./modules/documents/documents.routes.js";
 import { chatRoute } from "./modules/chat/chat.routes.js";
 import { conversationsRoute } from "./modules/conversations/conversations.routes.js";
 import { auth } from "./shared/auth.js";
+import { runMigrations } from "./shared/db/migrate.js";
 
-const app = Fastify({ logger: true });
+// bodyLimit: the documented paste limit is 500k CHARS — Cyrillic is 2 bytes/char
+// in UTF-8 (~1MB), which exceeded Fastify's 1MB default (ERR-027).
+const app = Fastify({ logger: true, bodyLimit: 4 * 1024 * 1024 });
+
+// Apply pending SQL migrations before accepting traffic
+await runMigrations();
 
 // ─── Plugins ─────────────────────────────────────────────────────
 await app.register(cors, {

@@ -268,3 +268,45 @@ Reason:
 - The 2026-06-15 decision skipped `CLAUDE.md` because the workflow was Codex-only. The workflow now includes Claude Code, which auto-loads `CLAUDE.md`.
 - Division of labor: **AGENTS.md = the rules** (cross-tool standard read by Codex/Cursor/etc.: docs workflow, ERRORS.md format, security and RAG rules); **CLAUDE.md = the map** (architecture deep-dive, commands, known gotchas distilled from ERRORS.md). CLAUDE.md points to AGENTS.md and does not duplicate it.
 - Do not delete either file; keep both current. AGENTS.md staleness fixed at the same time (docs/ is git-tracked, mobile app + auth are built).
+
+---
+
+## 2026-07-02 — Deploy to Azure VM "Monarch" instead of DigitalOcean Droplet
+
+Reason:
+
+- Azure $200 free trial credit available (30-day expiry) — covers a much larger VM than the planned $6 Droplet.
+- One VM hosts both the RAG chatbot and personal game servers (Necesse now, Valheim later): Standard D4as v5 (4 vCPU / 16 GiB), Ubuntu 24.04, Korea Central (lowest latency from Ulaanbaatar), static IP 40.82.138.44.
+- **Isolation architecture**: each service in its own folder with its own docker-compose.yml (`~/necesse/`, `~/rag-chatbot/`, future `~/valheim/`). `docker compose` only manages its own file, so RAG deploys never touch game servers.
+- Hard rules that follow from sharing the VM:
+  - CI/CD deploy scripts MUST `cd ~/rag-chatbot` before any compose command.
+  - NEVER `docker system prune -a` on this VM (kills game-server images); narrow `docker image prune` at most.
+  - Port allocation: Necesse 14159/udp, RAG api 4000, web 80/443, postgres 5432 (bind postgres to 127.0.0.1 on the VM).
+- Billing: per-second on VM uptime, not CPU load; disk bills even when stopped; "Stopped (Deallocated)" = no compute charge. Budget alerts at $150/$180 pending.
+- Order of work: manual deploy and verification first; only then automate with GitHub Actions (Priority 4).
+- Repo must go private before the VM clone (secrets hygiene; local check confirms no .env ever committed).
+
+---
+
+## 2026-07-02 — Incremental SQL migrations applied by the API at startup
+
+Reason:
+
+- The old schema-apply workflow (`docker compose down -v` + fresh init scripts) destroys all data — unacceptable once production data exists on the Azure VM.
+- New convention: `infra/postgres/init/` is frozen (fresh-volume bootstrap only); every schema change is a new ordered file in `infra/postgres/migrations/` (`NNN_name.sql`, numbering continues from init at 003).
+- `apps/api/src/shared/db/migrate.ts` runs before `app.listen`: creates/reads a `schema_migrations` tracking table and applies pending files in order, each in its own transaction. Deploying a new API version applies its migrations automatically — no manual psql step, no volume destruction.
+- A dedicated tool (node-pg-migrate, dbmate) was considered but rejected for now: ~60 lines of runner cover the need with zero new dependencies; revisit if we ever need down-migrations.
+- pgAdmin (when used) runs as an optional compose service (`--profile tools`) with a named `pgadmin_data` volume so its configuration stops resetting.
+
+---
+
+## 2026-07-02 — Model research: stay on Gemini free tier; OpenAI has NO free API tier
+
+Reason (researched for the large-paste ingestion fix, ERR-027):
+
+- **OpenAI**: no free API tier as of 2026 — a credit card is required and the old one-time signup credit has been phased out. "gpt-4o-mini / old models are free" is a misconception carried over from the free ChatGPT app; the API is always paid. Not an option for this zero-budget MVP.
+- **Gemini (current choice — keep)**: best free API tier in 2026. Generation chain stays `gemini-2.5-flash → gemini-2.5-flash-lite` (~1,500 req/day on Flash, no card, no expiry). Embeddings stay `gemini-embedding-001` — free tier enforces a tokens-per-minute cap empirically hit at roughly ~20–25k tokens/min (observed: three 6k-token batches pass, the fourth 429s; single 23k-token batches 429 instantly). Batching + backoff in `embedder.ts` rides this out.
+- **Groq (best fallback candidate)**: real free tier with published limits (e.g. Llama 3.3 70B: 30 RPM / 1,000 RPD / 12k TPM / 100k TPD), very fast inference. Viable secondary generation provider if Gemini quotas become a problem — but no Mongolian-quality guarantee; needs evaluation before adoption.
+- **Mistral**: ~1B tokens/month on the Experiment tier but requires opting into data training — rejected for privacy.
+- **OpenRouter `:free` models**: rotating community models, unreliable under load (timeouts) — acceptable for experiments, not for the deployed app.
+- **Decision**: no provider change. Fix ingestion within Gemini's free-tier limits (token-budgeted batches, exponential backoff, pacing) — done in `embedder.ts`. Revisit Groq only if generation quotas start failing in production.

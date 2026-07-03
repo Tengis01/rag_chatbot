@@ -18,16 +18,26 @@ DATABASE_URL=postgresql://postgres:postgres@postgres:5432/rag_chatbot
 
 These are the fixed local dev defaults — do not change them for local development.
 
-### Applying the Schema
+### Applying the Schema (updated 2026-07-02 — migrations)
 
-The SQL init scripts in `infra/postgres/init/` only run **once**, on first container start with an empty volume.
+Two layers:
 
-To re-apply after schema changes:
+1. **`infra/postgres/init/`** — fresh-volume bootstrap ONLY (001_schema.sql, 002_auth.sql). Runs once via the postgres docker-entrypoint on an empty volume. **Frozen — do not edit for schema changes.**
+2. **`infra/postgres/migrations/`** — ALL incremental schema changes, as ordered `NNN_name.sql` files (numbering continues after init: 003+). The API applies pending ones automatically at startup (`apps/api/src/shared/db/migrate.ts`), tracked in the `schema_migrations` table, each in its own transaction.
+
+To change the schema: **add a new migration file and restart the API.** No data loss.
 
 ```bash
-docker compose down -v   # ⚠️ destroys all local DB data
-docker compose up --build
+# local fresh start is still fine when you WANT a clean DB:
+docker compose down -v && docker compose up --build   # ⚠️ destroys local data
+
+# but schema changes no longer require it — just:
+docker compose restart api   # applies pending migrations
 ```
+
+**Production rule: NEVER `down -v`.** The `postgres_data` named volume survives `docker compose up --build`; plain rebuilds never delete data. Nightly `pg_dump` backups on the VM land with the deploy task.
+
+pgAdmin (optional): `docker compose --profile tools up -d pgadmin` → http://127.0.0.1:5050 — its config persists in the `pgadmin_data` volume.
 
 ---
 
@@ -180,8 +190,7 @@ CREATE INDEX ON messages (conversation_id);
 
 - Every query must filter by `user_id`.
 - No cross-user data access is allowed.
-- For MVP: use a fixed demo UUID as `user_id` until auth is added.
-- Demo UUID: `'00000000-0000-0000-0000-000000000001'`
+- `user_id` comes from the Better Auth session (`requireUser()` in `shared/session.ts`) — the old demo UUID `'00000000-0000-0000-0000-000000000001'` is historical and no longer used by routes.
 
 ---
 

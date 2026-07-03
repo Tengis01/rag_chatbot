@@ -2,6 +2,7 @@ export interface DocumentItem {
   id: string;
   title: string;
   status: "pending" | "processing" | "ready" | "failed";
+  errorMessage?: string | null;
   createdAt: string;
 }
 

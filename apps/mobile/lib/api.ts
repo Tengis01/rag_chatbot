@@ -1,12 +1,6 @@
 import type { ChatMessage, Conversation, DocumentItem, RawSourceChunk } from "../types";
 import { authClient } from "./auth-client";
-
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000";
-// Physical device (USB or WiFi): use your machine's LAN IP (192.168.1.10)
-// Android emulator only: use http://10.0.2.2:4000 instead
-// Override permanently via EXPO_PUBLIC_API_URL in apps/mobile/.env
-
-export const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
+import { invalidateApiBase, resolveApiBase } from "./api-base";
 
 /** Session cookie stored in SecureStore by the Better Auth expo plugin. */
 function authHeaders(): Record<string, string> {
@@ -15,14 +9,28 @@ function authHeaders(): Record<string, string> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  });
+  const doFetch = async () => {
+    const base = await resolveApiBase();
+    return fetch(`${base}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+        ...(init?.headers ?? {}),
+      },
+      ...init,
+    });
+  };
+
+  let res: Response;
+  try {
+    res = await doFetch();
+  } catch (err) {
+    // Network failure — the cached base may be stale (e.g. moved from
+    // office WiFi to home). Re-probe once, then give up.
+    invalidateApiBase();
+    res = await doFetch();
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`API error ${res.status}: ${text}`);
@@ -42,6 +50,7 @@ export interface DocumentStatusResponse {
   chunkCount: number;
   title: string;
   filename: string;
+  errorMessage: string | null;
   updatedAt: string;
 }
 
@@ -52,6 +61,7 @@ export const api = {
       id: item.id,
       title: item.filename || "Баримт бичиг",
       status: item.status || "pending",
+      errorMessage: item.errorMessage ?? null,
       createdAt: item.createdAt || new Date().toISOString(),
     }));
     return { documents };
@@ -98,7 +108,8 @@ export const api = {
       type: "application/pdf",
     } as any);
 
-    const res = await fetch(`${API_BASE}/documents/upload`, {
+    const base = await resolveApiBase();
+    const res = await fetch(`${base}/documents/upload`, {
       method: "POST",
       headers: authHeaders(),
       body: formData,

@@ -920,6 +920,9 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 | Mobile typecheck fails on process, startX, or onboarding route | Cast new routes as any; declare process globally in global.d.ts; track initial gesture coordinates via shared value in onStart (ERR-023) |
 | Mobile: uploaded file never selectable, no processing status, chat reply blank | `lib/api.ts` drifted from backend: add `getDocumentStatus` + polling, parse `/chat`'s `.reply`/`.sources` (not `.message`), map source shape, don't auto-select pending docs (ERR-024) |
 | `expo export` fails: "Chunk containing module not found: undefined" | A lazily-imported peer dep is missing — `@better-auth/expo` dynamically imports `expo-network` and `expo-web-browser`; `npx expo install` both (ERR-025) |
+| Host disk space shrinks with every `docker compose up --build` and never comes back | Docker Desktop's VM disk (`~/.docker/desktop/vms/0/data/Docker.raw`) only grows; prune build cache (`docker builder prune --keep-storage=3GB`) and recreate the VM disk to reclaim; skip `--build` for daily dev — source is bind-mounted (ERR-026) |
+| Large paste (50k+ chars) always `failed`; 500k paste rejected with 413 | Gemini free-tier TPM: send token-budgeted batches with backoff (`embedder.ts`); raise Fastify `bodyLimit` (Cyrillic = 2 bytes/char); failure reason now stored in `documents.error_message` (ERR-027) |
+| Code edited on host but container still runs OLD code (bind mount) | Docker Desktop file sharing misses inode-replacing writes; `docker compose restart <svc>` re-reads files — verify with `docker exec <c> grep` before debugging "impossible" behavior (ERR-028) |
 
 ---
 
@@ -1088,3 +1091,108 @@ npx expo export   # succeeds
 #### Lesson
 
 **When Metro's export serializer says "Chunk containing module not found: undefined", run with `EXPO_DEBUG=1` and look for `FailedToResolveNameError` — the real culprit is usually a missing lazily-imported peer dependency, not a cache or serializer bug.**
+
+---
+
+### ERR-026 — Host disk space rapidly shrinking from Docker Desktop builds (12GB lost in a day)
+
+**Date**: 2026-07-02
+**Status**: ✅ Fixed
+
+#### What happened
+
+Free disk space dropped from ~60GB to ~48GB in one day of development, despite only running `docker compose up --build` / `docker compose down -v` cycles. Nothing else large was installed.
+
+#### Root cause
+
+Two compounding Docker Desktop (Linux) behaviors:
+
+1. **BuildKit cache accumulation**: every `--build` snapshots new layers; the ~1.5–2GB `pnpm install` layers pile up whenever dependencies change. 119 cache entries totaling 11.38GB had accumulated. `docker compose down -v` removes volumes only — never images or build cache.
+2. **The VM disk never shrinks**: Docker Desktop for Linux stores everything in a sparse VM disk (`~/.docker/desktop/vms/0/data/Docker.raw`). Pruning frees space *inside* the VM, but the raw file keeps the blocks — `fstrim` inside the VM trims successfully yet the host file stays the same size. The file had grown to 21GB.
+
+#### Files changed
+
+None (environment cleanup only).
+
+#### Fix
+
+```bash
+docker builder prune -f --keep-storage=3GB   # trim cache, keep recent layers fast
+docker image prune -f                        # remove dangling images
+# Reclaim the VM disk itself (wipes ALL docker data — images rebuild in ~10 min):
+systemctl --user stop docker-desktop
+rm ~/.docker/desktop/vms/0/data/Docker.raw   # recreated fresh on next start
+systemctl --user start docker-desktop
+```
+
+Result: `Docker.raw` 21GB → 119MB; host free space 45GB → 71GB (+26GB).
+
+#### Lesson
+
+**With Docker Desktop on Linux, `docker compose down -v` is not cleanup — build cache and the ever-growing VM disk are the real disk eaters. Skip `--build` for daily dev (source is bind-mounted; tsx/Vite hot-reload), rebuild only when package.json or Dockerfiles change, and run `docker builder prune --keep-storage=3GB` periodically.**
+
+---
+
+### ERR-027 — Large pastes never process: Gemini 429 on oversized embed batches + Fastify 413 at 500k chars
+
+**Date**: 2026-07-02
+**Status**: ✅ Fixed
+
+#### What happened
+
+1. A 50,000-char Cyrillic paste always ended `failed`. API logs: `Gemini batchEmbedContents failed [429] RESOURCE_EXHAUSTED` on the FIRST request — the old embedder sent up to 100 chunks (~23k estimated tokens) in a single `batchEmbedContents` call with no retry, no timeout, no pacing. The failure was silent: `status='failed'` with no reason stored or shown.
+2. A 500,000-char paste (the documented max) never even reached the pipeline: Fastify replied `413 FST_ERR_CTP_BODY_TOO_LARGE`.
+
+#### Root cause
+
+1. **Embedder**: free-tier `gemini-embedding-001` enforces a tokens-per-minute quota empirically around ~20–25k tokens/min (three 6k-token batches pass, the fourth 429s; a single 23k-token batch 429s instantly). One giant batch trips it immediately, and without retry the whole pipeline died on the first 429. The 429 body contains no `retryDelay` hint.
+2. **Body limit**: the paste route allows 500k CHARS, but Cyrillic is 2 bytes/char in UTF-8 (~1MB), exceeding Fastify's default 1MB `bodyLimit` — the documented max was unreachable for Mongolian text.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/api/src/modules/ingestion/embedder.ts` | Rewritten: token-budgeted batches (≤15 items / ~6k est. tokens), 3s inter-batch pacing, 30s AbortController timeout, exponential backoff + jitter on 429/5xx (max 8 attempts, honors `retryDelay` when present) |
+| `apps/api/src/modules/ingestion/chunker.ts` | Exported `estimateTokens()` (Cyrillic-aware) for batch budgeting |
+| `apps/api/src/index.ts` | `bodyLimit: 4MB` so 500k-char UTF-8 pastes fit |
+| `apps/api/src/modules/ingestion/pipeline.ts` + `documents/document-store.ts` | `setDocumentError()` stores the failure reason in `documents.error_message` (migration 003) |
+| `apps/api/src/modules/documents/documents.routes.ts` | `/documents` + `/documents/:id/status` return `errorMessage` |
+| `apps/web` types/api/WorkspacePage, `apps/mobile` types/api/workspace/DocumentPicker | Failed documents display the stored reason (red text) |
+
+#### Fix
+
+Verified live: 50k paste → 50 chunks, 5 batches, `ready` in ~95s — including batch 4 hitting 429 five times and recovering via backoff (2s→5s→9s→16s→32s). 500k paste accepted after the bodyLimit fix (413 gone) and processes through ~42 paced batches.
+
+#### Lesson
+
+**Free-tier LLM quotas are per-minute token budgets, not just request counts — batch senders must budget tokens per request, pace batches, and treat 429 as "wait and continue", never as instant failure; and always store WHY a background job failed, or every quota blip becomes an unexplainable mystery.**
+
+---
+
+### ERR-028 — Container kept running OLD code after host file was rewritten (bind mount + inode replacement)
+
+**Date**: 2026-07-02
+**Status**: ✅ Fixed
+
+#### What happened
+
+After rewriting `embedder.ts` on the host, the api container (bind mount `.:/app`, `tsx watch`) kept executing the OLD embedder: no retry logs, error text not truncated as new code would. In-place edits to other files (`documents.routes.ts`) propagated fine and even triggered tsx restarts — so the mount "worked", making the stale file invisible.
+
+#### Root cause
+
+Editor-style writes that REPLACE the file (write temp + rename → new inode) are not always propagated by Docker Desktop's Linux file-sharing layer; the container kept serving the old inode's content. In-place truncating writes (same inode) propagate normally.
+
+#### Files changed
+
+None — operational fix.
+
+#### Fix
+
+```bash
+docker compose restart api   # forces fresh file reads through the mount
+docker exec rag_api grep -n "MAX_ITEMS_PER_BATCH" /app/apps/api/src/.../embedder.ts  # verify container sees new code
+```
+
+#### Lesson
+
+**When containerized behavior contradicts the code you just wrote, first verify the container actually sees that code (`docker exec … grep`) — with Docker Desktop bind mounts, inode-replacing writes can leave the container on a stale version; a container restart resyncs it.**

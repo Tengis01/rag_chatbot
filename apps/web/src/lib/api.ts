@@ -60,6 +60,7 @@ export interface DocumentStatusResponse {
   chunkCount: number;
   title: string;
   filename: string;
+  errorMessage: string | null;
   updatedAt: string;
 }
 

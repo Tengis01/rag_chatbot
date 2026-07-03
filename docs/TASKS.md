@@ -128,6 +128,73 @@ Build the RAG backend pipeline and real chat UI.
 
 ---
 
+## 🔥 Current Bugs — Priority Order updated 2026-07-02 (evening)
+
+> New order: A (mobile boot loop) → B (large paste fails) → C (data persistence for prod) → then Priority 5 manual Azure deploy → Priority 4 CI/CD → Priority 6 EAS.
+
+### Priority A — Mobile boot loop on physical phone (P0 — app unusable on real device) ✅
+
+> **Symptom**: onboarding OK → press start → ~3 min loading animation → onboarding starts again. Login screen and workspace never appear.
+> **Diagnosis**: `app/index.tsx` catch block routes to `/onboarding` on ANY error. On a physical phone, `EXPO_PUBLIC_API_URL=http://10.0.2.2:4000` is an **emulator-only address** — unreachable from a real phone — so `authClient.getSession()` hangs until the network timeout (minutes), throws, and the catch sends the user back to onboarding. Three compounding bugs: wrong error fallback route, no timeout on the session check, emulator-only API URL on a physical device.
+
+- [x] `app/index.tsx`: when onboarding IS complete, failures route to `/login` — never back to `/onboarding`; onboarding finish goes through `/` so the session check decides
+- [x] `authClient.getSession()` + probing wrapped in 5s `Promise.race` timeout
+- [x] NEW `lib/api-base.ts`: liveness-probes ALL candidates in parallel (`EXPO_PUBLIC_API_URLS` home/office list + Metro `hostUri` LAN IP + `10.0.2.2` emulator + localhost) via `GET /health` with 2s timeout; first alive wins, cached, re-probed after network errors. `EXPO_PUBLIC_API_URL` = hard override for prod builds. Auth client rewrites request origin at call time via `customFetchImpl`.
+- [x] `apps/mobile/.env`: `EXPO_PUBLIC_API_URLS=http://192.168.1.10:4000` (home; add office IP when known)
+- [ ] Re-test on the physical phone: onboarding → login → register → workspace → upload → chat
+
+### Priority B — Large paste (~50k chars) never finishes processing ✅
+
+> **Symptom**: 50,000-character raw text via paste → document never reaches `ready`.
+> **Likely area**: ~40–100 chunks hit Gemini embedding limits — batch size / request payload size / per-input 2048-token truncation / free-tier rate limits (RPM). Must reproduce with API logs before fixing. Failure is currently silent (`failed` status with no reason).
+
+- [x] Reproduced: instant `429 RESOURCE_EXHAUSTED` on first oversized batch → ERR-027. Bonus find: 500k-char paste got Fastify `413` (Cyrillic = 2 bytes/char > 1MB default bodyLimit) → `bodyLimit: 4MB`
+- [x] `embedder.ts` rewritten: token-budgeted batches (≤15 items / ~6k tokens via exported `estimateTokens`), 3s pacing, 30s timeout, exponential backoff + jitter on 429/5xx (8 attempts, honors `retryDelay`)
+- [x] Failure reason stored (`documents.error_message`, migration 003) and shown in web + mobile document lists
+- [x] Verified live: 50k → 50 chunks / 5 batches / ready in ~95s INCLUDING riding out five consecutive 429s; 500k paste accepted and processing through ~42 paced batches
+- [x] Model research → DECISIONS.md: OpenAI API has NO free tier (misconception corrected); Gemini stays (best free tier); Groq = fallback candidate; Mistral rejected (data-training opt-in); OpenRouter `:free` unreliable
+- [x] ERR-028 logged: Docker Desktop bind mount served STALE code after inode-replacing writes — `docker compose restart` + `docker exec grep` to verify
+
+### Priority C — Data persistence across rebuilds (production must never lose data) ✅
+
+> **Clarification**: plain `docker compose up --build` does NOT wipe Postgres — the `postgres_data` named volume survives builds. Data is lost on `docker compose down -v`, which is the documented LOCAL schema-apply workflow. Production needs incremental migrations instead of destroy-and-recreate.
+
+- [x] `infra/postgres/migrations/` + runner (`apps/api/src/shared/db/migrate.ts`) applied at API startup, tracked in `schema_migrations`, per-file transactions; verified: applied once, idempotent across restarts
+- [x] Convention: `infra/postgres/init/` frozen; all future schema changes = `NNN_*.sql` migrations (003+). First: `003_document_error_message.sql`
+- [x] pgAdmin compose service (`--profile tools`, port 5050) with persistent `pgadmin_data` volume
+- [x] DB_SCHEMA.md workflow rewritten (local down -v optional; prod = migrations only, NEVER down -v); DECISIONS.md entry added
+- [ ] Nightly `pg_dump` backup cron on the VM (lands with the deploy task)
+
+---
+
+### Priority D — UI Polish (workspace + mobile feel "null" vs the landing page)
+> Strategy: **don't design anything new — extend the existing design system everywhere.** `docs/design.md` + `apps/web/src/index.css` tokens ARE the spec; the landing page follows them (that's why it feels good), workspace/mobile drift from them. Never pick colors by hand: reuse tokens. Steal layouts from ChatGPT/Perplexity (design.md already cites them), colors from our own palette.
+
+**D1 — Unify mobile palette with web tokens (highest impact, mechanical)**
+
+- [ ] Mobile uses purple (`#7c2bca`, `#9c69ed`, `#ceb3f6`) while web is blue (`hsl(217 91% 60%)` + `--primary-glow` cyan) — mirror web's HSL tokens into `apps/mobile/tailwind.config.js` and replace hardcoded hex values across mobile components/screens
+- [ ] One radius language + 4px spacing scale on mobile (stop mixing `rounded-xl/2xl/3xl` arbitrarily)
+
+**D2 — Workspace "finish" patterns (checklist, not taste)**
+
+- [ ] Empty states: zero-documents and zero-conversations get a friendly guided card (upload CTA), not a blank panel
+- [ ] Skeleton loaders instead of bare spinners (document list, conversation list, message history)
+- [ ] Toast notifications for errors/success instead of inline red boxes
+- [ ] Hover/focus polish pass on all interactive elements (buttons, list rows, source cards)
+
+**D3 — Implement the unbuilt parts of design.md (zero-risk, spec already written)**
+
+- [ ] Composer typing-placeholder animation (typewriter cycle, ~70ms/char per spec §6.2)
+- [ ] Suggested-question chips in empty chat state
+- [ ] Source-card hover-expand previews + animated match-percentage bars per spec
+
+**D4 — Component quality via shadcn/ui (fixes "bad at choosing components")**
+
+- [ ] Adopt shadcn/ui (design.md already names it as base; stack matches) for dialogs, dropdowns, toasts, tabs, form inputs — restyled with existing tokens
+- [ ] Replace hand-rolled modal/popover/input implementations in workspace with shadcn equivalents
+
+---
+
 ## Priority Order (updated)
 
 ### Priority 1 — Docker Build Optimization (Phase 6) ✅
@@ -181,29 +248,41 @@ Build the RAG backend pipeline and real chat UI.
 
 ---
 
-### Priority 4 — CI/CD (Phase 6)
-> Triggers on push to `main`. Backend deploy to Droplet, frontend auto-deploys via Vercel.
+### Priority 4 — CI/CD (Phase 6) — target is now the Azure VM
+> Triggers on push to `main`. Deploys to Azure VM "Monarch" (40.82.138.44, Ubuntu 24.04, Korea Central).
+> **Prerequisite: manual deploy (Priority 5) must succeed first — automate only what already works.**
 
 - [ ] Create `.github/workflows/deploy.yml`
   - `pnpm install` → `build` → `smoke-test.sh`
-  - Docker image build → push to GHCR
-  - SSH into Droplet → `docker compose pull` → `docker compose up -d`
+  - SSH into Azure VM → `cd ~/rag-chatbot` (**MUST cd explicitly** — VM also hosts game servers in sibling folders) → `git pull` → `docker compose up -d --build`
   - `/health` check after deploy
-- [ ] Set GitHub Secrets: `DROPLET_HOST`, `DROPLET_USER`, `DROPLET_SSH_KEY`, `GEMINI_API_KEY`, `DATABASE_URL`
+- [ ] Set GitHub Secrets: `AZURE_VM_HOST` (40.82.138.44), `AZURE_VM_USER` (monarch), `AZURE_VM_SSH_KEY`, `GEMINI_API_KEY`, `BETTER_AUTH_SECRET`
+- [ ] **NEVER `docker system prune -a` in CI** — it would delete the game-server images (Necesse/Valheim) on the shared VM; use narrow `docker image prune` or nothing
 - [ ] Branch strategy: `main` (production) → `dev` (staging) → `feature/*` (PRs)
 
 ---
 
-### Priority 5 — Deployment (Phase 6)
-> GitHub Student Pack: DigitalOcean $200 credit + Namecheap free `.me` domain.
+### Priority 5 — Deployment (Phase 6) — Azure VM (replaces DigitalOcean plan)
+> Azure $200 free trial (30-day expiry). VM "Monarch" is provisioned and shared with game servers (Necesse now, Valheim later) — see DECISIONS.md 2026-07-02 for isolation rules.
 
-- [ ] Provision DigitalOcean Droplet (1GB RAM, $6/mo)
-- [ ] Install Docker + Docker Compose on Droplet
-- [ ] Configure Nginx reverse proxy + SSL via Let's Encrypt
-- [ ] Set `DATABASE_URL` + `GEMINI_API_KEY` as Droplet environment variables
-- [ ] Connect GitHub repo to Vercel (frontend auto-deploy on push)
-- [ ] Set `VITE_API_URL=https://api.yourdomain.me` in Vercel env variables
-- [ ] Point Namecheap domain → Droplet IP (A record), `api.` subdomain
+**Done (VM provisioning):**
+
+- [x] Azure VM: Standard D4as v5 (4 vCPU / 16 GiB, AMD), Ubuntu 24.04 LTS, Korea Central Zone 1, 64 GiB Standard SSD
+- [x] Static public IP 40.82.138.44; SSH key auth (`monarch` user, Ed25519); local `~/.ssh/config` alias `ssh monarch`
+- [x] Docker CE + Compose plugin installed; `monarch` in docker group
+- [x] NSG inbound: SSH (22)
+
+**Remaining (RAG deploy — manual first, then CI/CD):**
+
+- [ ] Make GitHub repo **private** before cloning to the VM (verified locally: no `.env` ever committed, only placeholder `.env.example`)
+- [ ] Clone to `~/rag-chatbot` on VM (GitHub PAT), write production `.env` (`GEMINI_API_KEY`, strong `BETTER_AUTH_SECRET`, `DATABASE_URL`)
+- [ ] Production compose adjustments: web must be a static build behind Nginx (current compose runs Vite dev server), tighten Better Auth `trustedOrigins` + CORS from reflect-any-origin to the real domain
+- [ ] Nginx reverse proxy + SSL (Let's Encrypt) on VM; open NSG ports 80/443 (ports must not collide with Necesse 14159/udp)
+- [ ] `docker compose up -d --build` in `~/rag-chatbot`, verify `/health` + smoke test against the VM
+- [ ] Azure Cost Management: budget alerts at $150/$180
+- [ ] Domain (Namecheap `.me` from Student Pack) → A record to 40.82.138.44
+
+> Frontend note: Vercel auto-deploy is still an option for `apps/web` (then only the API lives on the VM); decide during deploy.
 
 ---
 

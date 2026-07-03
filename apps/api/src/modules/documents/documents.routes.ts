@@ -130,7 +130,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
 
         try {
             const result = await db.query(
-                `SELECT id, filename, source_type, status, created_at
+                `SELECT id, filename, source_type, status, error_message, created_at
                  FROM documents
                  WHERE user_id = $1
                  ORDER BY created_at DESC`,
@@ -142,6 +142,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
                 filename: row.filename,
                 sourceType: row.source_type,
                 status: row.status,
+                errorMessage: row.error_message ?? null,
                 createdAt: row.created_at,
             }));
 
@@ -175,6 +176,7 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
                 chunkCount: doc.chunk_count ?? 0,
                 title: doc.filename,
                 filename: doc.filename,
+                errorMessage: doc.error_message ?? null,
                 updatedAt: doc.updated_at,
             });
         } catch (err) {

@@ -187,7 +187,9 @@ export function WorkspacePage() {
             .then((res) => {
               if (res.status !== doc.status) {
                 setDocuments((prev) =>
-                  prev.map((d) => (d.id === doc.id ? { ...d, status: res.status } : d)),
+                  prev.map((d) =>
+                    d.id === doc.id ? { ...d, status: res.status, errorMessage: res.errorMessage } : d,
+                  ),
                 );
               }
             })
@@ -571,6 +573,14 @@ export function WorkspacePage() {
                                   <span className="mt-0.5 block text-[9px] capitalize text-muted-foreground">
                                     {SOURCE_TYPE_LABELS[doc.sourceType]} · {DOCUMENT_STATUS_LABELS[doc.status]}
                                   </span>
+                                  {doc.status === "failed" && doc.errorMessage && (
+                                    <span
+                                      className="mt-0.5 block truncate text-[9px] text-red-400"
+                                      title={doc.errorMessage}
+                                    >
+                                      {doc.errorMessage}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             );

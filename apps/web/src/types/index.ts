@@ -3,6 +3,7 @@ export interface DocumentItem {
   filename: string;
   sourceType: "pdf" | "text";
   status: "pending" | "processing" | "ready" | "failed";
+  errorMessage?: string | null;
   createdAt: string;
 }
 
