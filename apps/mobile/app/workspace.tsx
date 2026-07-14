@@ -52,6 +52,9 @@ export default function WorkspaceScreen() {
   // MMR rerank toggle (default on — matches the backend default)
   const [useMMR, setUseMMR] = useState(true);
 
+  // Retrieval settings (defaults = backend's ERR-021 interim values, same as web)
+  const [retrieval, setRetrieval] = useState({ threshold: 0.1, lambda: 0.5 });
+
   const scrollRef = useRef<ScrollView>(null);
 
   const fetchDocuments = (selectReady = false) => {
@@ -204,6 +207,8 @@ export default function WorkspaceScreen() {
         documentIds: selectedIds,
         message: text,
         useMMR,
+        threshold: retrieval.threshold,
+        lambda: retrieval.lambda,
       });
       setConversationId(res.conversationId);
       const assistantMsg: ChatMessage = {
@@ -358,8 +363,9 @@ export default function WorkspaceScreen() {
                           className={`text-xs font-medium ${
                             useMMR ? "text-primary-light" : "text-muted-foreground"
                           }`}
+                          numberOfLines={1}
                         >
-                          MMR
+                          Олон талт хариу
                         </Text>
                       </Pressable>
                     </View>
@@ -428,6 +434,8 @@ export default function WorkspaceScreen() {
                 disabled={isSending}
                 useMMR={useMMR}
                 onToggleMMR={() => setUseMMR((v) => !v)}
+                retrieval={retrieval}
+                onRetrievalChange={setRetrieval}
               />
             </View>
           )}
