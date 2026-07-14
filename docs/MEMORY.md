@@ -89,6 +89,18 @@ Standard D4as v5 (4 vCPU / 16 GiB), Ubuntu 24.04, Korea Central, static IP **40.
   - **ERR-029** chat thread touch-scroll dead after long chats: full-screen sidebar-swipe `Gesture.Pan()` ate vertical drags. Fixed with `hitSlop({left:0,width:40})` + `activeOffsetX(15)` + `failOffsetY(±10)`; ScrollView padding moved to `contentContainerStyle`.
   - Mobile MMR toggle (Composer Shuffle button + "MMR" pill on greeting bar, `useMMR` → `/chat`), paste counter `N / 500,000 тэмдэгт` (red + save disabled when over), sidebar "Шинэ чат"/close both `h-11`, suggested-question chips on mobile empty screen (web parity).
 - `pnpm typecheck` green (5/5). Needs one more phone pass to confirm.
+- **Round 2b (same day)**: mobile Composer standardized to the web layout — "Олон талт хариу" labeled pill + `SlidersHorizontal` settings button on the RIGHT of the input; settings opens a threshold/λ slider popover (Modal + `@react-native-community/slider`, new dep) with reset; mobile now sends `threshold`/`lambda` to `/chat` (full P8+P9 parity). Typecheck + `expo export` green.
+
+## NEW PHASE: Internship report (2026-07-14)
+
+Project moved to report-writing phase (МУИС үйлдвэрлэлийн дадлагын тайлан, XeLaTeX, Mongolian, Times New Roman 11pt, IEEE references). `report/` folder created:
+
+- Base = colleague's МУИС МКУТ template (dics.sty by М.Золжаргал/Г.Амарсанаа) from Дадлага.zip; adapted `main.tex`: 12pt→11pt, removed deprecated `xltxtra`/`xunicode`/`[T2A]fontenc`/`babel mongolian`, font = Liberation Serif (TNR metric twin; swap line commented in main.tex when real TNR installed), added `biblatex style=ieee` + `references.bib` (8 starter entries: RAG, MMR, HNSW papers + tool docs), `pdfpages` for signed scan inserts.
+- `subfiles/plan.tex` = the REAL approved plan (2026-06-15, 12 tasks, from `2026-dadlaga_tulvlguu.docx`), translated to Mongolian. Original English wording (incl. BullMQ/SSE which differ from actual implementation) preserved in the docx in `report/reference-materials/`.
+- Chapter skeletons with TODO outlines: company (blank fields for org), research (RAG/embeddings/MMR/Gemini), design (architecture/stack/DB), implementation (pipeline/retrieval/auth/web/mobile/docker), results (problem→solution stories: ERR-021 cross-lingual, ERR-027 429 backoff, boot loop), skills, conclusion, appendix.
+- School requirements (`2026-Үйлдвэрлэлийн дадлагын удирдамж.docx`): report structure MUST be Нүүр → Удирдагчийн үнэлгээ → Захирлын тушаал → Төлөвлөгөө → Тайлан → Хавсралт (placeholders via commented `\includepdf` in main.tex). Grading: удирдагч 10 + бичилт 45 (шинжилгээ 15, асуудал/шийдэл 15, баримт 15) + хамгаалалт 45. Deadline: submit first week of September 2026, defend second week.
+- Compile: `cd report && latexmk` (.latexmkrc pins xelatex+biber). **TeX Live not yet installed** — user must run dnf install (sudo needed). Empty fields user will fill: organization, supervisor, date.
+- Blank student fields filled from ECEN326 lab PDF: Ц.Тэнгис 22B1NUM6249.
 
 ## Current Next Step
 

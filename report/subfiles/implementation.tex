@@ -1,0 +1,40 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+\section{Баримт оруулах хоолой (Ingestion pipeline)}
+
+% TODO: upload (PDF -> pdf-parse) ба paste зам; түр санах ойн текст сан;
+% chunker (~500 токен, 15% давхцал, кирилл үсгийн токен тооцоо);
+% embedder (gemini-embedding-001, 768 хэмжээст, багцын хязгаар, 429 backoff);
+% vector-store (транзакцаар багц оруулах); төлөвийн шилжилт + 3с polling
+
+\section{Хайлт ба хариу үүсгэлт}
+
+% TODO: match_chunks (косинус, HNSW) -> MMR rerank (top-20 -> 5);
+% threshold/lambda параметрүүд; generator fallback chain
+% (gemini-2.5-flash -> flash-lite); эх сурвалж ишлэл JSONB-д хадгалагдах
+
+\section{Нэвтрэлт ба олон хэрэглэгчийн тусгаарлалт}
+
+% TODO: Better Auth (email+password, scrypt), session cookie (вэб) /
+% SecureStore (мобайл); requireUser() бүх хамгаалагдсан route дээр;
+% бүх query user_id шүүлтүүртэй
+
+\section{Вэб клиент}
+
+% TODO: Landing + Workspace; Mongolian UI; glassmorphism дизайн;
+% документын төлөв хянах polling; MMR toggle + threshold/lambda slider
+% Дэлгэцийн зургууд: figures/web-*.png
+
+\section{Мобайл клиент}
+
+% TODO: Expo Router, onboarding, login, workspace, sidebar drawer;
+% API base autodiscovery (олон хаяг зэрэг probe); web-тэй ижил composer
+% Дэлгэцийн зургууд: figures/mobile-*.png
+
+\section{Docker байршуулалт}
+
+% TODO: docker-compose (postgres/api/web), layer caching оновчлол,
+% migration startup, Azure VM бэлтгэл
+
+\end{document}

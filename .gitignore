@@ -32,6 +32,26 @@ yarn-debug.log*
 # coverage
 coverage/
 
+# LaTeX build artifacts (report/)
+report/**/*.aux
+report/**/*.out
+report/**/*.toc
+report/**/*.lof
+report/**/*.lot
+report/**/*.bbl
+report/**/*.bcf
+report/**/*.blg
+report/**/*.run.xml
+report/**/*.fls
+report/**/*.fdb_latexmk
+report/**/*.xdv
+report/**/*.nlo
+report/**/*.nls
+report/**/*.ilg
+report/main.pdf
+report/**/*.synctex.gz
+report/**/*.synctex(busy)
+
 # Expo / Mobile
 .expo/
 web-build/

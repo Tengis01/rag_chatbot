@@ -1,0 +1,173 @@
+%----------------------------------------------------------------------------------------
+%   Үйлдвэрлэлийн дадлагын тайлан — МУИС, МТЭС, МКУТ загвар (XeLaTeX)
+%   Хөрвүүлэх: latexmk -xelatex main.tex
+%----------------------------------------------------------------------------------------
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+\documentclass[11pt,a4paper]{report}
+
+\usepackage{fontspec}
+\setlength{\headheight}{15pt}
+% Times New Roman нь Linux дээр суугаагүй тул metric-compatible Liberation Serif ашиглав.
+% TNR суулгасны дараа доорх хоёр мөрийг сольж болно:
+% \setmainfont[Ligatures=TeX]{Times New Roman}
+\setmainfont[Ligatures=TeX]{Liberation Serif}
+\setsansfont{Liberation Sans}
+\setmonofont[Scale=0.9]{Liberation Mono}
+
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{afterpage}
+\usepackage{graphicx}
+\graphicspath{{./}{figures/}}
+\usepackage{amsmath,amssymb,amsbsy}
+\usepackage{dcolumn,array}
+\usepackage{tocloft}
+\usepackage{dics}
+\usepackage{nomencl}
+\usepackage{upgreek}
+\newcommand{\argmin}{\arg\!\min}
+\usepackage{mathtools}
+\usepackage[hidelinks, unicode]{hyperref}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\DeclarePairedDelimiter\abs{\lvert}{\rvert}%
+\makeatletter
+\usepackage{caption}
+\captionsetup[table]{belowskip=0.5pt}
+\usepackage{subfiles}
+
+\usepackage{listings}
+\renewcommand{\lstlistingname}{Код}
+\renewcommand{\lstlistlistingname}{\lstlistingname ын жагсаалт}
+
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{pdfpages} % тушаал, үнэлгээний скан хуудас оруулахад
+
+% --- Ном зүй: IEEE загвар ---
+\usepackage[backend=biber,style=ieee]{biblatex}
+\addbibresource{references.bib}
+
+\usepackage{color}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.99,0.99,0.99}
+
+\lstdefinestyle{mystyle}{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=false,
+    numbers=left,
+    numbersep=10pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\let\oldabs\abs
+\def\abs{\@ifstar{\oldabs}{\oldabs*}}
+\makeatother
+\makenomenclature
+\setlength{\emergencystretch}{3em} % шаардлагатай үед мөрийг арай уян болгож багтаана
+\begin{document}
+
+
+%----------------------------------------------------------------------------------------
+%   Өөрийн мэдээллээ оруулах хэсэг  (хоосон талбаруудыг бөглөнө үү)
+%----------------------------------------------------------------------------------------
+\title{\textbf{Үйлдвэрлэлийн дадлага ажлын тайлан}}
+\aothura{Ц.~Тэнгис} \sisiIda{22B1NUM6249}
+% Дадлага хийсэн байгууллагын нэр:
+\organization{................................}
+% Удирдагчийн зэрэг цол, овгийн эхний үсэг, нэр (албан тушаал):
+\supervisor{................................}
+\university{МОНГОЛ УЛСЫН ИХ СУРГУУЛЬ}
+\faculty{МЭДЭЭЛЛИЙН ТЕХНОЛОГИ, ЭЛЕКТРОНИКИЙН СУРГУУЛЬ }
+\department{МЭДЭЭЛЭЛ, КОМПЬЮТЕРИЙН УХААНЫ ТЭНХИМ}
+\cityName{Улаанбаатар}
+% Хэвлэгдсэн огноо:
+\gradyear{2026 он}
+
+
+%----------------------------------------------------------------------------------------
+%   Нүүр хуудас, гарчиг, жагсаалтууд (main-pre.tex)
+%----------------------------------------------------------------------------------------
+\include{main-pre}
+
+
+% --- Хуудасны дугаар голд ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhfoffset{0pt}
+
+
+%----------------------------------------------------------------------------------------
+%   Удирдамжийн 4-р зүйлд заасан бүрэлдэхүүн:
+%   1) Нүүр  2) Удирдагчийн үнэлгээ  3) Захирлын тушаал  4) Төлөвлөгөө  5) Тайлан  6) Хавсралт
+%   Гарын үсэгтэй скан хуудсуудыг бэлэн болмогц доорх мөрүүдийг тайлж оруулна:
+%----------------------------------------------------------------------------------------
+% \includepdf[pages=-]{figures/udirdagchiin-unelgee.pdf}   % Удирдагчийн үнэлгээ, дүгнэлт
+% \includepdf[pages=-]{figures/zahirlyn-tushaal.pdf}       % Удирдагчийг томилсон тушаал
+
+
+%----------------------------------------------------------------------------------------
+%   Тайлангийн үндсэн хэсэг
+%----------------------------------------------------------------------------------------
+\chapter{Дадлагын ажлын төлөвлөгөө}
+\subfile{subfiles/plan}
+
+\chapter{Байгууллагын танилцуулга}
+\subfile{subfiles/company}
+
+\chapter{Даалгаврын тодорхойлолт ба судалгаа}
+\subfile{subfiles/research}
+
+\chapter{Системийн зохиомж}
+\subfile{subfiles/design}
+
+\chapter{Хэрэгжүүлэлт}
+\subfile{subfiles/implementation}
+
+\chapter{Туршилт ба үр дүн}
+\subfile{subfiles/results}
+
+\chapter{Дадлагын хугацаанд эзэмшсэн мэдлэг, ур чадвар}
+\subfile{subfiles/skills}
+
+\chapter{Дүгнэлт}
+\subfile{subfiles/conclusion}
+
+%----------------------------------------------------------------------------------------
+%   Ном зүй (IEEE загвар)
+%----------------------------------------------------------------------------------------
+% ТҮР: бүх эх сурвалжийг ном зүйд харуулна. Бүлгүүдэд \cite{...} ишлэлүүд
+% бичигдсэний дараа доорх мөрийг устгана (зөвхөн ишилсэн нь үлдэнэ).
+\nocite{*}
+\printbibliography[heading=bibintoc, title={НОМ ЗҮЙ}]
+
+%----------------------------------------------------------------------------------------
+%   Хавсралт
+%----------------------------------------------------------------------------------------
+\appendix
+\chapter{Хавсралт}
+\subfile{subfiles/appendix}
+
+\end{document}

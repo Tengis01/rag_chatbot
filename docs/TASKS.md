@@ -208,7 +208,8 @@ Build the RAG backend pipeline and real chat UI.
 - [x] **Paste character counter**: now shows `N / 500,000 тэмдэгт`, turns red and disables "Хадгалах" when over the backend limit
 - [x] **Sidebar button heights**: "Шинэ чат" and close button both pinned to 44px (`h-11`)
 - [x] **Bonus (parity)**: suggested starter questions on the mobile empty screen (same 3 Mongolian questions as web)
-- [ ] Re-test on the physical phone (onboarding policy, scroll after long chat, MMR pill, counter)
+- [x] **Round 2b — Composer standardized to web layout** (user feedback 2026-07-03): MMR pill labeled **"Олон талт хариу"** (was icon-only/"MMR"), placed on the **right side** of the input (was left beside the add button), plus the missing **retrieval settings button** (`SlidersHorizontal`) opening a threshold ("Хамаарлын босго") + lambda ("Олон талт байдал (λ)") slider popover with live values, explainer, and "Анхдагч утга сэргээх" reset — full P9 parity. `threshold`/`lambda` now sent from mobile `/chat` calls. New dep: `@react-native-community/slider` (expo install). Verified: typecheck + `expo export` green
+- [ ] Re-test on the physical phone (onboarding policy, scroll after long chat, "Олон талт хариу" pill + sliders popover, counter)
 
 ---
 
@@ -333,6 +334,91 @@ Build the RAG backend pipeline and real chat UI.
 - [x] `threshold` + `lambda` added to `/chat` Zod schema (0–1, defaults 0.1/0.5 per ERR-021 interim fix) and passed to `retrieveChunks`
 - [x] Settings popover in Composer (sliders icon): "Хамаарлын босго" + "Олон талт байдал (λ)" sliders with live values, explainer text, reset-to-defaults
 - [x] Verified: threshold 0.95 → honest no-context reply (0 sources); 0.1 → grounded answer (5 sources)
+
+---
+
+## Phase 7: Internship Report (started 2026-07-14) — `report/`
+
+> МУИС XeLaTeX template (Mongolian, 11pt, IEEE refs). Structure per удирдамж: Нүүр → Үнэлгээ → Тушаал → Төлөвлөгөө → Тайлан → Хавсралт. Deadline: submit early September 2026.
+
+- [x] Analyze colleague template (Дадлага.zip) + school docx (удирдамж, төлөвлөгөө)
+- [x] `report/` scaffold: adapted main.tex (11pt, modern preamble, biblatex ieee, pdfpages), dics.sty, main-pre.tex, .latexmkrc, .gitignore entries
+- [x] Real approved plan table (12 tasks, 06.15–07.02) in `subfiles/plan.tex` (Mongolian translation)
+- [x] Chapter skeletons: company / research / design / implementation / results / skills / conclusion / appendix
+- [x] Starter `references.bib` (RAG, MMR, HNSW, pgvector, Gemini, Fastify, Better Auth, Expo)
+- [ ] Install TeX Live: `sudo dnf install texlive-scheme-medium texlive-collection-langcyrillic texlive-subfiles texlive-tocloft texlive-nomencl texlive-algorithms texlive-algorithmicx texlive-upgreek texlive-biblatex-ieee biber latexmk`
+- [ ] First successful `latexmk` compile (verify title page, TOC, plan table, bibliography)
+- [x] Install TeX Live (texlive-was, not texlive-upgreek), LaTeX Workshop in VS Code (XeLaTeX recipe in `.vscode/settings.json`, removed conflicting vscode-pdf ext)
+- [x] First successful compile: 16 pages, A4 (fixed stray `\\` in title, letterpaper→a4paper in class + dics.sty TOC geometry, `@default_files` pinned in .latexmkrc, Table→Хүснэгт caption, temp `\nocite{*}`)
+
+### Writing plan (target ~28–35 pages; write in order 5 → 4 → 6 → 3 → 2 → 7 → 8)
+
+**Prep (before Ch5)**
+
+- [ ] Figures pipeline: Mermaid → PNG export working; `docs/diagrams/sequence.md` → `report/figures/`
+- [ ] Draw architecture diagram (3 clients → Fastify API → Postgres+pgvector)
+- [ ] Draw ER diagram (documents, chunks, conversations, messages, conversation_documents, auth tables)
+- [ ] Capture web screenshots: landing, workspace+sources, retrieval-settings popover
+- [ ] Capture mobile screenshots: onboarding, login, chat, sidebar
+
+**Бүлэг 1 — Төлөвлөгөө ✅** (2 pages, real approved plan)
+
+- [ ] (print-time) Fill Биелэлт column; supervisor fills үнэлгээ by hand
+
+**Бүлэг 2 — Байгууллагын танилцуулга** (~2–3 pages) — BLOCKED on user input
+
+- [ ] User provides: org name, founding year, field, size, team, supervisor role, IT systems used
+- [ ] 2.1 Ерөнхий мэдээлэл · 2.2 Бүтэц (+ optional org chart) · 2.3 МТ орчин (удирдамж §3.1–3.3)
+
+**Бүлэг 3 — Даалгаврын тодорхойлолт ба судалгаа** (~4–5 pages; шинжилгээ rubric pt.1)
+
+- [ ] 3.1 Problem statement + requirements (Mongolian docs, citations, multi-user, PDF+paste) + MVP scope
+- [ ] 3.2 RAG concept + diagram, why not fine-tuning \cite{lewis2020rag}
+- [ ] 3.3 Embedding/vector search: cosine formula, pgvector, HNSW \cite{malkov2018hnsw,pgvector}
+- [ ] 3.4 MMR formula with λ \cite{carbonell1998mmr} (tie to UI slider)
+- [ ] 3.5 Gemini models + free-tier limits \cite{geminiapi} (sets up Ch6 429 story)
+
+**Бүлэг 4 — Системийн зохиомж** (~5–6 pages; sources: DECISIONS.md, DB_SCHEMA.md)
+
+- [ ] 4.1 Architecture + diagram, non-goals (no ORM, no external vector DB)
+- [ ] 4.2 Tech choice table with justification per layer
+- [ ] 4.3 DB design: ER diagram, VECTOR(768)+HNSW, match_chunks, init vs migrations
+- [ ] 4.4 Modules: 5 domain modules, doc status state machine, sequence diagram figure
+
+**Бүлэг 5 — Хэрэгжүүлэлт** (~7–8 pages, biggest; write FIRST)
+
+- [ ] 5.1 Ingestion: pdf-parse, chunker (500tok/15%, Cyrillic-aware — highlight!), batch embed, tx insert + 1 listing
+- [ ] 5.2 Retrieval+generation: match_chunks SQL listing, MMR top-20→5, threshold/λ, fallback chain, language-preserving prompt
+- [ ] 5.3 Auth: Better Auth, scrypt, cookie vs SecureStore, requireUser + user_id scoping
+- [ ] 5.4 Web client (3–4 screenshots, polling, Mongolian UI)
+- [ ] 5.5 Mobile client (3–4 screenshots, parallel liveness probes)
+- [ ] 5.6 Docker: compose, layer caching, startup migrations
+
+**Бүлэг 6 — Туршилт ба үр дүн** (~4–5 pages; асуудал/шийдэл rubric — problem→diagnosis→solution→verification)
+
+- [ ] 6.1 Methodology: smoke-test.sh, typecheck/build, device tests
+- [ ] 6.2 Асуудал 1 ERR-021: cross-lingual 0.35 vs 0.7 → threshold 0.1 + prompt; verified 0.95→0 src / 0.1→5 src
+- [ ] 6.3 Асуудал 2 ERR-027/028: 429 + 413 → token-budget batches + backoff; 50k→95s/five 429s, 500k→492 chunks
+- [ ] 6.4 Асуудал 3: phone boot loop → parallel probes + 5s timeout
+- [ ] 6.5 Measurements table (size → chunks → batches → time)
+
+**Бүлэг 7 — Ур чадвар** (~1–1.5 pages)
+
+- [ ] Prose from skeleton bullets + user's personal notes on org experience
+
+**Бүлэг 8 — Дүгнэлт** (~1.5–2 pages)
+
+- [ ] Plan fulfillment 12/12 + honest deviations (BullMQ→setImmediate, SSE dropped — MVP justification)
+- [ ] Proposal to organization (required by удирдамж §3.3) + future work (query translation, EAS, CI/CD)
+
+**Finishing**
+
+- [ ] Remove temp `\nocite{*}` once chapters have real \cite commands
+- [ ] Fill title-page blanks: organization, supervisor, date (user)
+- [ ] Хавсралт: schema SQL, long code, extra screenshots
+- [ ] Insert signed scans (удирдагчийн үнэлгээ, захирлын тушаал) via `\includepdf`
+- [ ] Optional: install real Times New Roman and swap font line in main.tex
+- [ ] Full read-through + submit first week of September, defense second week
 
 ---
 

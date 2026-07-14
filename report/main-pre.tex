@@ -1,0 +1,31 @@
+%----------------------Нүүр хуудастай хамаатай зүйлс----------------------------
+\pagenumbering{roman}
+
+\maketitle
+
+\doublespace
+
+% Гарчгийг автоматаар оруулна
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+% Зургийн жагсаалтыг автоматаар оруулна
+\listoffigures
+
+% Хүснэгтийн жагсаалтыг автоматаар оруулна
+\listoftables
+
+% % Кодын жагсаалтыг автоматаар оруулна
+% \lstlistoflistings
+
+% This puts the word "Page" right justified above everything else.
+\newpage
+%% \addtocontents{lof}{Зураг~\hfill Хуудас \par}
+\newpage
+%% \addtocontents{lot}{Хүснэгт~\hfill Хуудас \par}
+
+\renewcommand{\cftlabel}{Зураг}
+
+
+\doublespace
+\pagenumbering{arabic}

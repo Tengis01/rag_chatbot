@@ -1,0 +1,29 @@
+\documentclass[../main.tex]{subfiles}
+\begin{document}
+
+\section{Системийн ерөнхий архитектур}
+
+% TODO: Гурван клиент (вэб, мобайл, smoke-test) — нэг Fastify API — нэг Postgres.
+% Архитектурын диаграм оруулах (figures/architecture.png)
+% docs/diagrams/sequence.md-ээс sequence диаграмыг зураг болгон гаргах.
+
+\section{Технологийн сонголт, үндэслэл}
+
+% TODO: хүснэгтээр — давхарга бүрд сонгосон технологи + үндэслэл:
+% Frontend: React + Vite + Tailwind; Mobile: Expo + Expo Router + NativeWind;
+% Backend: Fastify \cite{fastify} + TypeScript (ESM); DB: PostgreSQL + pgvector;
+% AI: Gemini API; Auth: Better Auth \cite{betterauth}; Монорепо: pnpm + Turborepo;
+% Байршуулалт: Docker Compose
+
+\section{Өгөгдлийн сангийн зохиомж}
+
+% TODO: documents, chunks (VECTOR(768) + HNSW), conversations, messages,
+% conversation_documents, auth хүснэгтүүд; ER диаграм; match_chunks функц;
+% migration систем (init/ + migrations/)
+
+\section{Модулиудын зохиомж}
+
+% TODO: modules/documents, ingestion, retrieval, chat, conversations, shared/ —
+% тус бүрийн үүрэг, хоорондын урсгал (pending -> processing -> ready/failed)
+
+\end{document}

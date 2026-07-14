@@ -1,0 +1,5 @@
+@default_files = ('main.tex');
+$pdf_mode = 5;          # xelatex
+$xelatex = 'xelatex -interaction=nonstopmode -halt-on-error %O %S';
+$bibtex_use = 2;        # biber via biblatex
+$clean_ext = 'bbl bcf blg run.xml xdv nlo nls';
