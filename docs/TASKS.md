@@ -370,13 +370,13 @@ Build the RAG backend pipeline and real chat UI.
 - [ ] User provides: org name, founding year, field, size, team, supervisor role, IT systems used
 - [ ] 2.1 Ерөнхий мэдээлэл · 2.2 Бүтэц (+ optional org chart) · 2.3 МТ орчин (удирдамж §3.1–3.3)
 
-**Бүлэг 3 — Даалгаврын тодорхойлолт ба судалгаа** (~4–5 pages; шинжилгээ rubric pt.1)
+**Бүлэг 3 — Даалгаврын тодорхойлолт ба судалгаа ✅ done (2026-07-15)** — 5 pages
 
-- [ ] 3.1 Problem statement + requirements (Mongolian docs, citations, multi-user, PDF+paste) + MVP scope
-- [ ] 3.2 RAG concept + diagram, why not fine-tuning \cite{lewis2020rag}
-- [ ] 3.3 Embedding/vector search: cosine formula, pgvector, HNSW \cite{malkov2018hnsw,pgvector}
-- [ ] 3.4 MMR formula with λ \cite{carbonell1998mmr} (tie to UI slider)
-- [ ] 3.5 Gemini models + free-tier limits \cite{geminiapi} (sets up Ch6 429 story)
+- [x] 3.1 Problem statement + requirements (Mongolian docs, citations, multi-user, PDF+paste, zero-budget) as 6-item list
+- [x] 3.2 RAG concept + rag-flow.png diagram (new `figures/src/rag-flow.mmd`), why not fine-tuning \cite{lewis2020rag}
+- [x] 3.3 Embedding/vector search: cosine formula, ANN/HNSW \cite{malkov2018hnsw}, pgvector-vs-dedicated-DB choice \cite{pgvector}, cross-lingual caveat → 6.2
+- [x] 3.4 General MMR formula (sim₁/sim₂ abstract, per Carbonell) \cite{carbonell1998mmr}; concrete Jaccard/λ impl deferred to Ch5 (no duplication)
+- [x] 3.5 Gemini model selection (embedding 768d ↔ VECTOR(768), 2.5 family fallback rationale) + free-tier RPM/TPM/RPD framing that sets up 6.3 \cite{geminiapi}
 
 **Бүлэг 4 — Системийн зохиомж ✅ done (2026-07-15)** — 5 pages
 
@@ -396,13 +396,13 @@ Build the RAG backend pipeline and real chat UI.
 - [ ] Insert web screenshots (web-workspace.png, web-settings.png) — placeholders ready in implementation.tex
 - [ ] Insert mobile screenshots (mobile-onboarding/chat/sidebar.png) — placeholders ready
 
-**Бүлэг 6 — Туршилт ба үр дүн** (~4–5 pages; асуудал/шийдэл rubric — problem→diagnosis→solution→verification)
+**Бүлэг 6 — Туршилт ба үр дүн ✅ done (2026-07-15)** — 4 pages, асуудал→оношилгоо→шийдэл→баталгаажуулалт structure
 
-- [ ] 6.1 Methodology: smoke-test.sh, typecheck/build, device tests
-- [ ] 6.2 Асуудал 1 ERR-021: cross-lingual 0.35 vs 0.7 → threshold 0.1 + prompt; verified 0.95→0 src / 0.1→5 src
-- [ ] 6.3 Асуудал 2 ERR-027/028: 429 + 413 → token-budget batches + backoff; 50k→95s/five 429s, 500k→492 chunks
-- [ ] 6.4 Асуудал 3: phone boot loop → parallel probes + 5s timeout
-- [ ] 6.5 Measurements table (size → chunks → batches → time)
+- [x] 6.1 Methodology: smoke-test.sh full flow, typecheck/build, curl param tests, 2 phone rounds
+- [x] 6.2 Асуудал 1 ERR-021 (incl. masking-bugs insight, honest interim-fix framing + query-translation future)
+- [x] 6.3 Асуудал 2 ERR-027/028 (TPM quota empirics, Cyrillic 2-byte 413 story, error_message UX fix, ERR-028 bind-mount lesson)
+- [x] 6.4 Асуудал 3 boot loop (3 compounding bugs, emulator-vs-phone diagnosis difficulty)
+- [x] 6.5 Performance table (3k/50k/500k rows; 500k honestly marked partially-verified)
 
 **Бүлэг 7 — Ур чадвар** (~1–1.5 pages)
 

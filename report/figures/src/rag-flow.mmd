@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph IDX["1. Индексжүүлэлт (баримт нэмэгдэх үед)"]
+        direction LR
+        DOC["Баримтууд<br/>(PDF, текст)"] --> CHUNK["Хэсэглэлт<br/>(chunking)"]
+        CHUNK --> EMB1["Embedding<br/>загвар"]
+        EMB1 --> STORE[("Вектор<br/>хайлтын сан")]
+    end
+
+    subgraph QRY["2. Хайлт (асуулт бүрд)"]
+        direction LR
+        Q["Хэрэглэгчийн<br/>асуулт"] --> EMB2["Embedding<br/>загвар"]
+        EMB2 -- "асуултын вектор" --> SEARCH["Хамгийн ойр k хэсгийг<br/>косинус төстэй байдлаар олох"]
+    end
+
+    subgraph GEN["3. Хариу үүсгэлт"]
+        direction LR
+        PROMPT["Prompt =<br/>заавар + context + асуулт"] --> LLM["Том хэлний<br/>загвар (LLM)"]
+        LLM --> ANS["Хариулт<br/>+ эх сурвалжууд"]
+    end
+
+    STORE -.-> SEARCH
+    SEARCH -- "олдсон хэсгүүд (context)" --> PROMPT
