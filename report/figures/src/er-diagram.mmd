@@ -1,0 +1,57 @@
+erDiagram
+    user ||--o{ documents : "эзэмшинэ"
+    user ||--o{ conversations : "эзэмшинэ"
+    documents ||--o{ chunks : "хуваагдана"
+    conversations ||--o{ messages : "агуулна"
+    conversations ||--o{ conversation_documents : ""
+    documents ||--o{ conversation_documents : ""
+
+    user {
+        UUID id PK
+        TEXT name
+        TEXT email UK
+        BOOLEAN emailVerified
+    }
+
+    documents {
+        UUID id PK
+        UUID user_id
+        TEXT filename
+        TEXT source_type "pdf | text"
+        TEXT status "pending..failed"
+        INT chunk_count
+        TEXT error_message "migration 003"
+        TIMESTAMPTZ created_at
+    }
+
+    chunks {
+        UUID id PK
+        UUID document_id FK
+        UUID user_id
+        TEXT content
+        INT page
+        INT chunk_index
+        INT token_count
+        VECTOR_768 embedding "HNSW индекс"
+    }
+
+    conversations {
+        UUID id PK
+        UUID user_id
+        TEXT title
+        TIMESTAMPTZ updated_at
+    }
+
+    messages {
+        UUID id PK
+        UUID conversation_id FK
+        UUID user_id
+        TEXT role "user | assistant"
+        TEXT content
+        JSONB sources
+    }
+
+    conversation_documents {
+        UUID conversation_id PK, FK
+        UUID document_id PK, FK
+    }

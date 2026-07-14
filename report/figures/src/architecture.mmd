@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph Clients["Клиентүүд"]
+        WEB["Вэб апп<br/>React + Vite + Tailwind"]
+        MOB["Мобайл апп<br/>Expo + React Native"]
+    end
+
+    subgraph API["Fastify API (TypeScript, ESM)"]
+        AUTH["auth<br/>Better Auth /api/auth/*"]
+        DOCS["documents<br/>upload / paste / status"]
+        ING["ingestion<br/>chunker → embedder → vector-store"]
+        RET["retrieval<br/>match_chunks + MMR"]
+        CHAT["chat<br/>RAG урсгал"]
+        CONV["conversations<br/>түүх"]
+    end
+
+    subgraph DB["PostgreSQL 16 + pgvector"]
+        TBL["documents · chunks VECTOR(768)<br/>conversations · messages · auth хүснэгтүүд"]
+        HNSW["HNSW индекс<br/>(косинус)"]
+    end
+
+    GEM["Gemini API<br/>gemini-embedding-001 (768d)<br/>gemini-2.5-pro / flash / flash-lite"]
+
+    WEB --> API
+    MOB --> API
+    DOCS --> ING
+    CHAT --> RET
+    ING -- "batchEmbedContents" --> GEM
+    CHAT -- "generateContent" --> GEM
+    ING --> DB
+    RET --> DB
+    AUTH --> DB
+    CONV --> DB

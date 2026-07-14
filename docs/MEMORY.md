@@ -102,6 +102,17 @@ Project moved to report-writing phase (МУИС үйлдвэрлэлийн да�
 - Compile: `cd report && latexmk` (.latexmkrc pins xelatex+biber). **TeX Live not yet installed** — user must run dnf install (sudo needed). Empty fields user will fill: organization, supervisor, date.
 - Blank student fields filled from ECEN326 lab PDF: Ц.Тэнгис 22B1NUM6249.
 
+### Report progress (2026-07-15)
+
+- Ch4 Системийн зохиомж WRITTEN (5 pages): 4.1 architecture + deliberate simplifications (incl. honest BullMQ→setImmediate plan deviation), 4.2 tech-choice longtable (zero-budget criterion), 4.3 ER diagram (`er-diagram.png` — new mermaid source `figures/src/er-diagram.mmd`) + 5 design decisions, 4.4 modules table. Cross-refs: → Зураг 5.1/5.2, → sec:impl-docker (new label in implementation.tex 5.6). First real \cite calls live (geminiapi, malkov2018hnsw → IEEE [1]/[2]). Report now 27 pages.
+
+- Ch5 Хэрэгжүүлэлт WRITTEN (7 pages): 6 sections, 4 listings (chunker, match_chunks SQL, api-base probe, Dockerfile), MMR formula, SYSTEM_INSTRUCTION quote, 2 diagram figures. Style locked: neutral past narrative + English tech terms as-is (user choice, matches their ECEN326 style). Report now 23 pages, compiles clean.
+- Figures pipeline: `report/figures/build.sh` (npx @mermaid-js/mermaid-cli, white bg, scale 2), sources `figures/src/*.mmd`. Generated: architecture.png (for Ch4), ingestion-flow.png, chat-sequence.png.
+- IMPORTANT code-vs-docs correction: generator fallback chain in code is `gemini-2.5-pro → gemini-2.5-flash → gemini-2.5-flash-lite` (generator.ts:76-80) — NOT the 2-model chain older docs claim. Also schema comment "text-embedding-004" is stale; real model gemini-embedding-001. Report follows the code.
+- Cross-refs: implementation.tex references `sec:problem-crosslingual` / `sec:problem-large-paste` labels now placed in results.tex (Ch6) — keep them when writing Ch6.
+- Screenshot placeholders (commented \includegraphics + TODO) in 5.4/5.5 wait for user-captured PNGs in report/figures/.
+- Plan table col 2 narrowed 8cm→7.3cm (was overfull). Remaining known overfulls: long uppercase chapter titles (template quirk, cosmetic).
+
 ## Current Next Step
 
 1. **Physical phone re-test (Priority E verification)** — onboarding checkbox policy, scroll after a long chat, MMR pill, paste counter.

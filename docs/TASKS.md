@@ -355,8 +355,8 @@ Build the RAG backend pipeline and real chat UI.
 
 **Prep (before Ch5)**
 
-- [ ] Figures pipeline: Mermaid → PNG export working; `docs/diagrams/sequence.md` → `report/figures/`
-- [ ] Draw architecture diagram (3 clients → Fastify API → Postgres+pgvector)
+- [x] Figures pipeline: Mermaid → PNG via `report/figures/build.sh` (npx mmdc, white bg, scale 2; sources in `figures/src/*.mmd`)
+- [x] Draw architecture diagram (`architecture.png`, for Ch4) + ingestion-flow (`ingestion-flow.png`) + chat sequence (`chat-sequence.png`, redrawn from docs/diagrams with threshold/lambda + real 3-model chain)
 - [ ] Draw ER diagram (documents, chunks, conversations, messages, conversation_documents, auth tables)
 - [ ] Capture web screenshots: landing, workspace+sources, retrieval-settings popover
 - [ ] Capture mobile screenshots: onboarding, login, chat, sidebar
@@ -378,21 +378,23 @@ Build the RAG backend pipeline and real chat UI.
 - [ ] 3.4 MMR formula with λ \cite{carbonell1998mmr} (tie to UI slider)
 - [ ] 3.5 Gemini models + free-tier limits \cite{geminiapi} (sets up Ch6 429 story)
 
-**Бүлэг 4 — Системийн зохиомж** (~5–6 pages; sources: DECISIONS.md, DB_SCHEMA.md)
+**Бүлэг 4 — Системийн зохиомж ✅ done (2026-07-15)** — 5 pages
 
-- [ ] 4.1 Architecture + diagram, non-goals (no ORM, no external vector DB)
-- [ ] 4.2 Tech choice table with justification per layer
-- [ ] 4.3 DB design: ER diagram, VECTOR(768)+HNSW, match_chunks, init vs migrations
-- [ ] 4.4 Modules: 5 domain modules, doc status state machine, sequence diagram figure
+- [x] 4.1 Architecture + diagram, deliberate simplifications (no ORM, no external vector DB, setImmediate over BullMQ, in-process auth)
+- [x] 4.2 Tech choice table (8 layers, zero-budget criterion, Gemini vs OpenAI free-tier cite)
+- [x] 4.3 DB design: ER diagram (er-diagram.png generated), 5 design decisions (VECTOR(768), HNSW, user_id denorm, sources JSONB snapshot, CASCADE), init vs migrations
+- [x] 4.4 Modules table (7 rows), state machine + sequence figure cross-refs to Ch5, /config principle
 
-**Бүлэг 5 — Хэрэгжүүлэлт** (~7–8 pages, biggest; write FIRST)
+**Бүлэг 5 — Хэрэгжүүлэлт ✅ text done (2026-07-15)** — 7 pages; screenshots still pending
 
-- [ ] 5.1 Ingestion: pdf-parse, chunker (500tok/15%, Cyrillic-aware — highlight!), batch embed, tx insert + 1 listing
-- [ ] 5.2 Retrieval+generation: match_chunks SQL listing, MMR top-20→5, threshold/λ, fallback chain, language-preserving prompt
-- [ ] 5.3 Auth: Better Auth, scrypt, cookie vs SecureStore, requireUser + user_id scoping
-- [ ] 5.4 Web client (3–4 screenshots, polling, Mongolian UI)
-- [ ] 5.5 Mobile client (3–4 screenshots, parallel liveness probes)
-- [ ] 5.6 Docker: compose, layer caching, startup migrations
+- [x] 5.1 Ingestion: pdf-parse/createRequire, async setImmediate + polling, chunker listing (Cyrillic-aware), embedder batching, tx vector insert + ingestion-flow figure
+- [x] 5.2 Retrieval+generation: match_chunks SQL listing, MMR formula (λ·sim−(1−λ)·maxJaccard), fallback chain **gemini-2.5-pro→flash→flash-lite (per code!)**, SYSTEM_INSTRUCTION quote, sources JSONB, chat-sequence figure
+- [x] 5.3 Auth: Better Auth in-process, scrypt, cookie vs SecureStore, requireUser + user_id double-filter invariant
+- [x] 5.4 Web client text (dynamic API base, conditional polling, MMR pill + sliders) — screenshots = commented placeholders
+- [x] 5.5 Mobile client text (routing, parallel liveness probe listing, composer parity) — screenshots = commented placeholders
+- [x] 5.6 Docker: compose services, layer-cache Dockerfile listing, migration runner
+- [ ] Insert web screenshots (web-workspace.png, web-settings.png) — placeholders ready in implementation.tex
+- [ ] Insert mobile screenshots (mobile-onboarding/chat/sidebar.png) — placeholders ready
 
 **Бүлэг 6 — Туршилт ба үр дүн** (~4–5 pages; асуудал/шийдэл rubric — problem→diagnosis→solution→verification)
 

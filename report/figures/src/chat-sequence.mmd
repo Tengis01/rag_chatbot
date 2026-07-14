@@ -1,0 +1,46 @@
+sequenceDiagram
+    actor User as Хэрэглэгч
+    participant UI as Клиент (вэб/мобайл)
+    participant API as Chat Route
+    participant DB as PostgreSQL
+    participant Emb as Embedder
+    participant Ret as Retrieval
+    participant PGV as pgvector
+    participant Gen as Generator
+    participant Gem as Gemini API
+
+    User->>UI: Асуулт бичнэ
+    UI->>API: POST /chat {message, documentIds, useMMR, threshold, lambda}
+
+    API->>DB: getReadyDocumentIds(userId, documentIds)
+    DB-->>API: readyDocumentIds
+
+    API->>Emb: embedText(message)
+    Emb->>Gem: gemini-embedding-001 (768d)
+    Gem-->>Emb: queryEmbedding
+
+    API->>Ret: retrieveChunks(embedding, docIds, k=5, threshold, lambda, useMMR)
+    Ret->>PGV: match_chunks (top 20 кандидат)
+    PGV-->>Ret: кандидатууд + similarity
+
+    alt useMMR = true
+        Ret->>Ret: MMR rerank (Jaccard, шилдэг 5)
+    else useMMR = false
+        Ret->>Ret: similarity-аар эхний 5
+    end
+
+    Ret-->>API: chunks[]
+
+    alt chunks хоосон
+        API->>DB: saveMessage (NO_CONTEXT_REPLY)
+        API-->>UI: {reply, sources: []}
+    else chunks байна
+        API->>Gen: generateAnswer(message, chunks)
+        Gen->>Gem: gemini-2.5-pro (fallback: flash, flash-lite)
+        Gem-->>Gen: хариулт
+        Gen-->>API: хариулт
+        API->>DB: saveMessage ×2 + sources (JSONB)
+        API-->>UI: {conversationId, reply, sources[]}
+    end
+
+    UI-->>User: Хариулт + эх сурвалжийн картууд

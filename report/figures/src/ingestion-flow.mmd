@@ -1,0 +1,24 @@
+flowchart TB
+    UP["POST /documents/upload<br/>PDF (≤20MB) → pdf-parse"]
+    PA["POST /documents/paste<br/>текст (≤500,000 тэмдэгт)"]
+
+    PEND["status = pending<br/>(текст түр санах ойд)"]
+    UP --> PEND
+    PA --> PEND
+
+    PEND -- "setImmediate<br/>(шууд 201 хариу буцаана)" --> PROC["status = processing"]
+
+    subgraph PIPE["Арын боловсруулалт (pipeline.ts)"]
+        CH["chunker<br/>~500 токен, 15% давхцал,<br/>кирилл-мэдрэг тооцоо"]
+        EM["embedder<br/>gemini-embedding-001, 768d<br/>багц ≤15 / ~6000 токен, backoff"]
+        VS["vector-store<br/>транзакцаар pgvector-т хадгална"]
+        CH --> EM --> VS
+    end
+
+    PROC --> PIPE
+    PIPE -->|"амжилттай"| RDY["status = ready<br/>chunk_count хадгалагдана"]
+    PIPE -->|"алдаа"| FAIL["status = failed<br/>error_message хадгалагдана"]
+
+    POLL["Клиент 3с тутам<br/>GET /documents/:id/status"]
+    RDY -.-> POLL
+    FAIL -.-> POLL

@@ -1,29 +1,201 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
+Энэ бүлэгт системийн ерөнхий архитектур, технологийн сонголтын үндэслэл,
+өгөгдлийн сангийн бүтэц болон серверийн модулиудын зохион байгуулалтыг
+тайлбарлав.
+
 \section{Системийн ерөнхий архитектур}
 
-% TODO: Гурван клиент (вэб, мобайл, smoke-test) — нэг Fastify API — нэг Postgres.
-% Архитектурын диаграм оруулах (figures/architecture.png)
-% docs/diagrams/sequence.md-ээс sequence диаграмыг зураг болгон гаргах.
+Системийг pnpm workspace болон Turborepo дээр суурилсан monorepo хэлбэрээр
+зохион байгуулав. Нэг репозиторид гурван аппликейшн
+(\texttt{apps/api}, \texttt{apps/web}, \texttt{apps/mobile}) болон дундын
+багцууд (\texttt{packages/}) зэрэгцэн байрладаг тул хувилбарын удирдлага,
+хамаарлын шинэчлэл, build процесс нэг дороос хийгддэг. Ерөнхий бүтцийг
+Зураг~\ref{fig:architecture}-д үзүүлэв: вэб болон мобайл клиент хоёулаа нэг
+Fastify API-тай HTTP-ээр харилцаж, бүх өгөгдөл нэг PostgreSQL санд
+хадгалагдана. Gemini API нь embedding болон хариулт үүсгэх гэсэн хоёр
+үүргээр гаднаас холбогддог цорын ганц гадаад хамаарал юм.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{architecture.png}
+  \caption{Системийн ерөнхий архитектур}
+  \label{fig:architecture}
+\end{figure}
+
+Архитектурын хэд хэдэн зориудын хялбаршуулалт хийв. Нэгд, ORM ашиглалгүйгээр
+\texttt{pg} сангаар шууд SQL бичсэн нь vector төрөл, тусгай функц зэрэг
+pgvector-ийн онцлогуудыг саадгүй ашиглах боломж олгосон. Хоёрд, тусдаа vector
+өгөгдлийн сан (Pinecone, Qdrant гэх мэт) нэвтрүүлэхийн оронд pgvector
+өргөтгөлөөр бүх өгөгдлийг нэг PostgreSQL дотор байлгаснаар транзакцын
+бүрэн бүтэн байдал хадгалагдаж, нөөцлөлт (backup) нэг сангаар хязгаарлагдана.
+Гуравт, дарааллын систем (message queue) нэвтрүүлэхийн оронд Node.js-ийн
+\texttt{setImmediate}-ээр арын боловсруулалтыг шийдэв: анхны төлөвлөгөөнд
+BullMQ гэж тусгагдсан байсан ч нэг серверийн MVP-д тусдаа Redis хамаарал
+нэмэх нь илүүц гэж үзсэн. Эцэст нь нэвтрэлтийг тусдаа үйлчилгээ биш, API
+процессын дотор ажилладаг Better Auth сангаар шийдсэн.
 
 \section{Технологийн сонголт, үндэслэл}
 
-% TODO: хүснэгтээр — давхарга бүрд сонгосон технологи + үндэслэл:
-% Frontend: React + Vite + Tailwind; Mobile: Expo + Expo Router + NativeWind;
-% Backend: Fastify \cite{fastify} + TypeScript (ESM); DB: PostgreSQL + pgvector;
-% AI: Gemini API; Auth: Better Auth \cite{betterauth}; Монорепо: pnpm + Turborepo;
-% Байршуулалт: Docker Compose
+Давхарга бүрд сонгосон технологи болон сонголтын үндэслэлийг
+Хүснэгт~\ref{tab:techstack}-д нэгтгэв. Гол шалгуур нь тэг төсөвтэй MVP-д
+тохирох байдал байв: бүх бүрэлдэхүүн нээлттэй эх эсвэл үнэгүй түвшинтэй.
+
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|>{\raggedright\arraybackslash}m{2.6cm}
+                  |>{\raggedright\arraybackslash}m{4.2cm}
+                  |>{\raggedright\arraybackslash}m{8.4cm}|}
+\caption{Технологийн сонголт ба үндэслэл}
+\label{tab:techstack}
+\\ \hline
+\textbf{Давхарга} & \textbf{Сонголт} & \textbf{Үндэслэл} \\ \hline
+\endfirsthead
+\hline
+\textbf{Давхарга} & \textbf{Сонголт} & \textbf{Үндэслэл} \\ \hline
+\endhead
+
+Вэб клиент &
+React + Vite + Tailwind CSS &
+Хурдан хөгжүүлэлтийн орчин (HMR), компонентод суурилсан UI, нэгдсэн
+дизайн-токен систем. \\ \hline
+
+Мобайл клиент &
+Expo + React Native + NativeWind &
+Вэбтэй ижил React мэдлэгээр Android/iOS апп бүтээх; Expo Go-оор бодит
+төхөөрөмж дээр шууд турших боломж. \\ \hline
+
+Сервер &
+Fastify + TypeScript (ESM) &
+Express-ээс хурдан, schema-д суурилсан валидац, TypeScript-ийн бүрэн
+дэмжлэг. \\ \hline
+
+Өгөгдлийн сан &
+PostgreSQL 16 + pgvector &
+Харьцангуй өгөгдөл ба vector хайлт нэг санд; тусдаа vector сан шаардлагагүй;
+Docker-оор локал ажиллана. \\ \hline
+
+Хиймэл оюун &
+Gemini API (embedding + generation) &
+2026 оны байдлаар хамгийн өгөөмөр үнэгүй түвшин~\cite{geminiapi}; OpenAI
+API нь үнэгүй түвшингүй тул тэг төсөвт тохирохгүй. \\ \hline
+
+Нэвтрэлт &
+Better Auth &
+Фреймворкоос хараат бус, өөрийн PostgreSQL-д хадгалдаг, Expo-гийн бэлэн
+дэмжлэгтэй. \\ \hline
+
+Monorepo &
+pnpm + Turborepo &
+Workspace-үүдийн хамаарлыг нэг lockfile-аар удирдах, build cache. \\ \hline
+
+Байршуулалт &
+Docker Compose &
+Локал болон production орчныг ижилхэн тодорхойлох; нэг команд бүрэн стек
+асаана. \\ \hline
+\end{longtable}
 
 \section{Өгөгдлийн сангийн зохиомж}
 
-% TODO: documents, chunks (VECTOR(768) + HNSW), conversations, messages,
-% conversation_documents, auth хүснэгтүүд; ER диаграм; match_chunks функц;
-% migration систем (init/ + migrations/)
+Өгөгдлийн сангийн бүтцийг Зураг~\ref{fig:er-diagram}-д үзүүлэв. Аппликейшны
+дөрвөн үндсэн хүснэгт (\texttt{documents}, \texttt{chunks},
+\texttt{conversations}, \texttt{messages}), холбоос хүснэгт
+(\texttt{conversation\_documents}) болон Better Auth-ийн хэрэглэгчийн
+хүснэгтүүд (\texttt{user}, \texttt{session}, \texttt{account},
+\texttt{verification}) нэг санд зэрэгцэн байрлана.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{er-diagram.png}
+  \caption{Өгөгдлийн сангийн ER диаграм (session, account, verification
+  хүснэгтүүдийг товчлов)}
+  \label{fig:er-diagram}
+\end{figure}
+
+Зохиомжийн гол шийдвэрүүд:
+
+\begin{itemize}
+\item \textbf{VECTOR(768) багана.} Хэсэг бүрийн embedding нь
+\texttt{chunks.embedding} баганад pgvector-ийн \texttt{VECTOR(768)} төрлөөр
+хадгалагдана. Хэмжээс нь \texttt{gemini-embedding-001} загварын
+\texttt{outputDimensionality: 768} тохиргоотой заавал тэнцүү байх ёстой ---
+өөр хэмжээтэй вектор оруулах оролдлого сангийн түвшинд алдаа өгнө.
+\item \textbf{HNSW индекс.} Ойролцоо хамгийн ойрын хөрш хайлтыг
+$O(\log n)$ орчим хугацаанд гүйцэтгэхийн тулд \texttt{embedding} багана дээр
+косинус хэмжигдэхүүнтэй HNSW индекс үүсгэсэн~\cite{malkov2018hnsw}.
+\item \textbf{user\_id-г давхардуулан хадгалах.} \texttt{chunks} болон
+\texttt{messages} хүснэгтэд \texttt{user\_id}-г шууд хадгалдаг
+(denormalization). Ингэснээр хайлтын функц JOIN хийлгүйгээр
+\texttt{user\_id}-аар шүүж чаддаг бөгөөд энэ нь аюулгүй байдлын шүүлтийг
+хамгийн гүн давхаргад нь оруулж өгдөг.
+\item \textbf{sources-ийг JSONB-ээр хадгалах.} Хариултын эх сурвалжуудыг
+тусдаа хүснэгт биш, \texttt{messages.sources} JSONB баганад хадгална. Энэ нь
+хариулт үүссэн агшны байдлыг өөрчлөгдөшгүйгээр (snapshot) үлдээдэг тул
+эх баримт нь хожим устсан ч түүхэн мессежийн эх сурвалж харагдсаар байна.
+\item \textbf{CASCADE устгал.} Баримт устахад түүний бүх chunk, харилцан
+яриа устахад бүх мессеж автоматаар устдаг тул орфан бичлэг үүсэхгүй.
+\end{itemize}
+
+Бүтцийн өөрчлөлтийн удирдлагыг хоёр үе шаттай зохион байгуулав: анхны бүтэц
+\texttt{infra/postgres/init/} доторх SQL файлуудаар шинэ volume үүсэх үед
+нэг удаа тавигдана, харин үүнээс хойшхи бүх өөрчлөлт
+\texttt{infra/postgres/migrations/} доторх дугаарлагдсан migration файлаар
+орж ирнэ (жишээ нь \texttt{003\_document\_error\_message.sql} нь алдааны
+шалтгаан хадгалах багана нэмсэн). Migration-уудыг API асахдаа автоматаар
+хэрэгжүүлдэг тухай \ref{sec:impl-docker} хэсэгт өгүүлсэн.
 
 \section{Модулиудын зохиомж}
 
-% TODO: modules/documents, ingestion, retrieval, chat, conversations, shared/ —
-% тус бүрийн үүрэг, хоорондын урсгал (pending -> processing -> ready/failed)
+Серверийн кодыг техникийн давхаргаар биш, үйл ажиллагааны хүрээгээр
+(domain) нь модулиудад хуваав. Модуль бүр өөрийн route, service, store
+файлуудыг агуулдаг тул нэг функцийг өөрчлөхөд хамрах хүрээ нь тодорхой
+байдаг. Хүснэгт~\ref{tab:modules}-д модулиудын үүргийг нэгтгэв.
+
+\begin{longtable}{|>{\raggedright\arraybackslash}m{3.6cm}
+                  |>{\raggedright\arraybackslash}m{11.8cm}|}
+\caption{Серверийн модулиуд ба тэдгээрийн үүрэг}
+\label{tab:modules}
+\\ \hline
+\textbf{Модуль} & \textbf{Үүрэг} \\ \hline
+\endfirsthead
+\hline
+\textbf{Модуль} & \textbf{Үүрэг} \\ \hline
+\endhead
+
+\texttt{modules/documents} &
+Баримт хүлээн авах: PDF байршуулах ба текст буулгах route-ууд, баримтын
+жагсаалт, төлөв шалгах endpoint. \\ \hline
+
+\texttt{modules/ingestion} &
+Арын боловсруулалт: chunker, embedder, vector-store, тэдгээрийг холбосон
+pipeline. \\ \hline
+
+\texttt{modules/retrieval} &
+Vector хайлт: \texttt{match\_chunks} дуудлага, MMR дахин эрэмбэлэлт,
+threshold/$\lambda$ параметрүүд. \\ \hline
+
+\texttt{modules/chat} &
+RAG урсгалын зохицуулалт: валидац, баримтын төлөв шалгах, хайлт, хариулт
+үүсгэх, мессеж хадгалах. \\ \hline
+
+\texttt{modules/conversations} &
+Харилцан ярианы түүх: жагсаалт, мессежүүдийг эх сурвалжийн хамт буцаах. \\ \hline
+
+\texttt{shared/} &
+Дундын дэд бүтэц: PostgreSQL Pool, Better Auth тохиргоо,
+\texttt{requireUser()} session шалгалт, migration runner, тогтмолууд. \\ \hline
+
+\texttt{routes/} &
+Системийн нээлттэй endpoint-ууд: \texttt{/health} (сангийн холболтын
+шалгалттай), \texttt{/config} (клиентэд өгөх нууц биш тохиргоо). \\ \hline
+\end{longtable}
+
+Баримт нь \texttt{pending} $\rightarrow$ \texttt{processing} $\rightarrow$
+\texttt{ready} эсвэл \texttt{failed} гэсэн төлөвийн машинаар дамждаг
+(Зураг~\ref{fig:ingestion-flow}), харин чатын хүсэлтийн бүрэн дарааллыг
+Зураг~\ref{fig:chat-sequence}-д үзүүлсэн. Клиентэд өгөх тохиргоог
+(файлын дээд хэмжээ, тэмдэгтийн хязгаар зэрэг) \texttt{.env} файлаас биш
+\texttt{GET /config} endpoint-оос авдаг зарчим баримталсан тул хязгаарын
+өөрчлөлт клиентийн build шаардахгүй.
 
 \end{document}
