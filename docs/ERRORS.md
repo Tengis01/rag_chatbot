@@ -923,6 +923,8 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 | Host disk space shrinks with every `docker compose up --build` and never comes back | Docker Desktop's VM disk (`~/.docker/desktop/vms/0/data/Docker.raw`) only grows; prune build cache (`docker builder prune --keep-storage=3GB`) and recreate the VM disk to reclaim; skip `--build` for daily dev — source is bind-mounted (ERR-026) |
 | Large paste (50k+ chars) always `failed`; 500k paste rejected with 413 | Gemini free-tier TPM: send token-budgeted batches with backoff (`embedder.ts`); raise Fastify `bodyLimit` (Cyrillic = 2 bytes/char); failure reason now stored in `documents.error_message` (ERR-027) |
 | Code edited on host but container still runs OLD code (bind mount) | Docker Desktop file sharing misses inode-replacing writes; `docker compose restart <svc>` re-reads files — verify with `docker exec <c> grep` before debugging "impossible" behavior (ERR-028) |
+| Mobile chat screen stops responding to touch scroll (programmatic scroll still works) | A full-screen `Gesture.Pan()` (sidebar edge-swipe) captures vertical drags before the ScrollView; constrain it with `hitSlop({left:0,width:40})` + `activeOffsetX` + `failOffsetY` (ERR-029) |
+| Onboarding skipped even though "Дахиж харуулахгүй" was NOT checked | `handleStart` persisted `true` unconditionally; persist the actual checkbox value and only suppress onboarding while the login session is valid (ERR-030) |
 
 ---
 
@@ -1196,3 +1198,68 @@ docker exec rag_api grep -n "MAX_ITEMS_PER_BATCH" /app/apps/api/src/.../embedder
 #### Lesson
 
 **When containerized behavior contradicts the code you just wrote, first verify the container actually sees that code (`docker exec … grep`) — with Docker Desktop bind mounts, inode-replacing writes can leave the container on a stale version; a container restart resyncs it.**
+
+---
+
+### ERR-029 — Chat thread stopped scrolling by touch after several Q&A rounds (gesture conflict)
+
+**Date**: 2026-07-03
+**Status**: ✅ Fixed
+
+#### What happened
+
+Physical-phone test: after a few upload → ask → answer rounds filled the screen, older messages were pushed out of view and touch-scrolling did nothing — the thread was stuck. Sending another question DID move the list (programmatic `scrollToEnd` worked), which proved the ScrollView itself was fine and only touch input was being lost.
+
+#### Root cause
+
+`app/workspace.tsx` wraps the whole screen in a `GestureDetector` with an unconstrained `Gesture.Pan()` (edge-swipe to open the sidebar). An unconstrained Pan activates on ANY drag — including vertical — and once active it claims the touch stream, so the chat ScrollView never receives scroll gestures. The internal `startX < 40` check only filtered the *handler logic*, not gesture *activation*.
+
+#### Files changed
+
+- `apps/mobile/app/workspace.tsx`
+
+#### Fix
+
+Constrain the pan so it can only win for deliberate horizontal swipes from the left edge, and let vertical movement fail fast back to the ScrollView:
+
+```ts
+Gesture.Pan()
+  .hitSlop({ left: 0, width: 40 })   // recognize only in the leftmost 40px
+  .activeOffsetX(15)                 // require horizontal intent to activate
+  .failOffsetY([-10, 10])            // any vertical move → gesture fails → ScrollView scrolls
+```
+
+Also moved the ScrollView's `py-4` off the scroll container into `contentContainerStyle` (vertical padding on the ScrollView style clips content on Android).
+
+#### Lesson
+
+**A full-screen `Gesture.Pan()` silently eats every child ScrollView's touch scrolling. Always constrain screen-level pans with `hitSlop`/`activeOffsetX`/`failOffsetY`; a JS-side coordinate check inside the handler does not stop the gesture from claiming the touch.**
+
+---
+
+### ERR-030 — Onboarding never reappeared even though "Дахиж харуулахгүй" was left unchecked
+
+**Date**: 2026-07-03
+**Status**: ✅ Fixed
+
+#### What happened
+
+Physical-phone test: on second launch the onboarding screens were skipped entirely, although the user had NOT checked "Дахиж харуулахгүй" (don't show again) and had not used Skip in a way that opted out.
+
+#### Root cause
+
+`app/onboarding.tsx` `handleStart` called `setOnboardingComplete(true)` unconditionally — the `dontShowAgain` checkbox state was rendered but never consulted. One pass through onboarding permanently suppressed it.
+
+#### Files changed
+
+- `apps/mobile/app/onboarding.tsx` — persist the actual checkbox value; route directly to `/workspace` or `/login` (never back through `/`, which could loop)
+- `apps/mobile/app/index.tsx` — new policy: the opt-out only suppresses onboarding while a valid Better Auth session exists; expired/absent session → onboarding shows again (same lifetime as the login, per user request)
+- `apps/mobile/lib/api-base.ts` — exported shared `withTimeout` helper
+
+#### Fix
+
+Boot gate now: session valid + opted out → `/workspace`; session valid + not opted out → `/onboarding`; session confirmed absent → `/onboarding` (opt-out expired with the login); API unreachable → `/login` if opted out (never loop through onboarding blind), `/onboarding` otherwise. Onboarding's start button checks the session itself and lands on `/workspace` or `/login` directly.
+
+#### Lesson
+
+**Rendering a setting is not honoring it — trace every persisted flag from the UI control that sets it to the code that reads it. And tie "don't show again" suppressions to an explicit lifetime (here: the login session), not forever.**

@@ -141,7 +141,7 @@ Build the RAG backend pipeline and real chat UI.
 - [x] `authClient.getSession()` + probing wrapped in 5s `Promise.race` timeout
 - [x] NEW `lib/api-base.ts`: liveness-probes ALL candidates in parallel (`EXPO_PUBLIC_API_URLS` home/office list + Metro `hostUri` LAN IP + `10.0.2.2` emulator + localhost) via `GET /health` with 2s timeout; first alive wins, cached, re-probed after network errors. `EXPO_PUBLIC_API_URL` = hard override for prod builds. Auth client rewrites request origin at call time via `customFetchImpl`.
 - [x] `apps/mobile/.env`: `EXPO_PUBLIC_API_URLS=http://192.168.1.10:4000` (home; add office IP when known)
-- [ ] Re-test on the physical phone: onboarding → login → register → workspace → upload → chat
+- [x] Re-test on the physical phone: onboarding → login → register → workspace → upload → chat (2026-07-03: "pretty good, almost done" — boot loop gone; remaining feedback tracked in Priority E below)
 
 ### Priority B — Large paste (~50k chars) never finishes processing ✅
 
@@ -170,28 +170,45 @@ Build the RAG backend pipeline and real chat UI.
 ### Priority D — UI Polish (workspace + mobile feel "null" vs the landing page)
 > Strategy: **don't design anything new — extend the existing design system everywhere.** `docs/design.md` + `apps/web/src/index.css` tokens ARE the spec; the landing page follows them (that's why it feels good), workspace/mobile drift from them. Never pick colors by hand: reuse tokens. Steal layouts from ChatGPT/Perplexity (design.md already cites them), colors from our own palette.
 
-**D1 — Unify mobile palette with web tokens (highest impact, mechanical)**
+**D1 — Palette unification (DIRECTION REVERSED, decision pending)**
 
-- [ ] Mobile uses purple (`#7c2bca`, `#9c69ed`, `#ceb3f6`) while web is blue (`hsl(217 91% 60%)` + `--primary-glow` cyan) — mirror web's HSL tokens into `apps/mobile/tailwind.config.js` and replace hardcoded hex values across mobile components/screens
+> ⚠️ 2026-07-02: the mobile PURPLE (`#7c2bca` family) is the CURRENT brand — design.md's blue tokens are the stale previous version (user confirmation). Unification direction is web → purple, NOT mobile → blue. User chose "decide later".
+
+- [ ] DECIDE: re-hue web `index.css` tokens (primary/glow/gradients) to the purple family, or keep web blue / mobile purple split
+- [ ] Update design.md token section to the purple palette once decided
 - [ ] One radius language + 4px spacing scale on mobile (stop mixing `rounded-xl/2xl/3xl` arbitrarily)
 
-**D2 — Workspace "finish" patterns (checklist, not taste)**
+**D2 — Workspace "finish" patterns ✅**
 
-- [ ] Empty states: zero-documents and zero-conversations get a friendly guided card (upload CTA), not a blank panel
-- [ ] Skeleton loaders instead of bare spinners (document list, conversation list, message history)
-- [ ] Toast notifications for errors/success instead of inline red boxes
-- [ ] Hover/focus polish pass on all interactive elements (buttons, list rows, source cards)
+- [x] Empty states: guided glass card in chat thread — upload CTA when no ready documents, suggested questions when ready; conversation sidebar empty copy improved
+- [x] Skeleton loaders: `ChatThreadSkeleton` (message history) + pulse rows in ConversationSidebar
+- [x] Toasts: new `ToastProvider` (glass, auto-dismiss, error/success/info) replaces the global error bar; upload/paste now confirm with success toasts. Inline send-error banner kept (it has retry)
+- [x] Hover/focus: composer focus ring, popover/settings hover states (part of new components)
 
-**D3 — Implement the unbuilt parts of design.md (zero-risk, spec already written)**
+**D3 — Implement the unbuilt parts of design.md ✅**
 
-- [ ] Composer typing-placeholder animation (typewriter cycle, ~70ms/char per spec §6.2)
-- [ ] Suggested-question chips in empty chat state
-- [ ] Source-card hover-expand previews + animated match-percentage bars per spec
+- [x] Composer typing-placeholder animation (`useTypewriter`: 70ms type / 30ms delete / 1200ms pause, Mongolian phrases)
+- [x] Suggested-question chips in empty chat state (3 Mongolian starters, click = send)
+- [x] Source-card hover-expand previews + animated match bars — already implemented, verified present
 
-**D4 — Component quality via shadcn/ui (fixes "bad at choosing components")**
+**D4 — Component quality via shadcn/ui (NOT STARTED — deliberately deferred)**
 
-- [ ] Adopt shadcn/ui (design.md already names it as base; stack matches) for dialogs, dropdowns, toasts, tabs, form inputs — restyled with existing tokens
-- [ ] Replace hand-rolled modal/popover/input implementations in workspace with shadcn equivalents
+> Deferred 2026-07-02: D2/D3 delivered the highest-value pieces (toasts, skeletons, empty states) natively with existing tokens; a full shadcn refactor of modals/popovers is a larger visual-regression risk for less gain now. Revisit after the brand-color decision (D1).
+
+- [ ] Adopt shadcn/ui for dialogs, dropdowns, tabs, form inputs — restyled with existing tokens
+- [ ] Replace hand-rolled modal/popover implementations in workspace with shadcn equivalents
+
+### Priority E — Physical-phone test round 2 feedback (2026-07-03) ✅
+
+> User tested on the phone: "pretty good almost done". Five issues found; all fixed same day (ERR-029, ERR-030).
+
+- [x] **Onboarding shown/skipped wrongly** (ERR-030): `handleStart` saved the "Дахиж харуулахгүй" opt-out unconditionally — checkbox was never consulted. New policy: opt-out only suppresses onboarding **while the login session is valid**; expired/absent session → onboarding shows again. Onboarding now routes directly to `/workspace` or `/login` (never back through `/` — no loop possible)
+- [x] **Chat thread stopped touch-scrolling** (ERR-029): full-screen sidebar-swipe `Gesture.Pan()` captured vertical drags before the ScrollView. Constrained with `hitSlop({left:0,width:40})` + `activeOffsetX(15)` + `failOffsetY(±10)`; ScrollView padding moved to `contentContainerStyle`
+- [x] **MMR toggle missing on mobile**: Shuffle toggle in Composer + "MMR" pill on the greeting ask bar; `useMMR` sent to `/chat` (parity with web P8)
+- [x] **Paste character counter**: now shows `N / 500,000 тэмдэгт`, turns red and disables "Хадгалах" when over the backend limit
+- [x] **Sidebar button heights**: "Шинэ чат" and close button both pinned to 44px (`h-11`)
+- [x] **Bonus (parity)**: suggested starter questions on the mobile empty screen (same 3 Mongolian questions as web)
+- [ ] Re-test on the physical phone (onboarding policy, scroll after long chat, MMR pill, counter)
 
 ---
 
@@ -305,18 +322,17 @@ Build the RAG backend pipeline and real chat UI.
 - [ ] Pass `detected_language` from `chat.routes.ts` through to retrieval layer
 - [ ] Restore `threshold → 0.6–0.7` and `lambda → 0.7` once query expansion is stable
 
-### Priority 8 — MMR Toggle UI (Phase 3)
-> Backend fully done. Frontend toggle only remaining.
+### Priority 8 — MMR Toggle UI (Phase 3) ✅
 
-- [ ] Add toggle button in `apps/web/src/components/workspace/Composer.tsx`
-- [ ] User-facing label: `"Олон талт хариу"` — avoid "MMR" jargon
-- [ ] Wire to `useMMR: boolean` in chat API request body
+- [x] Toggle pill in `Composer.tsx` (Shuffle icon, active = primary tint, tooltip explains behavior)
+- [x] Label: `"Олон талт хариу"` — no "MMR" jargon
+- [x] Wired to `useMMR` in chat request body; verified end-to-end via curl
 
-### Priority 9 — Threshold / Lambda UI Controls (Phase 3)
-> Deferred. Power-user feature, not MVP-critical.
+### Priority 9 — Threshold / Lambda UI Controls (Phase 3) ✅
 
-- [ ] Expose `threshold` as advanced/debug query param
-- [ ] Lambda slider in workspace UI
+- [x] `threshold` + `lambda` added to `/chat` Zod schema (0–1, defaults 0.1/0.5 per ERR-021 interim fix) and passed to `retrieveChunks`
+- [x] Settings popover in Composer (sliders icon): "Хамаарлын босго" + "Олон талт байдал (λ)" sliders with live values, explainer text, reset-to-defaults
+- [x] Verified: threshold 0.95 → honest no-context reply (0 sources); 0.1 → grounded answer (5 sources)
 
 ---
 

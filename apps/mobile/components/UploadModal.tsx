@@ -29,6 +29,9 @@ const C = {
 
 type Tab = "pdf" | "paste";
 
+/** Backend rejects pasted text longer than this (documents/paste Zod schema). */
+const MAX_PASTE_CHARS = 500_000;
+
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -232,8 +235,14 @@ export function UploadModal({ visible, onClose, onDocumentAdded }: Props) {
                 <View>
                   <Text style={styles.label}>
                     Агуулга{" "}
-                    <Text style={{ color: C.mutedFg }}>
-                      ({pasteContent.length.toLocaleString()} тэмдэгт)
+                    <Text
+                      style={{
+                        color:
+                          pasteContent.length > MAX_PASTE_CHARS ? C.danger : C.mutedFg,
+                      }}
+                    >
+                      ({pasteContent.length.toLocaleString()} /{" "}
+                      {MAX_PASTE_CHARS.toLocaleString()} тэмдэгт)
                     </Text>
                   </Text>
                   <TextInput
@@ -250,11 +259,19 @@ export function UploadModal({ visible, onClose, onDocumentAdded }: Props) {
                 <Pressable
                   style={[
                     styles.primaryBtn,
-                    (pasting || !pasteTitle.trim() || !pasteContent.trim()) &&
+                    (pasting ||
+                      !pasteTitle.trim() ||
+                      !pasteContent.trim() ||
+                      pasteContent.length > MAX_PASTE_CHARS) &&
                       styles.btnDisabled,
                   ]}
                   onPress={handlePaste}
-                  disabled={pasting || !pasteTitle.trim() || !pasteContent.trim()}
+                  disabled={
+                    pasting ||
+                    !pasteTitle.trim() ||
+                    !pasteContent.trim() ||
+                    pasteContent.length > MAX_PASTE_CHARS
+                  }
                 >
                   {pasting ? (
                     <ActivityIndicator size="small" color="#fff" />

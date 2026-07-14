@@ -18,6 +18,22 @@ const app = Fastify({ logger: true, bodyLimit: 4 * 1024 * 1024 });
 // Apply pending SQL migrations before accepting traffic
 await runMigrations();
 
+// Sweep orphaned ingestion jobs: extracted text lives in memory, so any
+// document still pending/processing after a restart can never finish.
+// Fail it honestly so the UI shows why instead of spinning forever.
+const { db } = await import("./shared/db/db.js");
+const orphans = await db.query(
+  `UPDATE documents
+   SET status = 'failed',
+       error_message = 'Сервер дахин эхэлсэн тул боловсруулалт тасалдсан. Баримтаа дахин оруулна уу.',
+       updated_at = NOW()
+   WHERE status IN ('pending', 'processing')
+   RETURNING id`
+);
+if (orphans.rowCount) {
+  console.warn(`[startup] failed ${orphans.rowCount} orphaned processing document(s)`);
+}
+
 // ─── Plugins ─────────────────────────────────────────────────────
 await app.register(cors, {
   // Allow any origin so the app works from a phone on the same WiFi.

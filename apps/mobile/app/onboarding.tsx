@@ -16,6 +16,10 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Sparkles, FileText, ShieldCheck, ArrowRight } from "lucide-react-native";
 import { setOnboardingComplete } from "../lib/storage";
+import { authClient } from "../lib/auth-client";
+import { resolveApiBase, withTimeout } from "../lib/api-base";
+
+const SESSION_CHECK_TIMEOUT_MS = 5000;
 
 const COLORS = {
   bg: "#09090b",
@@ -79,10 +83,21 @@ export default function OnboardingScreen() {
   };
 
   const handleStart = async () => {
-    await setOnboardingComplete(true);
-    // Back through the root index: it routes to /login or /workspace
-    // depending on whether a Better Auth session exists.
-    router.replace("/");
+    // Only the checked box suppresses onboarding on future launches —
+    // and only while the login session stays valid (see app/index.tsx).
+    await setOnboardingComplete(dontShowAgain);
+    // Route directly — going back through "/" would re-run the gate and
+    // could land here again (boot loop) when the box is unchecked.
+    try {
+      await withTimeout(resolveApiBase(), SESSION_CHECK_TIMEOUT_MS);
+      const { data: session } = await withTimeout(
+        authClient.getSession(),
+        SESSION_CHECK_TIMEOUT_MS
+      );
+      router.replace(session ? "/workspace" : ("/login" as any));
+    } catch {
+      router.replace("/login" as any);
+    }
   };
 
   return (

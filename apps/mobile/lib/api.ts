@@ -85,6 +85,7 @@ export const api = {
     conversationId?: string;
     documentIds: string[];
     message: string;
+    useMMR?: boolean;
   }) =>
     request<ChatResponse>("/chat", {
       method: "POST",
@@ -92,6 +93,7 @@ export const api = {
         conversationId: params.conversationId,
         documentIds: params.documentIds,
         message: params.message,
+        useMMR: params.useMMR,
       }),
     }),
 

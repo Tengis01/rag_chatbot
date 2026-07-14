@@ -73,9 +73,26 @@ Standard D4as v5 (4 vCPU / 16 GiB), Ubuntu 24.04, Korea Central, static IP **40.
 - **B — Large-paste ingestion (ERR-027/028)**: `embedder.ts` rewritten — token-budgeted batches (≤15 items/~6k tokens), 3s pacing, 30s timeout, exponential backoff on 429 (free-tier embedding TPM ≈ 20–25k/min empirically). Fastify `bodyLimit` → 4MB (Cyrillic 500k chars ≈ 1MB UTF-8 exceeded 1MB default). Failure reason stored in `documents.error_message` and shown in both UIs. Verified: 50k → ready in ~95s riding out five 429s; 500k (492 chunks/41 batches) processes with pacing. ERR-028: Docker Desktop bind mount can serve stale code after inode-replacing writes — restart container + `docker exec grep` to verify.
 - **C — Migrations**: `apps/api/src/shared/db/migrate.ts` runs at API startup, applies `infra/postgres/migrations/NNN_*.sql` once each (tracked in `schema_migrations`, per-file transactions; verified idempotent). `init/` is frozen. pgAdmin compose service (`--profile tools`) with persistent volume. Production rule: NEVER `down -v`.
 
+## UI Polish + Retrieval Controls shipped (2026-07-02 late)
+
+- **P8 ✅** MMR toggle in web Composer ("Олон талт хариу" pill, Shuffle icon); **P9 ✅** threshold/lambda sliders in a Composer settings popover + `/chat` Zod schema params (verified: threshold 0.95 → no-context/0 sources, 0.1 → answer/5 sources).
+- **D2 ✅** `ToastProvider` (replaces global error bar; success toasts on upload/paste), `ChatThreadSkeleton` + sidebar skeletons, guided empty-state card (upload CTA when no ready docs / suggested-question chips when ready). **D3 ✅** typewriter composer placeholder (design.md §6.2), suggested chips wired, source hover-previews confirmed already present.
+- **D1 ⚠️ REVERSED + deferred**: mobile PURPLE (#7c2bca family) is the CURRENT brand; design.md/web blue is stale (user correction — almost repainted mobile wrong). Open decision: re-hue web → purple. **D4 deferred** (shadcn refactor postponed until after color decision).
+- **Robustness**: API startup now sweeps orphaned pending/processing documents → `failed` with honest error message (in-memory text store can't survive restarts; found via Docker Desktop daemon crash killing the 500k test mid-pipeline).
+- **Known gap**: full 500k paste → ready run never observed end-to-end (daemon crash at batch ~16/41; mechanics proven by 50k run + partial progress). Re-run when convenient.
+- Docker Desktop daemon crashed twice today on its own — if API suddenly refuses connections, `systemctl --user restart docker-desktop` then `docker compose up -d postgres api`.
+
+## Physical phone test round 2 → Priority E fixes (2026-07-03)
+
+- User tested on the real phone: **boot loop GONE**, auth + upload + chat work ("pretty good almost done"). Five feedback items, all fixed same day (TASKS Priority E):
+  - **ERR-030** onboarding opt-out: "Дахиж харуулахгүй" checkbox was rendered but never read (`setOnboardingComplete(true)` unconditional). New policy: opt-out suppresses onboarding **only while the Better Auth session is valid**; expired/absent session → onboarding again. Onboarding routes directly to `/workspace`//`/login`, never back through `/`.
+  - **ERR-029** chat thread touch-scroll dead after long chats: full-screen sidebar-swipe `Gesture.Pan()` ate vertical drags. Fixed with `hitSlop({left:0,width:40})` + `activeOffsetX(15)` + `failOffsetY(±10)`; ScrollView padding moved to `contentContainerStyle`.
+  - Mobile MMR toggle (Composer Shuffle button + "MMR" pill on greeting bar, `useMMR` → `/chat`), paste counter `N / 500,000 тэмдэгт` (red + save disabled when over), sidebar "Шинэ чат"/close both `h-11`, suggested-question chips on mobile empty screen (web parity).
+- `pnpm typecheck` green (5/5). Needs one more phone pass to confirm.
+
 ## Current Next Step
 
-1. **Physical phone re-test (Priority A verification)** — onboarding → login → register → workspace → upload → chat on the real device.
+1. **Physical phone re-test (Priority E verification)** — onboarding checkbox policy, scroll after a long chat, MMR pill, paste counter.
 2. **Manual deploy to Azure VM (Priority 5)** — repo private → clone → prod `.env` → prod compose (static web behind Nginx, or Vercel for web) → SSL → NSG 80/443 → verify; add nightly `pg_dump` cron (Priority C leftover).
 3. **CI/CD (Priority 4, after manual deploy)**, then **EAS build (Priority 6)**.
 

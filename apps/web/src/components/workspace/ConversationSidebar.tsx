@@ -8,6 +8,7 @@ interface ConversationSidebarProps {
   activeId: string;
   onSelect: (id: string) => void;
   onNew: () => void;
+  loading?: boolean;
 }
 
 export function ConversationSidebar({
@@ -15,6 +16,7 @@ export function ConversationSidebar({
   activeId,
   onSelect,
   onNew,
+  loading = false,
 }: ConversationSidebarProps) {
   const [query, setQuery] = useState("");
 
@@ -64,9 +66,18 @@ export function ConversationSidebar({
 
       {/* List */}
       <div className="scrollbar-thin flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
-        {filtered.length === 0 && (
+        {loading &&
+          conversations.length === 0 &&
+          [0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-8 animate-pulse rounded-lg bg-secondary/40"
+              style={{ animationDelay: `${i * 120}ms` }}
+            />
+          ))}
+        {!loading && filtered.length === 0 && (
           <p className="py-6 text-center text-xs text-muted-foreground">
-            {query ? "Илэрц олдсонгүй" : "Одоогоор чат байхгүй."}
+            {query ? "Илэрц олдсонгүй" : "Одоогоор чат байхгүй — асуулт илгээхэд шинэ чат үүснэ."}
           </p>
         )}
         {filtered.map((conv) => {

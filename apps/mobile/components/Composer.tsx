@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { View, TextInput, Pressable, Text, ActivityIndicator } from "react-native";
-import { Plus } from "lucide-react-native";
+import { Plus, Shuffle } from "lucide-react-native";
 
 interface Props {
   onSend: (text: string) => void;
   onOpenPicker?: () => void;
   disabled?: boolean;
+  /** MMR rerank toggle — "Олон талт хариу" (mirrors the web composer pill). */
+  useMMR?: boolean;
+  onToggleMMR?: () => void;
 }
 
-export function Composer({ onSend, onOpenPicker, disabled }: Props) {
+export function Composer({ onSend, onOpenPicker, disabled, useMMR, onToggleMMR }: Props) {
   const [text, setText] = useState("");
 
   function handleSend() {
@@ -26,6 +29,19 @@ export function Composer({ onSend, onOpenPicker, disabled }: Props) {
           className="h-10 w-10 items-center justify-center rounded-full bg-muted/40"
         >
           <Plus size={18} color="#a1a1aa" />
+        </Pressable>
+      )}
+
+      {onToggleMMR && (
+        <Pressable
+          onPress={onToggleMMR}
+          accessibilityLabel="Олон талт хариу"
+          accessibilityState={{ selected: !!useMMR }}
+          className={`h-10 w-10 items-center justify-center rounded-full border ${
+            useMMR ? "border-primary/50 bg-primary/20" : "border-transparent bg-muted/40"
+          }`}
+        >
+          <Shuffle size={16} color={useMMR ? "#ceb3f6" : "#a1a1aa"} />
         </Pressable>
       )}
 

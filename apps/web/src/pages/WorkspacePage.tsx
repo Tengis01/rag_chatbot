@@ -16,8 +16,9 @@ import { useConfig } from "@/context/ConfigContext";
 import type { ChatMessage, Conversation, DocumentItem, SourceChunk } from "@/types";
 import { cn } from "@/lib/utils";
 import { WorkspaceTopBar } from "@/components/workspace/WorkspaceTopBar";
+import { useToast } from "@/components/layout/ToastProvider";
 import { ConversationSidebar } from "@/components/workspace/ConversationSidebar";
-import { ChatThread } from "@/components/workspace/ChatThread";
+import { ChatThread, ChatThreadSkeleton } from "@/components/workspace/ChatThread";
 import { Composer } from "@/components/workspace/Composer";
 import { SourcesPanel } from "@/components/workspace/SourcesPanel";
 
@@ -48,6 +49,13 @@ const SOURCE_TYPE_LABELS: Record<DocumentItem["sourceType"], string> = {
   pdf: "PDF",
   text: "текст",
 };
+
+// Suggested starter questions shown in the empty chat state (design.md §6.2 chips)
+const SUGGESTED_QUESTIONS = [
+  "Энэ баримтын гол санааг нэгтгэн хэлнэ үү",
+  "Хамгийн чухал 5 ойлголтыг жагсаана уу",
+  "Энэ баримтад юуны тухай өгүүлдэг вэ?",
+];
 
 // ---------------------------------------------------------------------------
 // Inline error banner appended into the thread instead of a global error bar
@@ -89,6 +97,7 @@ function InlineErrorBanner({ message, onRetry, onDismiss }: InlineErrorBannerPro
 
 export function WorkspacePage() {
   const config = useConfig();
+  const { toast } = useToast();
 
   // -------------------------------------------------------------------------
   // State
@@ -119,8 +128,11 @@ export function WorkspacePage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [lastSendParams, setLastSendParams] = useState<{ text: string; docIds: string[] } | null>(null);
 
-  // Global error bar (non-chat errors: load failures, upload errors)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Retrieval controls (Priority 8/9): MMR toggle + threshold/lambda sliders
+  const [useMMR, setUseMMR] = useState(true);
+  const [retrieval, setRetrieval] = useState({ threshold: 0.1, lambda: 0.5 });
+
+  const [loadingConversations, setLoadingConversations] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -215,7 +227,7 @@ export function WorkspacePage() {
       }
     } catch (err: unknown) {
       console.error(err);
-      setErrorMsg("Баримтын жагсаалтыг ачаалж чадсангүй.");
+      toast("Баримтын жагсаалтыг ачаалж чадсангүй.", "error");
     }
   };
 
@@ -225,7 +237,9 @@ export function WorkspacePage() {
       setConversations(res.conversations);
     } catch (err: unknown) {
       console.error(err);
-      setErrorMsg("Чатын жагсаалтыг ачаалж чадсангүй.");
+      toast("Чатын жагсаалтыг ачаалж чадсангүй.", "error");
+    } finally {
+      setLoadingConversations(false);
     }
   };
 
@@ -237,7 +251,7 @@ export function WorkspacePage() {
       setMessages(res.messages);
     } catch (err: unknown) {
       console.error(err);
-      setErrorMsg("Мессежийн түүхийг ачаалж чадсангүй.");
+      toast("Мессежийн түүхийг ачаалж чадсангүй.", "error");
     } finally {
       setLoadingMessages(false);
     }
@@ -268,12 +282,11 @@ export function WorkspacePage() {
 
     const maxSize = (config.maxUploadSizeMb ?? 20) * 1024 * 1024;
     if (selectedFile.size > maxSize) {
-      setErrorMsg(`Файл ${config.maxUploadSizeMb ?? 20} MB хязгаараас хэтэрсэн байна.`);
+      toast(`Файл ${config.maxUploadSizeMb ?? 20} MB хязгаараас хэтэрсэн байна.`, "error");
       return;
     }
 
     setUploadingFile(true);
-    setErrorMsg(null);
     try {
       const res = await api.uploadDocument(selectedFile);
       const newDoc: DocumentItem = {
@@ -287,9 +300,10 @@ export function WorkspacePage() {
       setSelectedDocumentIds((prev) => [...prev, newDoc.id]);
       setShowImportModal(false);
       setSelectedFile(null);
+      toast("Баримт хүлээн авлаа — боловсруулж эхэллээ.", "success");
     } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err instanceof Error ? err.message : "Файл оруулж чадсангүй.");
+      toast(err instanceof Error ? err.message : "Файл оруулж чадсангүй.", "error");
     } finally {
       setUploadingFile(false);
     }
@@ -300,7 +314,6 @@ export function WorkspacePage() {
     if (!pasteText.trim()) return;
 
     setPastingText(true);
-    setErrorMsg(null);
     try {
       const title = pasteTitle.trim() || "Хуулсан текст";
       const res = await api.pasteDocument(title, pasteText.trim());
@@ -316,9 +329,10 @@ export function WorkspacePage() {
       setShowImportModal(false);
       setPasteTitle("");
       setPasteText("");
+      toast("Текст хүлээн авлаа — боловсруулж эхэллээ.", "success");
     } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err instanceof Error ? err.message : "Текст хадгалж чадсангүй.");
+      toast(err instanceof Error ? err.message : "Текст хадгалж чадсангүй.", "error");
     } finally {
       setPastingText(false);
     }
@@ -342,6 +356,9 @@ export function WorkspacePage() {
         conversationId: activeConversationId,
         documentIds: docIds,
         message: text,
+        useMMR,
+        threshold: retrieval.threshold,
+        lambda: retrieval.lambda,
       });
 
       const assistantMsg: ChatMessage = {
@@ -375,7 +392,7 @@ export function WorkspacePage() {
       .map((d) => d.id);
 
     if (readyDocIds.length === 0) {
-      setErrorMsg("Асуулт асуухаас өмнө дор хаяж нэг бэлэн баримт сонгоно уу.");
+      toast("Асуулт асуухаас өмнө дор хаяж нэг бэлэн баримт сонгоно уу.", "error");
       return;
     }
 
@@ -393,24 +410,6 @@ export function WorkspacePage() {
   return (
     <div className="flex h-screen flex-col bg-background">
       <WorkspaceTopBar />
-
-      {/* Global non-chat error bar */}
-      <AnimatePresence>
-        {errorMsg && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="flex items-center justify-between border-b border-destructive/25 bg-destructive/10 px-6 py-2 text-xs text-red-400"
-          >
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-3.5 w-3.5" />
-              {errorMsg}
-            </div>
-            <button onClick={() => setErrorMsg(null)} className="px-1 hover:text-red-300">✕</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <div className={cn(
         "grid flex-1 grid-cols-1 overflow-hidden transition-all duration-300",
@@ -477,6 +476,7 @@ export function WorkspacePage() {
             <div className="flex-1 overflow-hidden">
               <ConversationSidebar
                 conversations={conversations}
+                loading={loadingConversations}
                 activeId={activeConversationId ?? ""}
                 onSelect={(id) => {
                   handleSelectConversation(id);
@@ -596,15 +596,20 @@ export function WorkspacePage() {
 
           {/* Loading messages state */}
           {loadingMessages ? (
-            <div className="flex flex-1 items-center justify-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin text-primary-glow" />
-              Түүх ачаалж байна…
-            </div>
+            <ChatThreadSkeleton />
           ) : (
             <ChatThread
               messages={messages}
               isLoading={isSending}
               documentNames={documentNameMap}
+              followUps={SUGGESTED_QUESTIONS}
+              onFollowUpClick={handleSend}
+              hasReadyDocuments={documents.some((d) => d.status === "ready")}
+              onUploadClick={() => {
+                setSelectedFile(null);
+                setActiveImportTab("file");
+                setShowImportModal(true);
+              }}
             />
           )}
 
@@ -633,6 +638,10 @@ export function WorkspacePage() {
                 setShowImportModal(true);
               }}
               disabled={isSending}
+              useMMR={useMMR}
+              onToggleMMR={() => setUseMMR((v) => !v)}
+              retrieval={retrieval}
+              onRetrievalChange={setRetrieval}
             />
           </div>
         </div>

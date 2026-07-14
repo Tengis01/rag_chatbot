@@ -19,6 +19,10 @@ const chatBodySchema = z.object({
   documentIds: z.array(z.string().uuid()).min(1),
   message: z.string().trim().min(1),
   useMMR: z.boolean().optional().default(true),
+  // Power-user retrieval controls (Priority 9). Defaults match the
+  // interim cross-lingual fix (ERR-021) — see DECISIONS.md before changing.
+  threshold: z.number().min(0).max(1).optional().default(0.1),
+  lambda: z.number().min(0).max(1).optional().default(0.5),
 });
 
 const NO_CONTEXT_REPLY =
@@ -72,8 +76,14 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       });
     }
 
-    const { conversationId: requestedConversationId, documentIds, message, useMMR } =
-      parsed.data;
+    const {
+      conversationId: requestedConversationId,
+      documentIds,
+      message,
+      useMMR,
+      threshold,
+      lambda,
+    } = parsed.data;
 
     try {
       const readyDocumentIds = await getReadyDocumentIds(user.id, documentIds);
@@ -99,8 +109,8 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
         user.id,
         readyDocumentIds,
         5,
-        0.1,
-        0.5,
+        threshold,
+        lambda,
         useMMR
       );
 

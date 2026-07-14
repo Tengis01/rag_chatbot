@@ -10,7 +10,7 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import { Menu, Sparkles, FileText, Send, X, Plus } from "lucide-react-native";
+import { Menu, Sparkles, FileText, Send, X, Plus, Shuffle } from "lucide-react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { api } from "../lib/api";
@@ -20,6 +20,13 @@ import { DocumentPicker } from "../components/DocumentPicker";
 import { Sidebar } from "../components/Sidebar";
 import { UploadModal } from "../components/UploadModal";
 import type { ChatMessage, DocumentItem, RawSourceChunk, SourceChunk } from "../types";
+
+// Starter questions on the empty screen (same list as the web workspace)
+const SUGGESTED_QUESTIONS = [
+  "Энэ баримтын гол санааг нэгтгэн хэлнэ үү",
+  "Хамгийн чухал 5 ойлголтыг жагсаана уу",
+  "Энэ баримтад юуны тухай өгүүлдэг вэ?",
+];
 
 export default function WorkspaceScreen() {
   // Sidebar State
@@ -41,6 +48,9 @@ export default function WorkspaceScreen() {
 
   // Greeting Ask Bar Input State
   const [greetingText, setGreetingText] = useState("");
+
+  // MMR rerank toggle (default on — matches the backend default)
+  const [useMMR, setUseMMR] = useState(true);
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -193,6 +203,7 @@ export default function WorkspaceScreen() {
         conversationId,
         documentIds: selectedIds,
         message: text,
+        useMMR,
       });
       setConversationId(res.conversationId);
       const assistantMsg: ChatMessage = {
@@ -220,15 +231,21 @@ export default function WorkspaceScreen() {
 
   const startX = useSharedValue(0);
 
-  // Swipe gesture to open sidebar (swiping right from left edge)
+  // Swipe gesture to open sidebar (swiping right from left edge).
+  // Must NOT capture vertical drags — an unconstrained Pan on the whole
+  // screen steals touches from the chat ScrollView and scrolling dies
+  // (ERR-029). hitSlop limits recognition to the left 40px; activeOffsetX
+  // requires horizontal intent; failOffsetY hands vertical moves back.
   const swipeGesture = Gesture.Pan()
+    .hitSlop({ left: 0, width: 40 })
+    .activeOffsetX(15)
+    .failOffsetY([-10, 10])
     .onStart((event) => {
       "worklet";
       startX.value = event.x;
     })
     .onUpdate((event) => {
       "worklet";
-      // Detect swipe right starting close to left edge (x < 40)
       if (startX.value < 40 && event.translationX > 50) {
         runOnJS(setSidebarOpen)(true);
       }
@@ -314,18 +331,38 @@ export default function WorkspaceScreen() {
                   </View>
 
                   <View className="flex-row items-center justify-between mt-4 pt-3 border-t border-border/40">
-                    {/* Document Selector Pill */}
-                    <Pressable
-                      onPress={handleOpenPicker}
-                      className="flex-row items-center gap-2 bg-muted rounded-full px-3 py-1.5"
-                    >
-                      <FileText size={14} color="#ceb3f6" />
-                      <Text className="text-xs text-muted-foreground font-medium">
-                        {selectedIds.length === 0
-                          ? "Баримт бичиг сонгох"
-                          : `${selectedIds.length} баримт сонгосон`}
-                      </Text>
-                    </Pressable>
+                    {/* Document Selector + MMR Pills */}
+                    <View className="flex-row items-center gap-2 flex-1 mr-2">
+                      <Pressable
+                        onPress={handleOpenPicker}
+                        className="flex-row items-center gap-2 bg-muted rounded-full px-3 py-1.5"
+                      >
+                        <FileText size={14} color="#ceb3f6" />
+                        <Text className="text-xs text-muted-foreground font-medium">
+                          {selectedIds.length === 0
+                            ? "Баримт бичиг сонгох"
+                            : `${selectedIds.length} баримт сонгосон`}
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => setUseMMR((v) => !v)}
+                        className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 border ${
+                          useMMR
+                            ? "border-primary/50 bg-primary/20"
+                            : "border-transparent bg-muted"
+                        }`}
+                      >
+                        <Shuffle size={12} color={useMMR ? "#ceb3f6" : "#a1a1aa"} />
+                        <Text
+                          className={`text-xs font-medium ${
+                            useMMR ? "text-primary-light" : "text-muted-foreground"
+                          }`}
+                        >
+                          MMR
+                        </Text>
+                      </Pressable>
+                    </View>
 
                     {/* Send Button */}
                     <Pressable
@@ -339,6 +376,20 @@ export default function WorkspaceScreen() {
                     </Pressable>
                   </View>
                 </View>
+
+                {/* Suggested starter questions (same list as web) */}
+                <View className="w-full mt-4 gap-2">
+                  {SUGGESTED_QUESTIONS.map((q) => (
+                    <Pressable
+                      key={q}
+                      onPress={() => handleSend(q)}
+                      className="flex-row items-center gap-2 rounded-xl border border-border bg-card/60 px-4 py-3 active:bg-muted"
+                    >
+                      <Sparkles size={13} color="#ceb3f6" />
+                      <Text className="flex-1 text-xs text-muted-foreground">{q}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             </ScrollView>
           ) : (
@@ -346,7 +397,8 @@ export default function WorkspaceScreen() {
             <View className="flex-1">
               <ScrollView
                 ref={scrollRef}
-                className="flex-1 px-4 py-4"
+                className="flex-1 px-4"
+                contentContainerStyle={{ paddingVertical: 16 }}
                 keyboardShouldPersistTaps="handled"
               >
                 {messages.map((msg) => (
@@ -370,7 +422,13 @@ export default function WorkspaceScreen() {
               </ScrollView>
 
               {/* Composer */}
-              <Composer onSend={handleSend} onOpenPicker={handleOpenPicker} disabled={isSending} />
+              <Composer
+                onSend={handleSend}
+                onOpenPicker={handleOpenPicker}
+                disabled={isSending}
+                useMMR={useMMR}
+                onToggleMMR={() => setUseMMR((v) => !v)}
+              />
             </View>
           )}
 

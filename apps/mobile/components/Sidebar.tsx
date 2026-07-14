@@ -157,12 +157,15 @@ export function Sidebar({
             <View className="flex-row items-center justify-between pb-4">
               <Pressable
                 onPress={() => handleSelect(undefined)}
-                className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary py-3 px-4 shadow-glow"
+                className="h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary px-4 shadow-glow"
               >
                 <Plus size={16} color="#fafafa" strokeWidth={2.5} />
                 <Text className="text-sm font-semibold text-white">Шинэ чат</Text>
               </Pressable>
-              <Pressable onPress={closeDrawer} className="ml-2 p-2 rounded-lg bg-muted">
+              <Pressable
+                onPress={closeDrawer}
+                className="ml-2 h-11 w-11 items-center justify-center rounded-xl bg-muted"
+              >
                 <X size={16} color="#a1a1aa" />
               </Pressable>
             </View>

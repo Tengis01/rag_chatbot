@@ -96,3 +96,13 @@ export function getApiBaseSync(): string {
 export function invalidateApiBase(): void {
   resolvedBase = null;
 }
+
+/** Race a promise against a timeout (boot-time session checks must never hang). */
+export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), ms)
+    ),
+  ]);
+}
