@@ -18,6 +18,10 @@
 \newcommand{\singlespace} {
   \renewcommand{\baselinestretch}{0.9}\small\normalsize
 }
+% Үндсэн эх бичвэрийн мөр хоорондын зай — Word-ийн "1.0" -тай тэнцүү.
+\newcommand{\normalspace} {
+  \renewcommand{\baselinestretch}{1.0}\small\normalsize
+}
 \singlespace
 
 %
@@ -315,11 +319,12 @@ IV ангийн оюутан: &\@aothura\ (\@sisiIda)
 }
 % Numbers chapters, sections, and subsections
 \setcounter{secnumdepth}{2}
-% Center section titles 
-\renewcommand{\section}{\@startsection{section}{1}{0 in}{1em}{1em}{\raggedright\large\textbf}}
-% Center and italicize subsection titles
-\renewcommand{\subsection}{\@startsection{subsection}{2}{0 in}{1em}{1em}
-{\raggedright\slshape\textbf}}
+% Section titles: гарчгийн өмнөх зай дараахаасаа их байх нь гарчгийг
+% дараагийн бичвэртэй нь холбож харагдуулна.
+\renewcommand{\section}{\@startsection{section}{1}{0 in}%
+{1.8em plus .3em minus .2em}{0.7em}{\raggedright\large\textbf}}
+\renewcommand{\subsection}{\@startsection{subsection}{2}{0 in}%
+{1.4em plus .2em minus .2em}{0.5em}{\raggedright\slshape\textbf}}
 
 
 % This is a bit of a hack.  I couldn't figure out a better way, but surely there
