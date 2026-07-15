@@ -404,14 +404,18 @@ Build the RAG backend pipeline and real chat UI.
 - [x] 6.4 Асуудал 3 boot loop (3 compounding bugs, emulator-vs-phone diagnosis difficulty)
 - [x] 6.5 Performance table (3k/50k/500k rows; 500k honestly marked partially-verified)
 
-**Бүлэг 7 — Ур чадвар** (~1–1.5 pages)
+**Бүлэг 7 — Ур чадвар ✅ done (2026-07-15)** — 2 pages
 
-- [ ] Prose from skeleton bullets + user's personal notes on org experience
+- [x] 7.1 theory→practice (papers→code, hypothesis testing w/ 0.35 measurement, zero-budget tradeoffs)
+- [x] 7.2 engineering practices (backend/SQL/migrations, rate-limit patterns, cross-platform, auth/security mindset, Docker/monorepo)
+- [x] 7.3 working methods (layered diagnosis, ERR-NNN/decision-log culture, verification-based dev, honest gap reporting)
+- [ ] (optional) weave in user's personal notes on org experience once org known
 
-**Бүлэг 8 — Дүгнэлт** (~1.5–2 pages)
+**Бүлэг 8 — Дүгнэлт ✅ done (2026-07-15)** — 2 pages
 
-- [ ] Plan fulfillment 12/12 + honest deviations (BullMQ→setImmediate, SSE dropped — MVP justification)
-- [ ] Proposal to organization (required by удирдамж §3.3) + future work (query translation, EAS, CI/CD)
+- [x] 8.1 Plan fulfillment 12/12 + honest deviations (BullMQ→setImmediate, SSE dropped, threshold 0.7→0.1 interim) + unplanned extra (mobile client)
+- [x] 8.2 Proposal to organization (удирдамж §3.3): internal knowledge assistant / help-center first line; org-agnostic wording (org still unknown); 3 preconditions (hosting+backup, paid-tier evaluation, access-policy)
+- [x] 8.3 Future work: query translation, prod deploy+CI/CD, EAS, OCR, streaming
 
 **Finishing**
 
@@ -424,9 +428,21 @@ Build the RAG backend pipeline and real chat UI.
 
 ---
 
-## Docs & Diagrams
+## Docs & Diagrams ✅ (2026-07-15)
 
-- [x] `docs/diagrams/sequence.md` — Chat workflow sequence diagram (Mermaid)
-- [ ] `docs/diagrams/sequence.md` — Add ingestion pipeline sequence diagram
-- [ ] `docs/diagrams/er.md` — Database ER diagram
-- [ ] `docs/diagrams/use-case.md` — User flow use case diagram
+- [x] `docs/diagrams/sequence/chat-workflow.md` — Chat workflow sequence diagram (Mermaid); fallback chain corrected to `gemini-2.5-pro → flash → flash-lite` (was stale 2-model chain)
+- [x] `docs/diagrams/sequence/ingestion-pipeline.md` — Ingestion pipeline sequence diagram (upload/paste → pending → chunker → batched embedder w/ backoff loop → tx vector store → ready/failed + polling loop; key-properties notes)
+- [x] `docs/diagrams/er.md` — Full ER diagram (5 app tables + 4 Better Auth tables incl. session/account/verification, CASCADE/denorm/JSONB-snapshot annotations + design-notes section)
+- [x] `docs/diagrams/use-case.md` — Use case diagram (11 use cases grouped auth/docs/chat with include/extend edges) + happy-path user flow chart
+- All mermaid blocks validated with mmdc (render clean)
+
+### Diagram set round 2 — Core UML + C4 (2026-07-15, user-approved plan)
+
+- [x] `docs/diagrams/state.md` — document lifecycle state diagram (incl. restart-sweep edges) + mobile routing state diagram (ERR-030 no-path-back-to-onboarding policy)
+- [x] `docs/diagrams/sequence/auth-flow.md` — signup/login (web cookie vs mobile SecureStore rects) + protected-request 401 guard sequence
+- [x] `docs/diagrams/deployment.md` — current Docker Compose topology + planned Azure VM "Monarch" prod topology (Nginx/SSL/NSG/pg_dump)
+- [x] `docs/diagrams/c4.md` — C4 Level 1 Context + Level 2 Container (container level marked docs-only: architecture.png already covers it in report)
+- [x] Report figures added (5 new .mmd sources + PNGs): c4-context → 4.1, doc-state → 4.4 (Зураг 4.4), auth-sequence → 5.3 (Зураг 5.3), mobile-routing → 5.5 (Зураг 5.4), deployment → 5.6 (Зураг 5.5)
+- [x] Fixed while inserting: ER figure moved after design-decisions list (page-gap), doc-state width 0.58\textwidth to fit, modules table col 3.6→4.7cm (`modules/conversations` overflowed — pre-existing)
+- [x] Report 32 pages, clean compile, 0 undefined refs
+- Deselected by user: code-level diagrams (component/class/DFD), Gantt

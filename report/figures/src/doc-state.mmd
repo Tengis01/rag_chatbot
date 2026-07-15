@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> pending : POST /documents/upload | /paste<br/>(INSERT + шууд 201 хариу)
+    pending --> processing : setImmediate → processDocument()
+    processing --> ready : бүх chunk + embedding хадгалагдав<br/>(chunk_count бичигдэнэ)
+    processing --> failed : pipeline алдаа<br/>(error_message бичигдэнэ)
+    pending --> failed : API restart sweep<br/>(түр санах ойн текст алдагдсан)
+    processing --> failed : API restart sweep
+    ready --> [*] : DELETE (chunks CASCADE устна)
+    failed --> [*] : DELETE
+
+    note right of ready
+        Зөвхөн ready баримт чатад
+        сонгогдоно — /chat бусдыг
+        400-аар няцаана
+    end note

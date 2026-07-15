@@ -1,0 +1,28 @@
+sequenceDiagram
+    actor User as "Хэрэглэгч"
+    participant Cl as "Клиент (вэб / мобайл)"
+    participant API as "Fastify API"
+    participant BA as "Better Auth (in-process)"
+    participant DB as "PostgreSQL"
+
+    User->>Cl: имэйл + нууц үг
+    Cl->>API: POST /api/auth/sign-up/email
+    API->>BA: Fetch-bridge (Fastify → Request)
+    BA->>DB: INSERT "user" (UUID id)
+    BA->>DB: INSERT "account" (scrypt hash)
+    BA->>DB: INSERT "session" (token, expiresAt)
+    BA-->>Cl: Set-Cookie: session token
+    note over Cl: Вэб — хөтчийн cookie<br/>Мобайл — SecureStore (шифрлэгдсэн)
+
+    User->>Cl: баримтын жагсаалт харах
+    Cl->>API: GET /documents (Cookie толгойтой)
+    API->>BA: requireUser() → getSession(headers)
+    BA->>DB: SELECT "session" JOIN "user" WHERE token
+
+    alt session хүчинтэй
+        BA-->>API: user
+        API->>DB: SELECT ... WHERE user_id = user.id
+        API-->>Cl: 200 (зөвхөн өөрийн өгөгдөл)
+    else session байхгүй / дууссан
+        API-->>Cl: 401 Unauthorized
+    end

@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph Host["Хөгжүүлэгчийн машин"]
+        subgraph Compose["Docker Compose (нэг network)"]
+            PG[("postgres<br/>pgvector/pgvector:pg16<br/>127.0.0.1:5432")]
+            APIC["api<br/>Node + Fastify (ESM)<br/>:4000"]
+            WEBC["web<br/>Vite dev server<br/>:5173"]
+            PGA["pgadmin<br/>(--profile tools)<br/>127.0.0.1:5050"]
+        end
+        VOL1[/"postgres_data<br/>named volume"/]
+        VOL2[/"pgadmin_data"/]
+        ENV["apps/api/.env<br/>GEMINI_API_KEY · BETTER_AUTH_SECRET<br/>DATABASE_URL"]
+    end
+
+    Browser["Вэб хөтөч<br/>(localhost / LAN IP)"] -->|":5173"| WEBC
+    Browser -->|":4000"| APIC
+    Phone["Утас — Expo Go<br/>(LAN, api-base probe)"] -->|":4000"| APIC
+    APIC -->|"pg Pool"| PG
+    PGA -.-> PG
+    PG === VOL1
+    PGA === VOL2
+    ENV -.-> APIC
+    APIC -->|"HTTPS REST"| GEM["Gemini API<br/>(цорын ганц гадаад хамаарал)"]

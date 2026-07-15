@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> Root : апп нээгдэв ("/")
+    Root : Root loader (index.tsx)
+    Root : api-base зэрэгцээ probe + getSession — 5с timeout
+
+    Root --> Workspace : session ✓ ба алгасах ✓
+    Root --> Onboarding : session ✓, алгасах ✗
+    Root --> Onboarding : session ✗ (алгасах хүчингүй болсон)
+    Root --> Login : API хүрэхгүй, алгасах ✓
+    Root --> Onboarding : API хүрэхгүй, алгасах ✗
+
+    Onboarding --> Workspace : «Эхлэх» (session ✓)
+    Onboarding --> Login : «Эхлэх» (session ✗)
+    Login --> Workspace : нэвтрэлт амжилттай
+    Workspace --> Login : гарах (session устна)
+
+    note right of Onboarding
+        "/" руу буцах шилжилт байхгүй —
+        boot loop дахин үүсэх боломжгүй
+    end note

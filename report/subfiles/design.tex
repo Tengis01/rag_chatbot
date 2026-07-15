@@ -7,6 +7,18 @@
 
 \section{Системийн ерөнхий архитектур}
 
+Системийн хил хязгаар, гадаад харилцааг C4 загварын нэгдүгээр түвшний
+(System Context) диаграмаар Зураг~\ref{fig:c4-context}-д үзүүлэв: систем
+хэрэглэгчид вэб болон мобайл аппаар үйлчилж, гаднаас зөвхөн Gemini API-тай
+харилцана.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\textwidth]{c4-context.png}
+  \caption{Системийн хүрээ (C4 Level 1 --- System Context)}
+  \label{fig:c4-context}
+\end{figure}
+
 Системийг pnpm workspace болон Turborepo дээр суурилсан monorepo хэлбэрээр
 зохион байгуулав. Нэг репозиторид гурван аппликейшн
 (\texttt{apps/api}, \texttt{apps/web}, \texttt{apps/mobile}) болон дундын
@@ -102,17 +114,8 @@ Docker Compose &
 \texttt{conversations}, \texttt{messages}), холбоос хүснэгт
 (\texttt{conversation\_documents}) болон Better Auth-ийн хэрэглэгчийн
 хүснэгтүүд (\texttt{user}, \texttt{session}, \texttt{account},
-\texttt{verification}) нэг санд зэрэгцэн байрлана.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.95\textwidth]{er-diagram.png}
-  \caption{Өгөгдлийн сангийн ER диаграм (session, account, verification
-  хүснэгтүүдийг товчлов)}
-  \label{fig:er-diagram}
-\end{figure}
-
-Зохиомжийн гол шийдвэрүүд:
+\texttt{verification}) нэг санд зэрэгцэн байрлана. Зохиомжийн гол
+шийдвэрүүд:
 
 \begin{itemize}
 \item \textbf{VECTOR(768) багана.} Хэсэг бүрийн embedding нь
@@ -136,6 +139,14 @@ $O(\log n)$ орчим хугацаанд гүйцэтгэхийн тулд \tex
 яриа устахад бүх мессеж автоматаар устдаг тул орфан бичлэг үүсэхгүй.
 \end{itemize}
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{er-diagram.png}
+  \caption{Өгөгдлийн сангийн ER диаграм (session, account, verification
+  хүснэгтүүдийг товчлов)}
+  \label{fig:er-diagram}
+\end{figure}
+
 Бүтцийн өөрчлөлтийн удирдлагыг хоёр үе шаттай зохион байгуулав: анхны бүтэц
 \texttt{infra/postgres/init/} доторх SQL файлуудаар шинэ volume үүсэх үед
 нэг удаа тавигдана, харин үүнээс хойшхи бүх өөрчлөлт
@@ -151,8 +162,8 @@ $O(\log n)$ орчим хугацаанд гүйцэтгэхийн тулд \tex
 файлуудыг агуулдаг тул нэг функцийг өөрчлөхөд хамрах хүрээ нь тодорхой
 байдаг. Хүснэгт~\ref{tab:modules}-д модулиудын үүргийг нэгтгэв.
 
-\begin{longtable}{|>{\raggedright\arraybackslash}m{3.6cm}
-                  |>{\raggedright\arraybackslash}m{11.8cm}|}
+\begin{longtable}{|>{\raggedright\arraybackslash}m{4.7cm}
+                  |>{\raggedright\arraybackslash}m{10.7cm}|}
 \caption{Серверийн модулиуд ба тэдгээрийн үүрэг}
 \label{tab:modules}
 \\ \hline
@@ -191,11 +202,19 @@ RAG урсгалын зохицуулалт: валидац, баримтын т
 \end{longtable}
 
 Баримт нь \texttt{pending} $\rightarrow$ \texttt{processing} $\rightarrow$
-\texttt{ready} эсвэл \texttt{failed} гэсэн төлөвийн машинаар дамждаг
-(Зураг~\ref{fig:ingestion-flow}), харин чатын хүсэлтийн бүрэн дарааллыг
-Зураг~\ref{fig:chat-sequence}-д үзүүлсэн. Клиентэд өгөх тохиргоог
+\texttt{ready} эсвэл \texttt{failed} гэсэн төлөвийн машинаар дамждаг бөгөөд
+төлөвийн бүрэн диаграмыг Зураг~\ref{fig:doc-state}-д, боловсруулалтын
+урсгалыг Зураг~\ref{fig:ingestion-flow}-д, харин чатын хүсэлтийн бүрэн
+дарааллыг Зураг~\ref{fig:chat-sequence}-д үзүүлсэн. Клиентэд өгөх тохиргоог
 (файлын дээд хэмжээ, тэмдэгтийн хязгаар зэрэг) \texttt{.env} файлаас биш
 \texttt{GET /config} endpoint-оос авдаг зарчим баримталсан тул хязгаарын
 өөрчлөлт клиентийн build шаардахгүй.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.58\textwidth]{doc-state.png}
+  \caption{Баримтын төлөвийн машин (UML state diagram)}
+  \label{fig:doc-state}
+\end{figure}
 
 \end{document}

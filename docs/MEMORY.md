@@ -104,6 +104,10 @@ Project moved to report-writing phase (МУИС үйлдвэрлэлийн да�
 
 ### Report progress (2026-07-15)
 
+- Typography pass (user feedback "looks unfeeling, line spacing too far"): body line spacing 1.66→1.0 — root cause was `\doublespace` at end of main-pre.tex applying to whole body; new `\normalspace` command (baselinestretch 1.0) in dics.sty, used in main-pre.tex. TOC/lists keep doublespace (template convention). Section heading skips rebalanced in dics.sty: more space above than below (section 1.8em/0.7em, subsection 1.4em/0.5em, was 1em/1em). Report 37→30 pages. Also added future-work bullet to 8.3: structured table extraction + multimodal image/diagram indexing from PDFs (user request).
+
+- Ch7 Ур чадвар + Ch8 Дүгнэлт WRITTEN (2 pages each, body pp. 26–29): Ch7 = 7.1 theory→practice / 7.2 engineering practices / 7.3 methods (ERR-log, layered diagnosis, honest verification). Ch8 = 8.1 plan 12/12 with honest deviations (BullMQ→setImmediate, SSE dropped, threshold interim) + mobile as unplanned extra; 8.2 org proposal kept ORG-AGNOSTIC (org still unknown — revisit wording if user wants org-specific detail); 8.3 future work (query translation, deploy+CI/CD, EAS, OCR, streaming). Report ~37 pages, compiles clean. TEXT of all chapters now done EXCEPT Ch2 (blocked on user org info). Other remaining: screenshots 5.4/5.5, \nocite{*} removal (fastify/betterauth/expo still uncited), title-page blanks, signed scans, TNR font swap.
+
 - Ch3 Даалгаврын тодорхойлолт ба судалгаа WRITTEN (5 pages, body pp. 4–8): 3.1 problem statement + 6 requirements incl. zero-budget; 3.2 RAG theory \cite{lewis2020rag} + new rag-flow.png (figures/src/rag-flow.mmd, conceptual 3-stage diagram); 3.3 cosine formula + HNSW + pgvector-vs-dedicated choice + cross-lingual caveat forward-ref → 6.2; 3.4 GENERAL MMR formula (abstract sim₁/sim₂ per Carbonell — concrete Jaccard version stays in Ch5, no duplication); 3.5 Gemini selection + free-tier RPM/TPM/RPD framing forward-ref → 6.3. Figure placed AFTER the RAG-advantages paragraph (with [H] before it, ⅓ page blank appeared on p.5). Report 34 pages, compiles clean, all refs/cites resolve. Remaining: Ch2 (company — user info), Ch7 (skills), Ch8 (дүгнэлт); screenshots 5.4/5.5.
 
 - Ch6 Туршилт ба үр дүн WRITTEN (4 pages): methodology + 3 problem stories (ERR-021 cross-lingual w/ masking-layers insight; ERR-027/028 w/ TPM empirics and bind-mount lesson; boot loop w/ 3 compounding bugs) + performance longtable (500k row honestly marked as partially verified — daemon crash). Labels sec:problem-crosslingual / -large-paste / -bootloop live here (Ch4/Ch5 refs point at them). Report 30 pages. Chapters remaining: 3 (судалгаа), 2 (company — needs user info), 7 (skills), 8 (дүгнэлт); screenshots for 5.4/5.5.
@@ -116,6 +120,14 @@ Project moved to report-writing phase (МУИС үйлдвэрлэлийн да�
 - Cross-refs: implementation.tex references `sec:problem-crosslingual` / `sec:problem-large-paste` labels now placed in results.tex (Ch6) — keep them when writing Ch6.
 - Screenshot placeholders (commented \includegraphics + TODO) in 5.4/5.5 wait for user-captured PNGs in report/figures/.
 - Plan table col 2 narrowed 8cm→7.3cm (was overfull). Remaining known overfulls: long uppercase chapter titles (template quirk, cosmetic).
+
+## Diagram set round 2 — Core UML + C4 (2026-07-15 late)
+
+User wanted "every possible useful diagram like requirement standards"; approved plan = Core UML + C4 (deselected code-level + Gantt). NEW: `docs/diagrams/state.md` (doc lifecycle + mobile routing states), `docs/diagrams/sequence/auth-flow.md`, `docs/diagrams/deployment.md` (compose + Azure target), `docs/diagrams/c4.md` (Context + Container; Container is docs-only since architecture.png covers that level in report). Report got 5 new figures (src in figures/src/): c4-context (4.1), doc-state (4.4), auth-sequence (5.3), mobile-routing (5.5), deployment (5.6). Layout fixes: ER figure moved after 4.3 bullet list, doc-state at 0.58\textwidth, modules table col widened 3.6→4.7cm (mono `modules/conversations` overflowed cell — pre-existing bug). c4-context.png was magick-trimmed (mermaid C4 renders with huge margins). Report 32 pages, clean. VS Code mermaid preview: Ctrl+Shift+V / Ctrl+K V (bierner.markdown-mermaid installed).
+
+## Docs & Diagrams complete (2026-07-15)
+
+All four TASKS "Docs & Diagrams" items done (report paused per user): NEW `docs/diagrams/sequence/ingestion-pipeline.md` (full upload/paste→ready sequence incl. backoff loop + notes), NEW `docs/diagrams/er.md` (5 app + 4 auth tables, design-notes), NEW `docs/diagrams/use-case.md` (use-case diagram + happy-path flow). FIXED stale fallback chain in `docs/diagrams/sequence/chat-workflow.md` (now pro→flash→flash-lite per generator.ts). All mermaid blocks validated via mmdc. Note: TASKS previously said `sequence.md` flat file — actual convention is `sequence/` folder.
 
 ## Current Next Step
 

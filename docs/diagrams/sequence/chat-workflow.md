@@ -44,15 +44,15 @@ participant Gen as "Generator"
         API-->>UI: {reply: NO_CONTEXT_REPLY, sources: []}
     else chunks байна
         API->>Gen: generateAnswer(message, chunks)
-        Gen->>Gem: gemini-2.5-flash system prompt + context
+        Gen->>Gem: gemini-2.5-pro system prompt + context
 
         alt 429 / 503 error
             Gem-->>Gen: rate limit
             Gen->>Gem: retry attempt=1
         end
 
-        alt 2.5-flash амжилтгүй
-            Gen->>Gem: gemini-2.5-flash-lite fallback
+        alt загвар амжилтгүй
+            Gen->>Gem: fallback гинж: gemini-2.5-flash → gemini-2.5-flash-lite
         end
 
         Gem-->>Gen: assistantReply

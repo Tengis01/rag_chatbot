@@ -181,7 +181,15 @@ cookie-г хөтчийн стандарт механизмаар (\texttt{creden
 асуулга --- баримтын жагсаалтаас эхлээд \texttt{match\_chunks} функцийн дотоод
 шүүлт хүртэл --- \texttt{user\_id}-аар хязгаарлагддаг. Ингэснээр нэг
 хэрэглэгчийн асуулт, хайлт, түүх нөгөө хэрэглэгчийн өгөгдөлд ямар ч нөхцөлд
-хүрч чадахгүй.
+хүрч чадахгүй. Бүртгэлээс хамгаалагдсан хүсэлт хүртэлх бүрэн дарааллыг
+Зураг~\ref{fig:auth-sequence}-д үзүүлэв.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{auth-sequence.png}
+  \caption{Нэвтрэлтийн дараалал: бүртгэл, session үүсэлт, 401 хамгаалалт}
+  \label{fig:auth-sequence}
+\end{figure}
 
 \section{Вэб клиент}
 
@@ -228,7 +236,17 @@ API-ийн хаягийг тогтмол бичихийн оронд ажилл�
 Native-д зориулсан Tailwind) гүйцэтгэнэ. Апп нээгдэхэд танилцуулга
 (onboarding) $\rightarrow$ нэвтрэх $\rightarrow$ ажлын талбар гэсэн дарааллаар
 чиглүүлдэг бөгөөд танилцуулгыг алгасах сонголт зөвхөн хүчинтэй session байгаа
-үед үйлчилнэ.
+үед үйлчилнэ. Чиглүүлэлтийн бүрэн бодлогыг Зураг~\ref{fig:mobile-routing}-д
+үзүүлэв; танилцуулгаас эхлэлийн \texttt{"/"} зам руу буцах шилжилт огт
+байхгүй байх нь \ref{sec:problem-bootloop} хэсэгт өгүүлэх boot loop алдааны
+засварын гол зарчим юм.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{mobile-routing.png}
+  \caption{Мобайл аппын чиглүүлэлтийн төлөвийн диаграм}
+  \label{fig:mobile-routing}
+\end{figure}
 
 Мобайл орчны нэг онцлог бэрхшээл нь API серверийн хаяг тодорхойгүй байдаг явдал
 юм: Android эмулятор хост машиныг \texttt{10.0.2.2} гэж хардаг бол бодит утас
@@ -276,7 +294,16 @@ resolving = Promise.any(candidateList().map(probe))
 холбогдсон), \texttt{api} (4000 порт) болон \texttt{web} (5173 порт). Мөн
 өгөгдлийн санг вэбээс удирдах pgAdmin-ийг сонголтоор (\texttt{--profile
 tools}) асаах боломжтой. Өгөгдөл named volume-д хадгалагддаг тул image дахин
-build хийхэд устдаггүй.
+build хийхэд устдаггүй. Бүрэн байршуулалтын топологийг ---
+хэрэглэгчийн төхөөрөмжүүд, контейнерууд, volume-ууд болон гадаад Gemini
+API-ийн холболтыг --- Зураг~\ref{fig:deployment}-д үзүүлэв.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{deployment.png}
+  \caption{Байршуулалтын диаграм: Docker Compose орчин}
+  \label{fig:deployment}
+\end{figure}
 
 Image build хийх хугацааг багасгахын тулд Docker-ийн layer cache-д тааруулсан
 дараалал ашиглав: эхлээд зөвхөн багц менежерийн файлуудыг хуулж хамаарлуудыг
