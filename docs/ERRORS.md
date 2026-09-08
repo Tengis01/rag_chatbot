@@ -925,6 +925,8 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 | Code edited on host but container still runs OLD code (bind mount) | Docker Desktop file sharing misses inode-replacing writes; `docker compose restart <svc>` re-reads files — verify with `docker exec <c> grep` before debugging "impossible" behavior (ERR-028) |
 | Mobile chat screen stops responding to touch scroll (programmatic scroll still works) | A full-screen `Gesture.Pan()` (sidebar edge-swipe) captures vertical drags before the ScrollView; constrain it with `hitSlop({left:0,width:40})` + `activeOffsetX` + `failOffsetY` (ERR-029) |
 | Onboarding skipped even though "Дахиж харуулахгүй" was NOT checked | `handleStart` persisted `true` unconditionally; persist the actual checkbox value and only suppress onboarding while the login session is valid (ERR-030) |
+| Report patch rejected because expected lines do not exist | Re-read the exact source paragraph and remove the mismatched hunk before reapplying (ERR-031) |
+| Report prose extends into the margin after editing | Use `\path{...}` for long file paths and shorten surrounding prose; check the final LaTeX log and rendered page (ERR-032) |
 
 ---
 
@@ -1263,3 +1265,66 @@ Boot gate now: session valid + opted out → `/workspace`; session valid + not o
 #### Lesson
 
 **Rendering a setting is not honoring it — trace every persisted flag from the UI control that sets it to the code that reads it. And tie "don't show again" suppressions to an explicit lifetime (here: the login session), not forever.**
+
+---
+
+### ERR-031 — Editorial patch rejected due to mismatched source lines
+
+**Date**: 2026-09-08
+**Status**: ✅ Fixed
+
+#### What happened
+
+An `apply_patch` call for the report failed with `Failed to find expected lines in .../report/subfiles/implementation.tex`, showing the expected two lines `баримт` and `хагас дутуу хадгалагдах боломжгүй.`. Neither file in that call was changed.
+
+#### Root cause
+
+An unnecessary no-op hunk split the existing paragraph at a line break that was not in the source. Patch context must match the physical source lines, not their rendered appearance.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `report/subfiles/design.tex` | Applied the intended editorial changes in the corrected patch |
+| `report/subfiles/implementation.tex` | Replaced the paragraph using its actual source context |
+| `docs/ERRORS.md` | Recorded the failure and correction |
+
+#### Fix
+
+Read the current paragraphs with `sed`, confirmed the failed call had not changed them, removed the mismatched no-op hunk, and reapplied the editorial patch with exact context. The corrected patch succeeded.
+
+#### Lesson
+
+Copy patch context from the current source and omit hunks that do not change anything.
+
+---
+
+### ERR-032 — Long inline paths overflowed report body text after prose edits
+
+**Date**: 2026-09-08
+**Status**: ✅ Fixed
+
+#### What happened
+
+`cd report && latexmk` succeeded, but `main.log` reported new body-text `Overfull \\hbox` warnings of 72.7944pt in the migration paragraph, 18.76695pt in the smoke-test paragraph, and 2.5821pt in the MMR paragraph. Existing body overflows of 30.53093pt (`messages.sources`) and 28.03227pt (init path) were also visible when comparing the previous log.
+
+#### Root cause
+
+Long paths inside `\texttt{...}` could not break at directory separators, and revised surrounding sentences left insufficient line space. Repeated long terminology in the MMR paragraph also exceeded the line width.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `report/subfiles/design.tex` | Used `\path{...}` for migration paths and shortened the JSONB explanation |
+| `report/subfiles/implementation.tex` | Removed a repeated expansion of MMR already defined in the research chapter |
+| `report/subfiles/results.tex` | Shortened the smoke-test introduction and used `\path{scripts/smoke-test.sh}` |
+| `docs/ERRORS.md` | Recorded the layout issue and verification |
+
+#### Fix
+
+Rebuilt with `latexmk -silent` and checked `main.log`. All body-text overflows were eliminated. The three remaining overflow warnings match the pre-existing title-page and uppercase chapter-heading warnings (17pt, 15.64577pt, 23.3929pt). The resulting PDF has 31 A4 pages; sampled design, skills, and conclusion pages render correctly. Existing template/package warnings remain unchanged.
+
+#### Lesson
+
+After changing LaTeX prose, rebuild and inspect line wrapping; a successful compile alone does not guarantee text stays inside the margins.

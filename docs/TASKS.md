@@ -4,6 +4,15 @@
 
 Build the RAG backend pipeline and real chat UI.
 
+## Context refresh — 2026-09-08
+
+- [x] Read agent instructions and project memory; cross-check current RAG code, migration startup, and report state before the user's next task.
+- [x] Read the full LaTeX report and prepare an initial editorial assessment (word choice, narrative voice, repetition, and overstatement); no report edits requested at this review stage.
+- [x] Revise chapters 2–8 after user approval: simplify phrasing, unify narrative voice/terminology, remove inflated claims, and clarify verification limits. Preserve code listings, equations, quoted prompt, citations, figures, approved plan, and supplied internship information.
+- [x] Rebuild the revised report (31 A4 pages), compare protected LaTeX content with the pre-edit snapshot, and inspect sample rendered pages; fix body-text overflows (ERR-032).
+- [ ] User read-through of the revised PDF; complete existing report finishing items (screenshots, title-page details, scans, appendix, bibliography).
+- [ ] When resuming the relevant work, reconcile historical docs/checklists with current files (Supabase references, generation fallback, migration workflow, completed TeX/ER prep, and the existing CallPro Labs company chapter). Orientation did not validate application runtime or report compilation.
+
 ---
 
 ## Done ✅

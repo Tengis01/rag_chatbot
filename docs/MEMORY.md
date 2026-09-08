@@ -21,6 +21,27 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### Context refresh (2026-09-08)
+
+- Read AGENTS.md, CLAUDE.md, the required project docs, progress/design references, and architecture diagrams; cross-checked the chat/retrieval/ingestion code and migration startup. Next action awaits the user's next task; no application changes or runtime verification performed in this orientation session.
+- Treat older notes as historical: PROJECT_BRIEF still mentions Supabase; CLAUDE.md's two-model fallback and destructive schema workflow are superseded by the current three-model chain (`gemini-2.5-pro → flash → flash-lite`) and startup SQL migrations. The mobile purple brand decision remains pending for web unification.
+- The existing, uncommitted `report/subfiles/company.tex` now contains a CallPro Labs introduction and internship duties, so the older “organization unknown” blocker below is stale. Its content was read, not edited or independently fact-checked. Existing `report.zip` was also left untouched.
+- Pending verification/deployment/report checklist items below remain unverified in this session; reconcile stale checklist entries when that area is next requested.
+
+### Report editorial review (2026-09-08)
+
+- Read all report LaTeX chapters, front matter, plan, appendix, and bibliography for the user's requested initial opinion on wording. Report files were not edited; no compilation or external fact-check was performed.
+- Main editorial issues: literal English translations, repetitive chapter introductions and explanatory endings, inflated self-assessment in chapters 7–8, inconsistent narrative voice, and claims stronger than the recorded verification. Preserve concrete implementation/debugging details and the author's internship experience.
+- Suggested direction: restrained student report voice; first person for personal duties/learning, direct descriptions for system behavior; consistent terminology and shorter sentences. Review wording such as “шударга хариу”, “хамгийн үнэ цэнтэй өв”, “production түвшний ... иж бүрэн туршлага”. Distinguish the original threshold setting from a theoretical standard and document-status polling from answer streaming.
+- Next: discuss the editorial assessment with the user before applying a prose revision; keep the approved plan, code listings, formulas, citations, and existing company edits intact during this review stage.
+
+### Report prose revision completed (2026-09-08)
+
+- User approved the editorial changes. Revised chapters 2–8 (`company`, `research`, `design`, `implementation`, `results`, `skills`, `conclusion`) to use direct Mongolian prose, fewer repeated introductions, consistent terminology, and restrained first-person descriptions of personal work/learning. Edited the user's existing CallPro Labs chapter in place while retaining its supplied company and internship information; no external fact-check was performed.
+- Replaced literal translations (“хоолой”, “амьд хариу”, “стекийн эсрэг”), evaluative claims (“шударга хариу”, “хамгийн үнэ цэнтэй өв”), and overstated completion/production claims. Clarified original versus theoretical threshold, polling versus response streaming, approximate token counts, up-to-20 retrieval results, eight total embedding attempts, and incomplete 500k/physical-phone verification.
+- Verification: `latexmk -silent` succeeded, producing `report/main.pdf` (31 A4 pages); no undefined references/citations or missing glyphs. Compared against a pre-edit snapshot: code-listing bodies, display equations, quoted system prompt, citation keys, labels, figure paths, approved plan, main/front matter, appendix, and bibliography are unchanged. Inspected rendered design, skills, and conclusion pages. Body overflows fixed; existing title/heading and package warnings remain (ERR-032). No application code changed, so application build/typecheck and API smoke tests were not run.
+- Next: user's read-through of the revised PDF. Existing report finishing work remains: screenshots, title-page fields, signed scans, appendix content, bibliography cleanup, and optional font/template polish. `report.zip` was not regenerated. Pre-edit snapshot is temporarily available at `/tmp/rag-report-edit.oOQ559/`.
+
 Infrastructure, config layer, dual ingestion paths, the complete Retrieval & Chat backend features, the module-based backend refactor, the decomposed Day 5 frontend UI/Landing components, the scaffolded Expo + Expo Router + NativeWind mobile app, cross-lingual retrieval + generation fixes, and the complete Mobile Client onboarding, greeting, chat, sidebar, and branding integrations are all complete. The visible frontend copy is localized to Mongolian. The web/mobile workspace packages are correctly integrated into the pnpm workspace.
 
 Completed so far:
