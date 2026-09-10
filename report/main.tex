@@ -4,15 +4,24 @@
 %----------------------------------------------------------------------------------------
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
-\documentclass[11pt,a4paper]{report}
+\documentclass[12pt,a4paper]{report}
 
 \usepackage{fontspec}
 \setlength{\headheight}{15pt}
-% Times New Roman нь Linux дээр суугаагүй тул metric-compatible Liberation Serif ашиглав.
-% TNR суулгасны дараа доорх хоёр мөрийг сольж болно:
-% \setmainfont[Ligatures=TeX]{Times New Roman}
-\setmainfont[Ligatures=TeX]{Liberation Serif}
-\setsansfont{Liberation Sans}
+% Сургуулийн фонт; суулгаагүй үед орлуулсныг build log-д ил тод мэдэгдэнэ.
+\IfFontExistsTF{Times New Roman}{
+  \setmainfont[Ligatures=TeX]{Times New Roman}
+}{
+  \IfFileExists{fonts/times.ttf}{
+    \setmainfont[Ligatures=TeX,Path=fonts/,
+      BoldFont=timesbd.ttf,ItalicFont=timesi.ttf,
+      BoldItalicFont=timesbi.ttf]{times.ttf}
+  }{
+    \setmainfont[Ligatures=TeX]{Liberation Serif}
+    \PackageWarningNoLine{report-fonts}{Times New Roman unavailable; using Liberation Serif}
+  }
+}
+\IfFontExistsTF{Arial}{\setsansfont{Arial}}{\setsansfont{Liberation Sans}}
 \setmonofont[Scale=0.9]{Liberation Mono}
 
 \usepackage{geometry}
@@ -42,7 +51,7 @@
 
 \usepackage{listings}
 \renewcommand{\lstlistingname}{Код}
-\renewcommand{\lstlistlistingname}{\lstlistingname ын жагсаалт}
+\renewcommand{\lstlistlistingname}{Кодын жагсаалт}
 
 \usepackage{longtable}
 \usepackage{booktabs}
@@ -71,6 +80,7 @@
     keepspaces=false,
     numbers=left,
     numbersep=10pt,
+    xleftmargin=20pt, % мөрийн дугаар зүүн захын дотор багтана
     showspaces=false,
     showstringspaces=false,
     showtabs=false,
@@ -93,12 +103,12 @@
 \title{\textbf{Үйлдвэрлэлийн дадлага ажлын тайлан}}
 \aothura{Ц.~Тэнгис} \sisiIda{22B1NUM6249}
 % Дадлага хийсэн байгууллагын нэр:
-\organization{................................}
+\organization{Callpro}
 % Удирдагчийн зэрэг цол, овгийн эхний үсэг, нэр (албан тушаал):
-\supervisor{................................}
+\supervisor{Хөгжүүлэгч Т.Билгүүн}
 \university{МОНГОЛ УЛСЫН ИХ СУРГУУЛЬ}
 \faculty{МЭДЭЭЛЛИЙН ТЕХНОЛОГИ, ЭЛЕКТРОНИКИЙН СУРГУУЛЬ }
-\department{МЭДЭЭЛЭЛ, КОМПЬЮТЕРИЙН УХААНЫ ТЭНХИМ}
+\department{МЭДЭЭЛЭЛ, КОМПЬЮТЕРЫН УХААНЫ ТЭНХИМ}
 \cityName{Улаанбаатар}
 % Хэвлэгдсэн огноо:
 \gradyear{2026 он}
@@ -122,15 +132,18 @@
 %----------------------------------------------------------------------------------------
 %   Удирдамжийн 4-р зүйлд заасан бүрэлдэхүүн:
 %   1) Нүүр  2) Удирдагчийн үнэлгээ  3) Захирлын тушаал  4) Төлөвлөгөө  5) Тайлан  6) Хавсралт
-%   Гарын үсэгтэй скан хуудсуудыг бэлэн болмогц доорх мөрүүдийг тайлж оруулна:
+%   Тодорхойлолт/үнэлгээ нь main-pre.tex-д нүүрний дараа байрлана.
+%   Захирлын тушаалын PDF ирэхэд main-pre.tex дэх зориулалтын мөрийг ашиглана.
 %----------------------------------------------------------------------------------------
-% \includepdf[pages=-]{figures/udirdagchiin-unelgee.pdf}   % Удирдагчийн үнэлгээ, дүгнэлт
-% \includepdf[pages=-]{figures/zahirlyn-tushaal.pdf}       % Удирдагчийг томилсон тушаал
 
 
 %----------------------------------------------------------------------------------------
 %   Тайлангийн үндсэн хэсэг
 %----------------------------------------------------------------------------------------
+\chapter*{Удиртгал}
+\addcontentsline{toc}{chapter}{Удиртгал}
+\subfile{subfiles/introduction}
+
 \chapter{Дадлагын ажлын төлөвлөгөө}
 \subfile{subfiles/plan}
 
@@ -152,22 +165,21 @@
 \chapter{Дадлагын хугацаанд эзэмшсэн мэдлэг, ур чадвар}
 \subfile{subfiles/skills}
 
-\chapter{Дүгнэлт}
+\chapter*{Дүгнэлт}
+\addcontentsline{toc}{chapter}{Дүгнэлт}
 \subfile{subfiles/conclusion}
 
 %----------------------------------------------------------------------------------------
 %   Ном зүй (IEEE загвар)
 %----------------------------------------------------------------------------------------
-% ТҮР: бүх эх сурвалжийг ном зүйд харуулна. Бүлгүүдэд \cite{...} ишлэлүүд
-% бичигдсэний дараа доорх мөрийг устгана (зөвхөн ишилсэн нь үлдэнэ).
-\nocite{*}
+% Зөвхөн бичвэрт ишилсэн эх сурвалжуудыг харуулна.
 \printbibliography[heading=bibintoc, title={НОМ ЗҮЙ}]
 
 %----------------------------------------------------------------------------------------
 %   Хавсралт
 %----------------------------------------------------------------------------------------
 \appendix
-\chapter{Хавсралт}
+\chapter{Өгөгдлийн сан ба кодын хэрэгжүүлэлт}
 \subfile{subfiles/appendix}
 
 \end{document}

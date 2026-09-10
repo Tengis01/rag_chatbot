@@ -1,14 +1,242 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
-% TODO: Хавсралт — урт кодын хэсгүүд, нэмэлт дэлгэцийн зургууд,
-% өгөгдлийн сангийн бүрэн схем, тушаал/тодорхойлолтын хуулбар г.м.
+Энд үндсэн бүлгүүдэд тайлбарласан хэрэгжүүлэлтийн код болон туршилтыг
+давтахад хэрэгтэй материалыг хавсаргав. Кодын хэсгүүдийг төслийн эх
+файлуудаас авсан; импорт болон зарим тайлбарыг оруулаагүй тул тус бүр нь
+дангаараа ажиллах програм биш.
 
-\section{Гол кодын хэсгүүд}
+\begingroup
+\lstset{basicstyle=\ttfamily\footnotesize, captionpos=b,
+        aboveskip=0.6em, belowskip=0.8em}
 
-% Жишээ:
-% \begin{lstlisting}[language=SQL, caption={match\_chunks функц}]
-% ...
-% \end{lstlisting}
+\section{RAG өгөгдлийн сангийн үндсэн хүснэгтүүд}
+\label{sec:appendix-schema}
 
+Код~\ref{lst:appendix-schema}-д баримт, хэсэг, харилцан яриа, мессеж болон
+баримт--харилцан ярианы холбоосыг хадгалах таван хүснэгт, тэдгээрийн
+индексийг үзүүлэв. Эх файл нь \path{infra/postgres/init/001_schema.sql}.
+Вектор хайлтын \texttt{match\_chunks} функцийн гол асуулгыг
+Код~\ref{lst:matchchunks}-д оруулсан тул энд давтаагүй.
+
+\begin{lstlisting}[language=SQL, caption={RAG хүснэгтүүд ба индексүүд}, label={lst:appendix-schema}]
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS documents (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID        NOT NULL,
+  filename    TEXT,
+  source_type TEXT        NOT NULL CHECK (source_type IN ('pdf', 'text')),
+  status      TEXT        NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'processing', 'ready', 'failed', 'error')),
+  chunk_count INT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents (user_id);
+
+CREATE TABLE IF NOT EXISTS chunks (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id  UUID        REFERENCES documents(id) ON DELETE CASCADE,
+  user_id      UUID        NOT NULL,
+  content      TEXT        NOT NULL,
+  page         INT,
+  chunk_index  INT,
+  token_count  INT,
+  embedding    VECTOR(768),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks (document_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_user_id     ON chunks (user_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_embedding
+  ON chunks USING hnsw (embedding vector_cosine_ops);
+
+CREATE TABLE IF NOT EXISTS conversations (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID        NOT NULL,
+  title      TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations (user_id);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID        REFERENCES conversations(id) ON DELETE CASCADE,
+  user_id         UUID        NOT NULL,
+  role            TEXT        NOT NULL CHECK (role IN ('user', 'assistant')),
+  content         TEXT        NOT NULL,
+  sources         JSONB,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages (conversation_id);
+
+CREATE TABLE IF NOT EXISTS conversation_documents (
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+  document_id     UUID REFERENCES documents(id)     ON DELETE CASCADE,
+  PRIMARY KEY (conversation_id, document_id)
+);
+\end{lstlisting}
+
+Баримт боловсруулахад гарсан алдааны шалтгааныг хадгалах баганыг
+\path{infra/postgres/migrations/003_document_error_message.sql}
+файлаар дараа нь нэмсэн.
+
+\begin{lstlisting}[language=SQL, caption={Алдааны тайлбар хадгалах баганын migration}, label={lst:appendix-migration}]
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS error_message TEXT;
+\end{lstlisting}
+
+Нэвтрэлтийн \texttt{user}, \texttt{session}, \texttt{account},
+\texttt{verification} хүснэгтүүдийн SQL нь
+\path{infra/postgres/init/002_auth.sql} файлд тусдаа бий. Хүснэгт үүсгэх
+анхны файлууд зөвхөн шинэ өгөгдлийн санд ажиллана. Харин дараагийн
+migration-уудыг API эхлэхэд ажиллуулж, гүйцэтгэсэн файлын нэрийг
+\texttt{schema\_migrations} хүснэгтэд бүртгэдэг.
+
+\section{Баримт боловсруулах функц}
+\label{sec:appendix-pipeline}
+
+\path{apps/api/src/modules/ingestion/pipeline.ts} файлын
+\texttt{processDocument} функц нь хэсэглэх, embedding үүсгэх, хадгалах
+алхмуудыг дарааллаар нь дуудна (Код~\ref{lst:appendix-pipeline}).
+Хадгалалт дууссаны дараа л баримтыг \texttt{ready} болгоно.
+Алдаа гарвал шалтгааныг хадгалахыг оролдож, алдааг дуудсан талд дахин
+дамжуулна. Амжилттай эсэхээс үл хамааран \texttt{finally} хэсэг түр
+санах ойд хадгалсан эх текстийг чөлөөлнө.
+
+\begin{lstlisting}[caption={Баримт боловсруулах үндсэн дараалал}, label={lst:appendix-pipeline}]
+export async function processDocument(
+  documentId: string,
+  extractedText: string
+): Promise<void> {
+  try {
+    // 1. Mark as processing
+    await updateDocumentStatus(documentId, "processing");
+
+    // 2. Split into chunks
+    const chunks = chunkText(extractedText);
+    if (chunks.length === 0) {
+      throw new Error("chunkText produced 0 chunks — document text may be empty");
+    }
+
+    // 3. Generate embeddings for all chunks (batched internally)
+    const embeddings = await embedTexts(chunks.map((c) => c.text));
+
+    // 4. Persist chunks + vectors
+    await storeChunks(documentId, chunks, embeddings);
+
+    // 5. Mark ready
+    await updateDocumentStatus(documentId, "ready", chunks.length);
+
+    console.log(
+      `[pipeline] document ${documentId} ready — ${chunks.length} chunks`
+    );
+  } catch (err) {
+    console.error(`[pipeline] document ${documentId} failed:`, err);
+    // Best-effort status + reason update; ignore secondary failure
+    const message = err instanceof Error ? err.message : String(err);
+    await setDocumentError(documentId, message).catch(() => {});
+    throw err;
+  } finally {
+    deleteDocumentText(documentId);
+  }
+}
+\end{lstlisting}
+
+\section{MMR дахин эрэмбэлэх функц}
+\label{sec:appendix-mmr}
+
+Код~\ref{lst:appendix-mmr}-ийг
+\path{apps/api/src/modules/retrieval/retrieval.service.ts} файлаас авав.
+Эхний хэсгийг асуулттай хамгийн төстэй байхаар сонгоно. Дараагийн
+сонголтуудад өмнө сонгосон хэсгүүдтэй давхцах байдлыг онооноос хасна.
+Энд дуудсан \texttt{jaccardSimilarity} туслах функц нь тухайн файлд
+тодорхойлогдсон бөгөөд текстүүдийн үгийн олонлогийн огтлолцлыг нэгдлийн
+хэмжээнд хувааж тооцдог.
+
+% Функцийн зарлал ба биеийг хуудасны заагт салгахгүй.
+\clearpage
+\begin{lstlisting}[caption={Хамаарал ба давхардлыг харгалзан хэсэг сонгох нь}, label={lst:appendix-mmr}]
+function rerankWithMmr(
+  candidates: RetrievedChunk[],
+  k: number,
+  lambda: number
+): RetrievedChunk[] {
+  const selected: RetrievedChunk[] = [];
+  const remaining = [...candidates];
+
+  while (selected.length < k && remaining.length > 0) {
+    let winnerIndex = 0;
+    let winnerScore = Number.NEGATIVE_INFINITY;
+
+    for (let i = 0; i < remaining.length; i++) {
+      const candidate = remaining[i];
+      const diversityPenalty =
+        selected.length === 0
+          ? 0
+          : Math.max(
+              ...selected.map((chunk) =>
+                jaccardSimilarity(candidate.content, chunk.content)
+              )
+            );
+      const score =
+        selected.length === 0
+          ? candidate.similarity
+          : lambda * candidate.similarity - (1 - lambda) * diversityPenalty;
+
+      if (score > winnerScore) {
+        winnerScore = score;
+        winnerIndex = i;
+      }
+    }
+
+    const [winner] = remaining.splice(winnerIndex, 1);
+    selected.push(winner);
+  }
+
+  return selected;
+}
+\end{lstlisting}
+
+Энэ функцийг дууддаг \texttt{retrieveChunks} нь анхдагчаар $k=5$,
+$\lambda=0.5$, төстэй байдлын босго $0.1$ утгыг ашигладаг.
+\texttt{useMMR=false} үед дахин эрэмбэлэхгүй, хайлтын эхний $k$ хэсгийг
+буцаана. Босгыг бууруулсан шалтгаан, хязгаарлалтыг
+\ref{sec:problem-crosslingual} хэсэгт тайлбарласан.
+
+\section{Локал орчин ба туршилтыг давтах дараалал}
+\label{sec:appendix-verification}
+
+Доорх нь репозиторийн үндсэн хавтсаас ажиллуулах командууд бөгөөд
+шинээр гүйцэтгэсэн туршилтын гаралт биш. Docker Compose, төслийн
+\path{package.json}-д заасан pnpm хувилбар, smoke test-д хэрэгтэй
+\texttt{curl}, \texttt{jq} суусан байх шаардлагатай. Gemini-ийн түлхүүр
+болон нэвтрэлтийн нууц утгыг Compose-д дамжуулах орчинд урьдчилан
+тохируулна; эдгээр утгыг тайланд оруулаагүй.
+
+\begin{lstlisting}[language=bash, numbers=none, caption={Локал үйлчилгээг асаах, шалгах командууд}, label={lst:appendix-checks}]
+pnpm install --frozen-lockfile
+docker compose up -d --build postgres api web
+curl --fail http://localhost:4000/health
+pnpm typecheck
+pnpm build
+bash scripts/smoke-test.sh
+\end{lstlisting}
+
+\path{scripts/smoke-test.sh} нь хэрэглэгч бүртгэх, нэвтрээгүй хүсэлтийг
+татгалзах (401), текст боловсруулах, асуултад хариулах дарааллыг шалгаж,
+харилцан ярианы түүхийг хэвлэнэ. Хариулт, харилцан ярианы ID хоосон бол
+зогсоно. Харин эх сурвалжгүй хариултад зөвхөн анхааруулга өгдөг тул
+скрипт амжилттай дуусах нь хариултын үнэн зөвийг бүрэн батлахгүй.
+
+Энэ туршилт өгөгдлийн санд хэрэглэгч, баримт, харилцан яриа үүсгэж,
+Gemini API-ийн квот хэрэглэдэг тул туршилтын орчинд ажиллуулна.
+Хариулт болон эх сурвалжийг оруулсан тексттэй тулгаж шалгах,
+өөр хэрэглэгчийн баримтад хандах оролдлого, том баримтын боловсруулалт
+зэргийг тусад нь турших шаардлагатай.
+
+Үйлчилгээг \texttt{docker compose down} командаар зогсооно.
+\texttt{-v} сонголт өгөгдлийн volume-ийг устгадаг тул нэмэхгүй.
+
+\endgroup
 \end{document}

@@ -4,6 +4,48 @@
 
 Build the RAG backend pipeline and real chat UI.
 
+## School template review — 2026-09-10
+
+- [x] Inspect supplied school ZIP and compare margins, fonts, spacing, headings, front matter, lists and appendices; record recommendations in `docs/REPORT_TEMPLATE_REVIEW.md` without altering report files/PDF.
+- [ ] Await user's approval of template-alignment items before editing; distinguish thesis-only example components from internship requirements and preserve previous template bug fixes.
+- [ ] After approval, implement selected items and recheck figure/table wrapping, code listings, TOC and PDF page bounds; do not assume the current 32-page count will remain.
+
+## Report appendix — 2026-09-10
+
+- [x] Complete technical appendix with source-verified RAG schema/migration, ingestion and MMR functions, plus local verification commands and honest smoke-test limits.
+- [x] Build 32-page PDF; inspect the three appendix pages and verify code excerpts/references without changing global margins or running application tests.
+
+## Report layout — 2026-09-10
+
+- [x] Follow-up: compare 2 cm, 1.8 cm and 1.5 cm vertical margins; select 1.5 cm top/bottom (30 pages) to reduce unused space. Supersedes the 3 cm vertical setting below; only the two geometry values changed, horizontal margins and all other report formatting/content preserved.
+- [x] Show centered “Агуулга” only on the first TOC page; remove duplicate continuation-page headers.
+- [x] Apply A4 margins throughout: left 2.5 cm, right 1 cm, top/bottom 3 cm; remove list-specific overrides and adapt the cover.
+- [x] Set chapter headings to 14 pt with automatic wrapping; keep code line numbers and long identifiers inside the text area.
+- [x] Rebuild 34-page PDF, inspect cover/TOC/long headings, check text bounds and confirm no overfull boxes or unresolved references.
+- [ ] User visual review of the updated report; remaining forms and content finishing items below still apply.
+
+## Report forms integration — 2026-09-09
+
+- [x] Read `report/2026-dadlaga_tulvlguu_last.docx`; replace the blank plan with all 12 supplied ratings/comments and preserve the original planned tasks.
+- [x] Add the supervisor statement/evaluation immediately after the title; retain exact body text and leave absent score/date/signatures blank. Keep the future director-order slot in the correct front-matter position.
+- [x] Rebuild 33-page PDF; verify all source table cells/review paragraphs, unchanged DOCX, TOC/reference links, and rendered review/plan pages.
+- [ ] Obtain/fill actual statement date, supervisor score and signatures; obtain the signed/stamped official statement and director's order required by the guideline.
+- [ ] Confirm official program naming: supplied statement says “Програм хангамж”; existing title template says “Мэдээллийн технологи”. Neither was silently changed.
+
+## Azure budget planning — 2026-09-09
+
+Latest direction: user rejects PAYG and wants to use existing personal $200 trial credit for a 16-GiB VM, targeting $190 total during the remaining trial. Student/free-service-upgrade options below are historical; deployment is not yet authorized.
+
+- [x] Recheck 16-GiB Korea Central VM prices for 30 days: D4as_v6 + 128-GiB Standard SSD/IP recommended at $174.48 base; v5 fallback $165.84.
+- [ ] If deployment is requested: confirm actual trial expiry/credit, spending limit and v6 quota/image compatibility; prepare production services and off-Azure backup before expiry. Do not upgrade to PAYG.
+- [x] Research post-trial free-service eligibility and app fit; verify P6 disk allowance, free PostgreSQL, Static Web Apps, App Service F1 and Container Apps constraints.
+- [ ] Before any PAYG upgrade, inspect existing paid resources and actual free-service expiry/meters; obtain explicit upgrade/deployment approval. Budget alerts are not a hard spending cap.
+- [x] Re-evaluate after user relaxed target to three months: recommend all-in-one B1ms + 64-GiB SSD/IP at $82.29 base for three months; verify four-GiB Central/South alternatives still exceed $100 for three months.
+- [x] Research current Korea-region Azure retail prices and Student allowances for a $100/four-month budget; record conditional recommendations in `docs/AZURE_BUDGET.md`.
+- [ ] Confirm actual remaining credit/free-service entitlement and Korea Central VM/PostgreSQL availability before selecting a deployment.
+- [ ] After user approval: prepare lean production deployment, verify PostgreSQL extension/TLS/schema migration if using managed DB, and measure small-VM memory/CPU/ingestion behavior before adding projects.
+- [ ] Configure cost monitoring and tested backups as part of deployment; no resources provisioned during research.
+
 ## Context refresh — 2026-09-08
 
 - [x] Read agent instructions and project memory; cross-check current RAG code, migration startup, and report state before the user's next task.
@@ -372,7 +414,7 @@ Build the RAG backend pipeline and real chat UI.
 
 **Бүлэг 1 — Төлөвлөгөө ✅** (2 pages, real approved plan)
 
-- [ ] (print-time) Fill Биелэлт column; supervisor fills үнэлгээ by hand
+- [x] Filled all 12 Биелэлт/үнэлгээ rows from the supplied completed DOCX (2026-09-09); plan remains two pages.
 
 **Бүлэг 2 — Байгууллагын танилцуулга** (~2–3 pages) — BLOCKED on user input
 
@@ -429,9 +471,11 @@ Build the RAG backend pipeline and real chat UI.
 **Finishing**
 
 - [ ] Remove temp `\nocite{*}` once chapters have real \cite commands
-- [ ] Fill title-page blanks: organization, supervisor, date (user)
-- [ ] Хавсралт: schema SQL, long code, extra screenshots
-- [ ] Insert signed scans (удирдагчийн үнэлгээ, захирлын тушаал) via `\includepdf`
+- [x] User filled title-page organization/supervisor (`Callpro`, `Хөгжүүлэгч Т.Билгүүн`); preserved during integration, publication year remains 2026.
+- [x] Хавсралт: RAG schema SQL/migration, ingestion/MMR code and local verification procedure (2026-09-10); three pages, checked against repository source.
+- [ ] Add actual extra screenshots when captured; no fabricated or placeholder screenshots were inserted into the completed technical appendix.
+- [x] Insert supplied supervisor statement/evaluation text in front matter (2026-09-09).
+- [ ] Replace with signed/stamped official statement when available; insert director's order via `\includepdf` in `main-pre.tex` (not supplied in the new DOCX).
 - [ ] Optional: install real Times New Roman and swap font line in main.tex
 - [ ] Full read-through + submit first week of September, defense second week
 

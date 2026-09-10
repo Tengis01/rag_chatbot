@@ -2,10 +2,8 @@
 % Хөгжүүлэгч М.Золжаргал, Г.Амарсанаа
 % Монгол Улсын Их Сургуулийн Мэдээлэл Компьютерийн Ухааны Тэнхимийн шаардлагад нийцүүлэв
 
-%\geometry{top=71.0truept,hmargin=90.344truept,height=648.0truept,includefoot,
-%letterpaper}%,showframe,showcrop}
-%
-\geometry{left=2cm,right=2cm,top=2cm,bottom=2cm,includefoot}%,showframe,showcrop}
+% Бүх хуудас нэг A4 хэмжээ, ижил захтай; жагсаалтууд geometry-г солихгүй.
+\geometry{a4paper,left=3cm,right=2cm,top=2.5cm,bottom=2cm,includefoot}
 %
 % Define singlespace and doublespace commands for 12pt fonts.
 %
@@ -84,10 +82,9 @@
 \newlength{\tenblanklines}\setlength{\tenblanklines}{1.5 in}
 
 \renewcommand\maketitle{
-  \enlargethispage{0.5in} %make extra room where page number would go
   \setcounter{page}{0}
   \thispagestyle{empty}
-\begin{minipage}[t][647.0truept][t]{\linewidth}
+\noindent\begin{minipage}[t][\dimexpr\textheight-\topskip\relax][t]{\linewidth}
   \begin{center}
 	\textbf{\@university} \\
     \textbf{\@faculty}\\ 
@@ -106,7 +103,7 @@
   \end{center}
   \vspace{\threeblanklines}
   
-\begin{tabular}{m{5cm}@{\hspace{2cm}}m{8cm}}
+\begin{tabular}{m{5cm}@{\hspace{1cm}}m{\dimexpr\linewidth-6cm-2\tabcolsep\relax}}
 Үйлдвэрлэлийн дадлага\\
 хийсэн байгууллагын нэр: &\@organization \\[0.8cm]
 
@@ -115,7 +112,7 @@
 удирдсан ажилтны нэр, албан тушаал:&\@supervisor \\[0.8cm]
 
 Гүйцэтгэсэн:&\\
-Мэдээллийн технологи\\
+Програм хангамж\\
 IV ангийн оюутан: &\@aothura\ (\@sisiIda)
 \\
 
@@ -215,49 +212,46 @@ IV ангийн оюутан: &\@aothura\ (\@sisiIda)
 %
 % Get the title for the TOC normal sized, centered, and at the right height.
 %
-\setlength{\cftbeforetoctitleskip}{-64.0truept}
-\setlength{\cftaftertoctitleskip}{0truept}
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{1em}
 %
-\renewcommand{\contentsname}{ГАРЧИГ}
-\renewcommand{\cfttoctitlefont}{\hfill\normalsize\rm}
-\renewcommand{\cftaftertoctitle}{\hfill}
+\renewcommand{\contentsname}{Агуулга}
+\renewcommand{\cfttoctitlefont}{\hfill\large\bfseries}
+\renewcommand{\cftaftertoctitle}{\hfill\mbox{}}
 %
 \newcommand{\cftlabel}{Бүлгүүд}
 %
 % Get rid of the header underline.
 \renewcommand{\headrulewidth}{0pt}
 %
-% Get the header on subsequent pages right.
-\renewcommand{\@cfttocstart}{ 
-   \newgeometry{top=1.0in,hmargin=1.25in,height=9.0in,
-   includehead,includefoot,a4paper}%,showcrop,showframe}
-
-   \doublespace
-   \pagestyle{fancyplain}
-   \afterpage{\lhead{}\rhead{}}
+% Агуулга, зураг/хүснэгтийн жагсаалтын үргэлжлэлд толгой давтахгүй.
+% plain хэв маяг нь зөвхөн хуудасны дугаарыг доод төвд харуулна.
+\renewcommand{\@cfttocstart}{
+   \clearpage
+   \pagestyle{plain}
 }
 
 \renewcommand{\@cfttocfinish}{
-   \restoregeometry\clearpage\afterpage{\lhead{}\rhead{}}
+   \clearpage
 }
 %
 % Get the title for the LOT normal sized, centered, and at the right height.
 %
-\setlength{\cftbeforelottitleskip}{-64.0truept}
-\setlength{\cftafterlottitleskip}{0truept}
+\setlength{\cftbeforelottitleskip}{0pt}
+\setlength{\cftafterlottitleskip}{1em}
 %
 \renewcommand{\listtablename}{ХҮСНЭГТИЙН ЖАГСААЛТ}
-\renewcommand{\cftlottitlefont}{\hfill\normalsize\rm}
-\renewcommand{\cftafterlottitle}{\hfill}
+\renewcommand{\cftlottitlefont}{\hfill\large\bfseries}
+\renewcommand{\cftafterlottitle}{\hfill\mbox{}}
 % 
 % Get the title for the LOF normal sized, centered, and at the right height.
 %
-\setlength{\cftbeforeloftitleskip}{-64.0truept}
-\setlength{\cftafterloftitleskip}{0truept}
+\setlength{\cftbeforeloftitleskip}{0pt}
+\setlength{\cftafterloftitleskip}{1em}
 %
 \renewcommand{\listfigurename}{ЗУРГИЙН ЖАГСААЛТ}
-\renewcommand{\cftloftitlefont}{\hfill\normalsize\rm}
-\renewcommand{\cftafterloftitle}{\hfill}
+\renewcommand{\cftloftitlefont}{\hfill\large\bfseries}
+\renewcommand{\cftafterloftitle}{\hfill\mbox{}}
 
 % Get the title for the LOF normal sized, centered, and at the right height.
 %
@@ -306,16 +300,23 @@ IV ангийн оюутан: &\@aothura\ (\@sisiIda)
 %
 % Fix chapter and section formats
 %
-% Chapters names are all caps, centered under "Chapter N"
+% Бүлгийн гарчиг: 16 pt, 20 pt мөрийн өндөр; урт нэрс зүүн тийш
+% зэрэгцсэн догол мөр болж автоматаар шилжинэ. Албадсан \\ хэрэглэхгүй.
 \renewcommand{\@makechapterhead}[1]{
-%\begin{center}
-\begin{huge}
-\noindent \uppercase{\textbf{\thechapter. {#1}}\vspace{0.3\baselineskip}}\\
-\end{huge}
-% \begin{huge}
-% \textbf{\expandafter{#1}}\vspace{\baselineskip}\\
-% \end{huge}
-%\end{center}
+  {\parindent\z@\raggedright\normalfont
+   \renewcommand{\baselinestretch}{1}\fontsize{16}{20}\selectfont\bfseries
+   \interlinepenalty\@M
+   \hangindent=1.6em\hangafter=1
+   \noindent\MakeUppercase{\thechapter.\ #1}\par\nobreak
+   \vskip 12pt}
+}
+% Дугааргүй бүлгийн гарчиг (ном зүй гэх мэт) мөн ижил хэмжээтэй.
+\renewcommand{\@makeschapterhead}[1]{
+  {\parindent\z@\raggedright\normalfont
+   \renewcommand{\baselinestretch}{1}\fontsize{16}{20}\selectfont\bfseries
+   \interlinepenalty\@M
+   \noindent\MakeUppercase{#1}\par\nobreak
+   \vskip 12pt}
 }
 % Numbers chapters, sections, and subsections
 \setcounter{secnumdepth}{2}

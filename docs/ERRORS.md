@@ -927,6 +927,14 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 | Onboarding skipped even though "Дахиж харуулахгүй" was NOT checked | `handleStart` persisted `true` unconditionally; persist the actual checkbox value and only suppress onboarding while the login session is valid (ERR-030) |
 | Report patch rejected because expected lines do not exist | Re-read the exact source paragraph and remove the mismatched hunk before reapplying (ERR-031) |
 | Report prose extends into the margin after editing | Use `\path{...}` for long file paths and shorten surrounding prose; check the final LaTeX log and rendered page (ERR-032) |
+| Public Azure pricing request fails with curl DNS error inside sandbox | Retry the same read-only request with approved network escalation; do not infer Azure is down (ERR-033) |
+| Azure Retail Prices OData filter returns HTTP 400 from shell | Percent-encode apostrophes too; JavaScript `encodeURIComponent` leaves them unescaped (ERR-034) |
+| Headless LibreOffice exits with a read-only dconf error in sandbox | Use approved escalation with an isolated temporary LibreOffice profile; keep the original DOCX unchanged (ERR-035) |
+| apply_patch rejects delete/add operations for the same path | Use one Update File operation for a whole-file replacement (ERR-036) |
+| Report-local ignore file cannot be read | LaTeX ignore rules are in the repository-root `.gitignore`, not `report/.gitignore` (ERR-037) |
+| Duplicate TOC headers or report text crossing margins | Use one global geometry, plain TOC pages, wrapping chapter headings and inset listing numbers; inspect the PDF after rebuilding (ERR-038) |
+| Temporary report inspection directory missing after resume | Create a new `mktemp -d` directory and regenerate inspection artifacts from the current report (ERR-039) |
+| Python PDF inspection cannot import `fitz` | Use installed Poppler tools and Python standard-library parsing; no extra dependency is needed for layout checks (ERR-040) |
 
 ---
 
@@ -1328,3 +1336,241 @@ Rebuilt with `latexmk -silent` and checked `main.log`. All body-text overflows w
 #### Lesson
 
 After changing LaTeX prose, rebuild and inspect line wrapping; a successful compile alone does not guarantee text stays inside the margins.
+
+---
+
+### ERR-033 — Sandboxed Azure pricing request could not resolve host
+
+**Date**: 2026-09-09
+**Status**: ✅ Fixed
+
+#### What happened
+
+A read-only `curl -fsS` request to `https://prices.azure.com/api/retail/prices` failed with exit code 6 (`Could not resolve host`) during Azure hosting research.
+
+#### Root cause
+
+The restricted execution environment could not resolve/reach the public endpoint; the request worked after approved network escalation. This was not an application or Azure deployment failure.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record research environment failure and working invocation |
+
+#### Fix
+
+Reran the read-only curl request with `sandbox_permissions: require_escalated`, user-facing justification, and the approved `curl -fsS` prefix. Retrieved the official pricing response successfully after also correcting the independent filter-quoting issue in ERR-034. No DNS or application settings changed.
+
+#### Lesson
+
+For sandbox network failures, request approved escalation before diagnosing an external service outage.
+
+---
+
+### ERR-034 — Shell quoting damaged an Azure retail-price filter
+
+**Date**: 2026-09-09
+**Status**: ✅ Fixed
+
+#### What happened
+
+The initial Azure Retail Prices API query returned HTTP 400 when its OData filter URL was passed to curl in shell single quotes.
+
+#### Root cause
+
+JavaScript `encodeURIComponent` leaves apostrophes unchanged. The filter's string-literal apostrophes therefore conflicted with the enclosing shell single quotes, causing Azure to receive an invalid filter.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record quoting failure and correction |
+
+#### Fix
+
+Encoded the filter with `encodeURIComponent(filter).replace(/'/g, "%27")` before forming the curl URL. Corrected requests returned JSON price records for the requested regions and SKUs. No production source needed editing.
+
+#### Lesson
+
+URL encoding and shell quoting are separate concerns; encode OData apostrophes explicitly when embedding a URL in single-quoted shell arguments.
+
+---
+
+### ERR-035 — Headless LibreOffice conversion blocked by sandbox desktop settings
+
+**Date**: 2026-09-09
+**Status**: ✅ Fixed
+
+#### What happened
+
+`libreoffice --headless --convert-to pdf` with an isolated temporary profile exited with code 1 while inspecting the supplied report DOCX. Output included `dconf-CRITICAL: unable to create file '/run/user/1000/dconf/user': Read-only file system`.
+
+#### Root cause
+
+LibreOffice's runtime also accessed desktop settings outside the writable workspace despite the isolated document profile. The sandbox blocked that access; conversion succeeded with approved escalation.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record conversion failure and successful invocation |
+
+#### Fix
+
+Reran the same conversion with `sandbox_permissions: require_escalated` and `-env:UserInstallation=file:///tmp/rag-report-forms.PArwJK/lo-profile`. It generated a four-page source PDF in `/tmp/rag-report-forms.PArwJK/`. The original DOCX was not modified.
+
+#### Lesson
+
+An isolated LibreOffice profile does not isolate every desktop runtime dependency; request approved escalation for sandbox-blocked conversion.
+
+---
+
+### ERR-036 — Whole-file replacement patch used two operations for one path
+
+**Date**: 2026-09-09
+**Status**: ✅ Fixed
+
+#### What happened
+
+The initial forms patch was rejected with `invalid patch: multiple operations target .../report/subfiles/plan.tex`; no changes from that call were applied.
+
+#### Root cause
+
+The patch attempted both `Delete File` and `Add File` for the same plan path in one call, which the patch tool rejects.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `report/subfiles/plan.tex` | Replaced through a single corrected Update File operation |
+| `docs/ERRORS.md` | Record rejected patch and correction |
+
+#### Fix
+
+Applied the independent front-matter changes separately, then generated one Update File patch for the plan from the current source and DOCX table cells. Applied it using `apply_patch`; the report built successfully and all 60 table cells matched the source.
+
+#### Lesson
+
+Use one Update File operation per existing path even when replacing its entire contents.
+
+---
+
+### ERR-037 — Assumed a report-local ignore file existed
+
+**Date**: 2026-09-09
+**Status**: ✅ Fixed
+
+#### What happened
+
+An inspection command reported `sed: can't read report/.gitignore: No such file or directory`.
+
+#### Root cause
+
+The report artifact ignore rules are stored in the repository-root `.gitignore`, not a separate file inside `report/`.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record correct location for future inspection |
+
+#### Fix
+
+Read the root `.gitignore` and confirmed the existing `report/main.pdf` and recursive LaTeX artifact exclusions. No ignore rules needed changing.
+
+#### Lesson
+
+Locate configuration files before assuming a subdirectory has its own copy.
+
+---
+
+### ERR-038 — Report template repeated TOC headers and overflowed the text area
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+The user reported two “ГАРЧИГ” running headers on a TOC continuation page and oversized chapter headings crossing the right margin. The template also used different margins for lists. While applying the requested A4 margins, builds exposed long-identifier overflows (7.3546pt, 31.78174pt and 42.31557pt); listing line numbers sat outside the text area.
+
+#### Root cause
+
+The TOC enabled `fancyplain` marks and separate `newgeometry` settings with negative title offsets. Chapter headings used `huge` and a forced line break. The cover combined an indented fixed-height minipage with page enlargement. Inline monospaced identifiers lacked break opportunities, while listing numbers were placed to the left of the listing without an inset.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `report/dics.sty` | Unified geometry, fixed cover dimensions, single centered TOC title, plain list pages and wrapping 14 pt chapter headings |
+| `report/main.tex` | Added 20 pt listing inset to contain line numbers |
+| `report/subfiles/implementation.tex` | Added layout-only break opportunities for the API environment variable and fallback model name |
+| `report/subfiles/results.tex` | Added layout-only break opportunities for the embedding model name |
+| `docs/MEMORY.md`, `docs/TASKS.md`, `docs/ERRORS.md` | Recorded layout changes and verification |
+
+#### Fix
+
+Use `a4paper,left=2.5cm,right=1cm,top=3cm,bottom=3cm,ignoreheadfoot` globally; remove list geometry overrides. Use `plain` list pages and the single “Агуулга” title, with a trailing empty box preserving its centering fill. Set numbered and unnumbered chapter headings to `fontsize{14}{18}` with ragged-right paragraph wrapping. Fit the unindented cover minipage to the text height, add `xleftmargin=20pt` to listings, and use `path`/`allowbreak` for long identifiers. `latexmk -silent` now produces 34 A4 pages with no overfull boxes or unresolved references. PDF text bounds and representative rendered pages were checked; TOC title occurs exactly once.
+
+#### Lesson
+
+Keep page geometry global and make headings and technical identifiers breakable; verify actual PDF bounds as well as successful compilation.
+
+---
+
+### ERR-039 — Temporary report inspection directory disappeared after environment resume
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+After resuming work, `pdftotext` could not open `/tmp/rag-report-layout.n9OIKw/bounds.html` for output, and the subsequent XML inspection raised `FileNotFoundError` for that path.
+
+#### Root cause
+
+The previously created temporary directory was no longer present in the resumed environment. Inspection commands assumed it persisted; report sources and the built PDF remained available in the workspace.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Recorded the missing temporary directory and regeneration procedure |
+
+#### Fix
+
+Created a fresh directory using `mktemp -d` (`/tmp/rag-report-layout.Er8v4D/`) and regenerated text, bounding-box XML and page images from `report/main.pdf`. Repeated inspections succeeded. The old temporary snapshots were not recovered or treated as still available; no report source restoration was necessary.
+
+#### Lesson
+
+Do not assume `/tmp` artifacts survive an environment resume; check their existence and regenerate disposable inspection outputs.
+
+---
+
+### ERR-040 — Optional PyMuPDF unavailable for report layout inspection
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+The capability check `python -c 'import fitz; print(fitz.__doc__)'` raised `ModuleNotFoundError: No module named 'fitz'` while comparing report margins.
+
+#### Root cause
+
+PyMuPDF was not installed in the active Python environment; it is not a report dependency. Poppler command-line PDF utilities were already available.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `/tmp/rag-report-margins.HsS0EU/check-layout.py` | Disposable standard-library comparison script reading grayscale page renders from Poppler |
+| `docs/ERRORS.md` | Recorded the failed capability probe and dependency-free alternative |
+
+#### Fix
+
+Used `pdfinfo` for page counts, `pdftoppm` for rendered-page inspection and coarse blank-row comparison, and `pdftotext -bbox-layout` with Python's `xml.etree.ElementTree` for text bounds. All checks completed without installing packages or changing project dependencies.
+
+#### Lesson
+
+Prefer existing PDF command-line utilities for simple layout checks rather than assuming optional Python PDF libraries are installed.

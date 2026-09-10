@@ -1,105 +1,135 @@
 \documentclass[../main.tex]{subfiles}
 \begin{document}
 
-% Дадлагын удирдагчаар батлуулсан төлөвлөгөө (2026.06.15) — өөрчлөхгүй, баримтаар орно.
-\renewcommand{\arraystretch}{1.3}
+% Эх: report/2026-dadlaga_tulvlguu_last.docx (2026.06.15).
+% Төлөвлөсөн ажлын англи эх, 12 биелэлт, удирдагчийн тайлбарыг хэвээр хадгалав.
+% BullMQ/SSE нь анхны төлөвлөгөө; хэрэгжилтийн зөрүүг дүгнэлтэд тайлбарласан.
+\begin{center}
+\textbf{RAG CHATBOT}
+\end{center}
+\begin{flushright}
+2026 он 06 сар 15 өдөр
+\end{flushright}
 
-\begin{longtable}{|>{\centering\arraybackslash}m{0.7cm}
-                  |>{\centering\arraybackslash}m{7.3cm}
-                  |>{\centering\arraybackslash}m{2.5cm}
-                  |>{\centering\arraybackslash}m{1.8cm}
-                  |>{\centering\arraybackslash}m{2.5cm}|}
-\caption{Үйлдвэрлэлийн дадлагын ажлын төлөвлөгөө}
+\begingroup
+\fontsize{10}{12}\selectfont
+\renewcommand{\arraystretch}{1.25}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{|>{\centering\arraybackslash}p{0.5cm}
+                  |>{\raggedright\arraybackslash}p{5.3cm}
+                  |>{\centering\arraybackslash}p{1.7cm}
+                  |>{\centering\arraybackslash}p{1.3cm}
+                  |>{\raggedright\arraybackslash}p{\dimexpr\linewidth-8.8cm-10\tabcolsep-6\arrayrulewidth\relax}|}
+\caption{Үйлдвэрлэлийн дадлагын ажлын төлөвлөгөө, биелэлт}
 \label{tab:internship-plan}
 \\ \hline
-\textbf{№} &
-\textbf{Гүйцэтгэх ажил} &
-\textbf{Хугацаа} &
-\textbf{Биелэлт} &
-\textbf{Дадлагын удирдагчийн үнэлгээ}
+\textbf{№} & \textbf{Гүйцэтгэх ажил} & \textbf{Хугацаа} &
+\textbf{Биелэлт} & \textbf{Дадлагын удирдагчийн үнэлгээ}
 \\ \hline
 \endfirsthead
 
+\multicolumn{5}{r}{\small Хүснэгт~\thetable-ын үргэлжлэл}\\[0.4em]
 \hline
-\textbf{№} &
-\textbf{Гүйцэтгэх ажил} &
-\textbf{Хугацаа} &
-\textbf{Биелэлт} &
-\textbf{Дадлагын удирдагчийн үнэлгээ}
+\textbf{№} & \textbf{Гүйцэтгэх ажил} & \textbf{Хугацаа} &
+\textbf{Биелэлт} & \textbf{Дадлагын удирдагчийн үнэлгээ}
 \\ \hline
 \endhead
+\endfoot
+\endlastfoot
 
 1 &
-Орчны бэлтгэл: monorepo, Postgres + pgvector, өгөгдлийн сангийн бүтэц (documents, chunks, conversations, messages), HNSW индекс. &
-2026.06.15 &
-&
+Setup: monorepo, Postgres + pgvector, schema (documents, chunks, conversations, messages), HNSW index &
+06.15 &
+сайн &
+Monorepo орчин, PostgreSQL + pgvector өгөгдлийн сан, шаардлагатай хүснэгтүүд болон HNSW индексийг тохируулж хэрэгжүүлсэн.
 \\ \hline
 
 2 &
-Баримт оруулах хоёр зам: (а) файл байршуулах $\rightarrow$ буфер $\rightarrow$ текст ялгах, (б) текст буулгах $\rightarrow$ шууд хэсэгчлэлд дамжуулах. &
-2026.06.16 &
-&
+Dual ingestion paths in-memory: (a) file upload $\rightarrow$ buffer $\rightarrow$ extract text, (b) text paste $\rightarrow$ straight to chunking &
+06.16 &
+сайн &
+PDF файл байршуулж текст ялгах болон текст шууд оруулах хоёр урсгалыг хэрэгжүүлсэн.
 \\ \hline
 
 3 &
-Хэсэгчлэл ($\sim$500--800 токен, 15\% давхцал) $\rightarrow$ багцаар embedding $\rightarrow$ векторуудыг pgvector-т хадгалах, арын процессоор (processing $\rightarrow$ ready). &
-2026.06.17 &
-&
+Chunk ($\sim$500--800 tokens, 15\% overlap) $\rightarrow$ batch embed $\rightarrow$ store vectors in pgvector, via BullMQ worker (processing $\rightarrow$ ready) &
+06.17 &
+сайн &
+Текстийг 500--800 токеноор хэсэглэн, embedding үүсгэж pgvector-д хадгалах ажиллагааг хэрэгжүүлсэн.
 \\ \hline
 
 4 &
-Хайлт (Retrieval): асуултын embedding $\rightarrow$ косинус төстэйгөөр top-k (5--8) + босго; чанарыг тусад нь турших. &
-2026.06.18 &
-&
+Retrieval: query embedding $\rightarrow$ cosine top-k (5--8) + similarity threshold; test quality in isolation &
+06.18 &
+сайн &
+Асуултын embedding үүсгэн cosine similarity болон top-k хайлтаар холбогдох хэсгүүдийг сонгох функцийг хэрэгжүүлж туршсан.
 \\ \hline
 
 5 &
-Хариу үүсгэлт (Generation): <<зөвхөн контекстээс хариулах>> заавар + олдсон хэсгүүд. &
-2026.06.19 &
-&
+Generation: “answer only from context” prompt + retrieved chunks, streamed via SSE &
+06.19 &
+сайн &
+Олдсон контекстэд тулгуурлан хариу үүсгэх зааварчилгааг хэрэгжүүлсэн. SSE streaming-г цаашдын хөгжүүлэлтэд үлдээсэн.
 \\ \hline
 
 6 &
-Чат UI: чат, байршуулалт + буулгалтын төлөв, харилцан ярианы жагсаалт, эх сурвалж харуулах. &
-2026.06.22--23 &
-&
+Chat UI: streaming chat, upload + paste with status, conversation list, source display &
+06.22-23 &
+сайн &
+Вэб чат интерфэйс, файл/текст оруулах, боловсруулалтын төлөв, харилцан ярианы жагсаалт, эх сурвалж харах боломжийг хэрэгжүүлсэн.
 \\ \hline
 
+\pagebreak
+
 7 &
-Харилцан ярианы сан: мессежүүдийг хадгалах, асуулт бүрд дахин хайлт хийх. &
-2026.06.24 &
-&
+Conversation memory: persist messages, re-retrieve per question &
+06.24 &
+сайн &
+Харилцан яриа болон мессежүүдийг өгөгдлийн санд хадгалж, асуулт бүрд дахин хайлт хийх урсгалыг хэрэгжүүлсэн.
 \\ \hline
 
 8 &
-Захын тохиолдлууд: хоосон хайлтын үр дүн, том файл, олон баримт, хүсэлтийн хязгаарлалт, токены төсөв. &
-2026.06.25 &
-&
+Edge cases: empty retrieval, large files, multi-doc, rate limiting, token budget &
+06.25 &
+сайн &
+Хоосон хайлт, том хэмжээний текст, олон баримт, API хүсэлтийн хязгаарлалт, токены төсөвтэй холбоотой нөхцөлүүдийг шалгаж, алдаа боловсруулах логик нэмсэн.
 \\ \hline
 
 9 &
-Ишлэл: хариулттай хамт эх сурвалжийн хэсгүүдийг (файлын нэр, хуудас) буцаах. &
-2026.06.26 &
-&
+Citations: return source snippets (filename, page) with answers &
+06.26 &
+сайн &
+Хариултад ашигласан эх сурвалжийн файлын нэр, хуудас болон холбогдох хэсгийг буцаах боломжийг хэрэгжүүлсэн.
 \\ \hline
 
 10 &
-Нэвтрэлт ба олон хэрэглэгч: бүх баримт, асуулгыг user\_id-аар хязгаарлах, түлхүүрүүд зөвхөн сервер талд, квот. &
-2026.06.29--30 &
-&
+Auth \& multi-tenancy: scope all docs/queries to user\_id, keys server-side only, quotas &
+06.29-30 &
+сайн &
+Хэрэглэгчийн бүртгэл, нэвтрэлт, session шалгалт болон өгөгдлийг user\_id-аар тусгаарлах хамгаалалтыг хэрэгжүүлсэн.
 \\ \hline
 
 11 &
-Туршилт: мэдэгдэж буй баримтууд дээрх асуулт-хариултын үнэлгээ, оруулах процессын ачааллын тест. &
-2026.07.01 &
-&
+Testing: Q\&A eval set against known docs, load-test ingestion &
+07.01 &
+сайн &
+Үндсэн урсгалын smoke test, typecheck, build болон баримт боловсруулах ачааллын туршилтуудыг хийсэн.
 \\ \hline
 
 12 &
-Байршуулалт: Docker-жуулах, хяналт ба лог. &
-2026.07.02 &
-&
+Deploy: Dockerize, monitoring/logging &
+07.02 &
+сайн &
+Docker Compose ашиглан локал байршуулалтын орчныг бэлтгэж, лог болон хяналтын үндсэн тохиргоог хийсэн.
 \\ \hline
+
 \end{longtable}
+\endgroup
+
+\vspace{1em}
+\noindent Баталсан: Албан байгууллагын дадлага удирдагч: \dotfill
+
+\vspace{1em}
+\noindent Төлөвлөгөө боловсруулсан: Оюутан \dotfill
 
 \end{document}

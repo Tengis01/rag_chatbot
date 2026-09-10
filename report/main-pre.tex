@@ -3,6 +3,17 @@
 
 \maketitle
 
+% Удирдамжийн дараалал: нүүр → удирдагчийн тодорхойлолт/үнэлгээ → тушаал.
+% Эх: 2026-dadlaga_tulvlguu_last.docx. Оноо, огноо, гарын үсгийг зохиож бөглөхгүй.
+\normalspace
+\phantomsection
+\addcontentsline{toc}{chapter}{Удирдагчийн тодорхойлолт, үнэлгээ}
+\subfile{subfiles/supervisor-review}
+\clearpage
+
+% Захирлын тушаал шинэ DOCX-д байхгүй. Баталгаажсан PDF ирэхэд энд орно.
+% \includepdf[pages=-]{figures/zahirlyn-tushaal.pdf}
+
 \doublespace
 
 % Гарчгийг автоматаар оруулна
@@ -15,8 +26,16 @@
 % Хүснэгтийн жагсаалтыг автоматаар оруулна
 \listoftables
 
-% % Кодын жагсаалтыг автоматаар оруулна
-% \lstlistoflistings
+% Кодын жагсаалт: бусад жагсаалттай ижил, үргэлжлэлд толгой давтахгүй.
+\clearpage
+\pagestyle{plain}
+\begingroup
+\makeatletter
+\renewcommand{\@makeschapterhead}[1]{%
+  {\centering\normalfont\large\bfseries #1\par\nobreak\vskip 1em}}
+\makeatother
+\lstlistoflistings
+\endgroup
 
 % This puts the word "Page" right justified above everything else.
 \newpage

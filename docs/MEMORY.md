@@ -21,6 +21,63 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### School template reviewed; implementation awaits approval (2026-09-10)
+
+- User supplied `report/МКУТ_ДИПЛОМ__ДАДЛАГЫН_АЖЛЫН_ТАЙЛАН_БИЧИХ_ЗАГВАР.zip` and explicitly requested a comparison/list before changes. Read its complete TeX/style guidance; findings and archive file/line references are in `docs/REPORT_TEMPLATE_REVIEW.md`.
+- Main template differences: 3/2/2.5/2 cm margins with `includefoot`, 12 pt Times New Roman/Arial, body `baselinestretch=1.66`, introduction, enabled code list, descriptively named appendices and unnumbered conclusion. Current TNR/Arial font requests resolve to Liberation substitutes. Template contents target a bachelor thesis, so two title pages/author declaration/co-supervisor must not be assumed mandatory for this internship.
+- Do not copy the template wholesale: it contains uppercase `A4`, conflicting list geometry/letterpaper request, old duplicate-TOC setup, oversized chapter headings and fixed oversized title layout. Preserve prior bug fixes. Figure/table repagination will be needed after approved font/margin changes; final page count is unknown.
+- Report sources, existing 32-page PDF and supplied ZIP remain untouched. Only review/memory/task docs changed; no template compilation, font installation or application tests performed. Next: user selects changes, then implementation.
+
+### Technical appendix completed (2026-09-10)
+
+- Replaced the empty `report/subfiles/appendix.tex` placeholder with four sections: five RAG tables/indices plus the error-message migration; the actual `processDocument` function; actual `rerankWithMmr` function with dependency explanation; and local startup/verification commands with smoke-test limitations and side effects.
+- SQL omits comments and some blank lines but preserves statements; TypeScript function excerpts match the current source verbatim. Cited repository paths and existing report references. Auth schema is explicitly referenced separately, not misrepresented as included; the main chapter's vector-search SQL was not duplicated. No invented screenshots, credentials, signed forms or test outputs.
+- Kept all earlier report text, horizontal/vertical margins and global styles unchanged. Only appendix listings use a locally scoped smaller code font; adjusted pagination so function declarations/bodies and SQL closing lines do not become isolated fragments.
+- Verification: `latexmk -silent` succeeds, 32 A4 pages with a three-page appendix (physical pages 30–32). Checked all four source excerpts, reference resolution, lack of overfull boxes/missing glyphs, rendered appendix pages and `git diff --check`. No application source changes; documented commands were not executed and no accounts/API usage were created by this report task.
+- Next: user's read-through. Actual web/mobile screenshots, signed/stamped forms/director's order and bibliography finishing remain separate pending items.
+
+### Report vertical margins reduced after visual feedback (2026-09-10)
+
+- User superseded the previous 3 cm top/bottom requirement because it left too much unused space around figures/tables; explicitly requested changing only vertical margins. Changed only `top` and `bottom` in `report/dics.sty` to **1.5 cm**. Left 2.5 cm/right 1 cm, heading styles, figure/table sizes and placement, spacing and all report content remain unchanged.
+- Compared compiled PDFs at 3 cm (34 pages), 2 cm (33 pages), 1.8 cm (31 pages) and 1.5 cm (30 pages). A coarse grayscale blank-row comparison across body pages also favored 1.5 cm (3309 total versus 4340 at 3 cm); this is a comparison of tested layouts, not proof of a universal optimum. Retained 1.5 cm after inspecting a figure/table page and the performance-table page. Chapter endings and the unfinished appendix naturally still leave space; no out-of-scope content/float changes made.
+- Verification: final `latexmk -silent` succeeds with no overfull boxes, missing glyphs or unresolved references. PDF text stays within the page; footer numbers remain outside the body margin as before. Next: user visual review; prior report finishing items remain outstanding.
+
+### Report page layout polished (2026-09-10)
+
+- Renamed the TOC to “Агуулга”, centered its title once on the first page, and removed running headers on continuation pages. Removed list-specific geometry overrides and negative title offsets.
+- Set one A4 body layout throughout: left 2.5 cm, right 1 cm, top/bottom 3 cm (`ignoreheadfoot`; page numbers remain in the footer). Cover now follows the available text height without paragraph indentation or page enlargement.
+- Standardized numbered/unnumbered chapter headings to 14 pt with 18 pt line height and automatic wrapping. Inset listing line numbers and added break opportunities to three long technical identifiers; report wording and code-listing bodies were not changed.
+- Verification: `latexmk -silent` succeeded; `report/main.pdf` is now 34 A4 pages, with no overfull boxes, missing glyphs or unresolved references/citations. PDF text contains “Агуулга” once and no “ГАРЧИГ”; inspected cover, both TOC pages and representative long chapter headings, and checked all pages' text bounds. `git diff --check` passes. No application changes or application checks needed.
+- Next: user's visual review and the outstanding report finishing items below. Preserve supplied forms, original DOCX and existing title-page information. Temporary inspection files may disappear between resumed environments; regenerate them from current sources when needed (ERR-039).
+
+### Latest hosting direction: personal $200 trial only (2026-09-09)
+
+- User explicitly rejects PAYG and says a personal account has $200 credit; wants a 16-GiB VM during the trial, aiming to spend at most $190. Supersedes earlier multi-month/upgrade recommendations. No cloud changes authorized/performed.
+- Rechecked Korea Central meters: recommend D4as_v6 (4 vCPU / 16 GiB, $0.224/hour), 128-GiB E10 Standard SSD ($9.60/month) and IPv4 ($0.005/hour): 30-day base $174.48 before extras. D4as_v5 fallback $165.84. Details in `docs/AZURE_BUDGET.md`; check quota/capacity and Gen2 NVMe image compatibility before creation.
+- Keep trial spending limit enabled; $190 is a planning target, not configurable hard credit cap. Confirm actual credit/expiry and take off-Azure backups before trial end. Do not upgrade, create replacement trial accounts, or start deployment based on this research alone.
+
+### Ordinary Azure Free Account follow-up (2026-09-09)
+
+- User confirmed the original $200 trial credit is consumed and requested research into remaining free services, not deployment or subscription upgrade. Researched official Free Account rules and app fit; expanded `docs/AZURE_BUDGET.md`.
+- Remaining first-year allowances may cover B2ats_v2 + PostgreSQL B1MS + **two exact 64-GB P6 disks** (newly verified in the general Free Account catalog). This can reduce the VM setup to roughly $3.65/month for one IPv4 before extras, if all relevant allowances remain active. Previous E4/E6 disk estimates did not assume this P6 entitlement. Static Web Apps Free + App Service F1 + eligible free PostgreSQL is a possible $0-within-allowances demo alternative, with CPU/idle and ingestion reliability limits; not a production guarantee.
+- PAYG is required after trial exhaustion. Before any upgrade, inspect existing paid resources: Microsoft warns disabled resources can reactivate and start billing. Actual benefit expiry, exact meters, region/quota and current resources remain unverified; ask for redacted subscription/free-service screenshots. No cloud, report or application changes made. Research resumed; deployment remains unauthorized.
+
+### Completed plan and supervisor review integrated (2026-09-09)
+
+- User paused Azure work because obtaining Student credit is troublesome and switched back to the report. Read `report/2026-dadlaga_tulvlguu_last.docx` and the school guideline. The new DOCX contains 12 completed plan rows (all `сайн`), per-task supervisor comments, and a supervisor statement/evaluation proposal; no director's order or signature images are present.
+- Replaced the blank plan in `report/subfiles/plan.tex` with the supplied table: original English task descriptions, dates, ratings and Mongolian supervisor comments preserved, including planned BullMQ/SSE (the existing conclusion still explains actual deviations). Two pages, repeated table header, existing `tab:internship-plan` reference retained. Copied the statement verbatim into `subfiles/supervisor-review.tex`, formatted as one page and inserted immediately after the title through `main-pre.tex`, with a TOC entry. Moved the future director-order insertion point there as well.
+- Preserved the user's title-page `Callpro` / `Хөгжүүлэгч Т.Билгүүн` edits, original DOCX bytes, all other report chapters, and prior Azure notes. Did not invent the missing review date, numeric score or signatures. A signed/stamped official statement and director's order remain outstanding under the school guideline; the supplied text is not presented as a signed scan.
+- Verification: `latexmk -silent` succeeds; `main.pdf` is 33 A4 pages. Checked all 60 table cells and all four statement/evaluation paragraphs against DOCX, original SHA-256 unchanged, page order and absence of blank pages verified. Visually inspected PDF page 2 (review), pages 7–8 (plan). No new overfull boxes, missing glyphs or unresolved references; pre-existing template warnings remain. `git diff --check` passes. No application changes; app build/typecheck not relevant to this document-only task.
+- Next: user review, fill/obtain the actual date/score/signatures and official director's order, then finish screenshots/appendix/bibliography. Source major says “Програм хангамж”, while the existing title template says “Мэдээллийн технологи”; both were preserved rather than guessing the student's official program. Temporary source PDF and pre-edit copies are in `/tmp/rag-report-forms.PArwJK/`.
+
+### Azure budget research (2026-09-09)
+
+- **Follow-up supersedes the original duration target:** user accepts roughly three months. Rechecked Central/South meters; now recommend a simple all-in-one Korea Central B1ms (1 vCPU / 2 GiB) + 64-GiB Standard SSD + one IPv4, 24/7: $27.43/month, $82.29/three average months before variable extras, no free benefits assumed. Four-GiB B2als_v2 + 32-GiB SSD/IP costs $120.642/three months Central or $112.758 South, so needs shorter uptime or extra budget. Details in `docs/AZURE_BUDGET.md`; no deployment authorized or performed. Existing report edits and the new report DOCX were left untouched.
+- User requested a Korea-region hosting recommendation: $100 Student credit for four months, prioritize this app with up to two optional small projects. Researched current official offer/specifications and live retail price meters; details and source queries are in `docs/AZURE_BUDGET.md`.
+- Conditional preference: B2ats_v2 API/static-web VM + eligible free PostgreSQL Flexible Server B1MS. Base cost with E4 SSD and one IPv4 is $6.05/month if both compute allowances apply, or $14.591/month if only PostgreSQL is free. Eligibility, remaining free months, region/quota, and app capacity are unverified.
+- Without free DB benefits, all-in-one 1-GiB B2ats_v2 fits cost but is memory-constrained. All-in-one 2-GiB B1ms costs $25.03/month before variable extras; four months slightly exceed $100. Four-GiB B2als_v2 costs $40.214/month with disk/IP. Historical Monarch D4as_v5 is not suitable for this budget.
+- Next: verify subscription benefits and Korea availability, then obtain the user's deployment choice. Production compose/build, database migration/TLS, load tests, backups and spend monitoring remain future work. No cloud or application changes made; user's existing `report/main.tex` modification left untouched.
+
 ### Context refresh (2026-09-08)
 
 - Read AGENTS.md, CLAUDE.md, the required project docs, progress/design references, and architecture diagrams; cross-checked the chat/retrieval/ingestion code and migration startup. Next action awaits the user's next task; no application changes or runtime verification performed in this orientation session.
