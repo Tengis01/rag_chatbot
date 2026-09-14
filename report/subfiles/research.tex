@@ -67,9 +67,9 @@ RAG ашигласнаар хайлтаас олдсон хэсгүүдийг х
 мэдээлэл хүрэлцэхгүйг хэрэглэгчид мэдэгдэж болно. Эдгээр боломж нь
 төслийн шаардлагад нийцсэн.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.88\textwidth]{rag-flow.png}
+  \includegraphics[width=.88\textwidth]{rag-flow.png}
   \caption{RAG архитектурын ерөнхий урсгал}
   \label{fig:rag-flow}
 \end{figure}
@@ -160,7 +160,7 @@ MMR-ийн хэрэгжүүлэлт болон хэрэглэгчийн тохи
 байв. Ашигласан загварууд:
 
 \begin{itemize}
-\item \textbf{Embedding:} \texttt{gemini-embedding-001} --- олон хэлний
+\item \textbf{Embedding:} \texttt{gemini-\allowbreak embedding-\allowbreak 001} --- олон хэлний
 дэмжлэгтэй, кирилл текст дээр ажилладаг, гаралтын хэмжээсийг
 \texttt{outputDimensionality} параметрээр тохируулах боломжтой. Системд 768
 хэмжээсээр тохируулсан бөгөөд гаралтын хэмжээ нь өгөгдлийн сангийн

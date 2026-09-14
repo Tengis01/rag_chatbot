@@ -21,6 +21,60 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### Git restored after laptop backup transfer (2026-09-14)
+
+- Restored 13 missing primary Git checkouts and verified the existing ICSI405 checkout: all 14 main branches match live GitHub origin/main, SSH authenticates as Tengis01, no unmerged entries, Git connectivity checks pass. See `docs/GIT_RECOVERY.md` for exact folder → repo mapping.
+- RAG remote HEAD is 5beb519. App code matched; all approved report/setup/local config files were preserved byte-for-byte. Existing report/setup work stays uncommitted, alongside these recovery notes. No real merge operation existed after .git deletion; no invented merge commit or push.
+- Other folders were not universally identical to GitHub: retained Spring MySQL edits, Nogoolin README plus substantial untracked app files, AI notebook edit, ECEN README/script edits and extra course files. ICSI301 is the latest Webapp_FindHire checkout; old findhire is linked on recovery/legacy-findhire at inferred historical base b089006, with local edits intact.
+- Restored 19 absent ECEN files; normalized transfer-related CRLF/file modes with original-file archives. Sparse checkout omits tracked generated files; five large repos use partial history blobs fetched on demand. ECEN's URL-less Wireshark gitlink remains excluded (ERR-055).
+- Private recovery archives/evidence: `/home/tengis/Documents/Tengis/.git-recovery-20260914/`. Before adding recovery docs, every archived RAG file matched the worktree. pnpm typecheck/build passed (5/5 Turbo cache hits); git diff --check passed. No app/PDF content edits, backend runtime or database operations.
+- Next: review/commit wanted local changes; additional unmatched folders need their actual repo URLs. Do not claim untracked Nogoolin/course files are backed up remotely. Current report remains the accepted 40-page version.
+
+### Heading indentation aligned with paragraphs (2026-09-14 follow-up)
+
+- User requested Heading 1/2 to start at the same indent as body paragraphs. Updated numbered/unnumbered chapter headings and sections in `report/dics.sty`; kept existing sizes, vertical gaps and wrapped-heading behavior. Subsections and contents/list formatting are unchanged.
+- Capture the section indent before `raggedright` resets `parindent` (ERR-053). PDF coordinates confirm chapter number, section number and paragraph first word all start at x=102.972 pt on a representative page.
+- `pnpm report:build` succeeds; PDF remains 40 A4 pages, with no overfull boxes, oversized floats, missing glyphs or unresolved references. Checked short/long heading renders and all-page text bounds. Original diagrams and prose remain unchanged.
+
+### Original Mermaid diagrams restored; spacing tightened (2026-09-14 follow-up)
+
+- User rejected simplified print diagrams and explicitly requested the previous default Mermaid appearance, changing only diagrams and nearby whitespace. This supersedes the vector/print-variant decision below.
+- Restored all ten original saved PNG exports and their original detailed Mermaid sources; sources are byte-identical to the pre-rollback backup. Removed six `*-print.mmd`/PDF variants and custom print config/CSS. Updated figure rendering script to use original sources/default theme (PNG default, optional PDF).
+- Current Mermaid 11.17.0 rerender did not reproduce the older saved layout (RAG became too tall); use the existing PNGs for this exact visual restoration. Optional regenerated PDFs are not embedded. Inspect any future rerender before replacing these images (ERR-052).
+- Tightened float/caption gaps and used `[!htbp]` with `placeins[section,above,below]` to permit compact placement while retaining section proximity. Original figure widths restored. All other approved report content, margins, body spacing, heading styles, tables and appendix code remain unchanged.
+- Latest `report/main.pdf`: **40 A4 pages**, down from 44. `pnpm report:build` and figure-script syntax pass; no overfull boxes, oversized floats, missing glyphs or unresolved references/citations. All 40 rendered pages visually reviewed; no text outside page bounds. Nonfigure content in edited chapters matches the backup.
+- Current embedded figures are raster originals; the previous 8.5+ pt/vector audit no longer applies. See `docs/REPORT_PRINT_CHECK.md`. No app changes/tests; earlier font, screenshot and runtime limitations remain.
+
+### School formatting and print preparation verified (2026-09-14)
+
+- User explicitly approved school margins/12 pt and items 1–8, with body line spacing kept at 1.0 and program confirmed as «Програм хангамж». Those changes were already partly present; completed overflow fixes and print preparation. Latest `report/main.pdf`: **44 A4 pages**, no overfull boxes, missing glyphs or unresolved references/citations.
+- Preserved 3/2/2.5/2 cm + includefoot, 16 pt wrapping chapters, introduction, code list, descriptive appendix, unnumbered conclusion, bottom listing captions and eight actually cited bibliography entries. No report prose rewrite or app changes.
+- All ten embedded diagrams now use vector PDFs; six print variants simplify broad diagrams with original detailed Mermaid sources retained. ER shows logical relationships, with columns/SQL in appendix. Neutral print theme and CLI 11.17.0 render script/config/CSS added. Smallest diagram text about 8.5+ pt at print size; see `docs/REPORT_PRINT_CHECK.md` for limits.
+- Figure placement uses htbp with section barriers. Long identifier wrapping, table/list caption fit and appendix listing pagination fixed. All-page contact sheets and final appendix renders checked; PDF bounds pass. Pipeline/MMR excerpts still match application source verbatim.
+- Remaining: genuine TNR/Arial fonts (currently Liberation fallback), actual web/mobile screenshots, same-logo higher-resolution/vector source if available (existing logo ~190 ppi), signed forms/order and user/physical-print review. No fabricated screenshots, signatures or scores. Font changes require a new layout check.
+- Application typecheck/build already passed during environment setup; not rerun for report-only edits. Docker/API/device runtime remains blocked separately. Temporary QA files disappear between resumed environments (ERR-039); do not rely on old /tmp snapshots.
+
+
+### Fedora installation verified (2026-09-10 follow-up)
+
+- User completed the setup script. Verified Node 24.18.0, pnpm 11.6.0, Go 1.26.8, adb 37.0.0, XeLaTeX/latexmk/Biber and workspace dependencies are installed.
+- `pnpm typecheck` passes. `pnpm build` passes for all five workspace tasks, including web production bundle, API TypeScript and Android/iOS Expo exports (api-client remains a placeholder). First build was blocked writing `~/.expo`; approved escalation resolved it without application changes. adb likewise needs host access for `~/.android` (ERR-046).
+- Forced report compilation succeeds, 42 A4 pages. Fixed `report:build` to `cd report && latexmk`, because `latexmk -cd ...` did not load report-local rc. Verified the corrected command reads `.latexmkrc`. Inspected cover and final appendix render; current sources have nine overfull-box warnings, no missing glyphs/unresolved references. Fonts fall back to Liberation; layout cleanup remains pending, not a compiler-install failure. No report content/style edits.
+- Docker socket still denies access outside sandbox; `sudo -n docker info` still needs password. Escalated `/health` confirms nothing listening on port 4000. Database/API startup and physical-phone/native APK verification remain pending. No DB mutations or Gemini calls.
+- Setup task is complete for installed compilers/dependencies and build validation; remaining runtime blocker is host Docker permission/session configuration. User shell also sources a missing `.deno/env` file (ERR-048); unrelated shell files were not edited.
+
+
+### Fedora environment preparation (2026-09-10; installation blocked on sudo)
+
+- Follow-up: granted owner execute permission (`chmod u+x scripts/setup-fedora.sh`) and launched the script with sandbox escalation. It stopped at the sudo password prompt; cancelled without installing packages. User must run it in an interactive terminal.
+
+- Inspected current report build configuration, required docs and workspace manifests. Current TeX sources already differ from the historical template review below (3/2/2.5/2 cm margins, 16 pt headings, explicit font fallback); did not alter report sources or regenerate the existing PDF.
+- Added `scripts/setup-fedora.sh`: official Fedora packages for Node 24/npm, native build tools, Go, adb, XeLaTeX/latexmk/Biber and required report packages/fonts; installs the manifest's pnpm version into `~/.local` then workspace dependencies with a frozen lockfile. Added read-only `scripts/check-environment.sh`, `pnpm env:check`, `pnpm report:build` and `docs/LOCAL_SETUP.md`.
+- Prepared absent `DATABASE_URL`, `GEMINI_API_KEY`, and `BETTER_AUTH_SECRET` in ignored `apps/api/.env`, preserving existing values: local published DB port, copied existing Gemini key and generated random auth secret; chmod 0600. No secret values printed; root/frontend env files unchanged. Validity/connectivity remain untested.
+- Actual installation is **not complete**: sudo requires user terminal authentication. Node/npm/pnpm, Go, adb and TeX tools are still absent; Docker/Compose binaries exist but daemon socket access is denied even with sandbox escalation. Android Studio launcher/Java 25 exist; SDK/emulator unverified. Times New Roman resolves to Liberation Serif.
+- Verification: shell syntax and package JSON parse pass; environment checker correctly reports missing tools/daemon access and present API keys. `pnpm typecheck` and `pnpm build` fail before running because pnpm is absent. No API, PDF, or device runtime verification. Agent `.git` view is empty, so no Git status/diff possible (ERR-041–045).
+- Next: user runs `bash scripts/setup-fedora.sh` in their terminal (sudo password stays there), then resume dependency/build/PDF verification and Docker access. No application dependency upgrades or cloud deployment performed.
+
 ### School template reviewed; implementation awaits approval (2026-09-10)
 
 - User supplied `report/МКУТ_ДИПЛОМ__ДАДЛАГЫН_АЖЛЫН_ТАЙЛАН_БИЧИХ_ЗАГВАР.zip` and explicitly requested a comparison/list before changes. Read its complete TeX/style guidance; findings and archive file/line references are in `docs/REPORT_TEMPLATE_REVIEW.md`.

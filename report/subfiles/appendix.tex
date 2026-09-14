@@ -7,7 +7,7 @@
 дангаараа ажиллах програм биш.
 
 \begingroup
-\lstset{basicstyle=\ttfamily\footnotesize, captionpos=b,
+\lstset{basicstyle=\ttfamily\fontsize{10}{11}\selectfont, captionpos=b,
         aboveskip=0.6em, belowskip=0.8em}
 
 \section{RAG өгөгдлийн сангийн үндсэн хүснэгтүүд}
@@ -155,7 +155,7 @@ export async function processDocument(
 хэмжээнд хувааж тооцдог.
 
 % Функцийн зарлал ба биеийг хуудасны заагт салгахгүй.
-\clearpage
+\Needspace{8\baselineskip}
 \begin{lstlisting}[caption={Хамаарал ба давхардлыг харгалзан хэсэг сонгох нь}, label={lst:appendix-mmr}]
 function rerankWithMmr(
   candidates: RetrievedChunk[],

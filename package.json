@@ -8,6 +8,8 @@
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
+    "report:build": "cd report && latexmk",
+    "env:check": "bash scripts/check-environment.sh",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"

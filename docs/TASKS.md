@@ -1,14 +1,47 @@
 # TASKS.md
 
+## Git recovery after laptop transfer — 2026-09-14
+
+- [x] Verify existing SSH identity; map and reconnect all 14 supplied repositories to the correct primary folders, preserving ICSI405's existing metadata.
+- [x] Restore RAG history/tracking without changing approved source/report/configuration; verify no conflicts, byte preservation, typecheck/build and Git integrity.
+- [x] Preserve real local edits and extra files; archive originals before normalizing transfer line endings/modes or updating proven older files.
+- [x] Restore 19 missing ECEN files, omit tracked generated transfer exclusions with sparse checkout, and link legacy findhire separately.
+- [x] Record mappings, recovery archives, partial clone behavior and remaining local-only work in docs/GIT_RECOVERY.md.
+- [ ] Review/commit desired local RAG/Nogoolin/other changes; no commits or pushes were performed by recovery.
+- [ ] If needed, provide URLs for unmatched folders and ECEN's unconfigured Wireshark gitlink (ERR-055).
+
+## Heading indentation — 2026-09-14
+
+- [x] Align chapter/section heading starts with paragraph indentation; preserve existing diagram/layout choices and verify 40-page PDF, heading coordinates, wrapping and page bounds.
+
+## Original diagram restoration — 2026-09-14 follow-up
+
+- [x] Restore all ten original default Mermaid diagrams and saved PNG exports; remove simplified print variants/custom theme, preserving other report changes.
+- [x] Tighten figure/caption/paragraph spacing and restore original widths; verify 40-page A4 PDF, all-page renders, bounds, references and unchanged nonfigure prose.
+- [x] Update render script and print audit to distinguish original raster exports from the superseded vector variants.
+
 ## Current Phase
 
 Build the RAG backend pipeline and real chat UI.
 
+## Fedora development environment — 2026-09-10
+
+- [x] Inspect report compiler/packages, existing runtimes, manifests and local configuration; verify Fedora package names from official repository metadata.
+- [x] Add reusable Fedora setup and read-only environment check scripts, report build command and `docs/LOCAL_SETUP.md`.
+- [x] Prepare missing backend env keys for host development without exposing secrets or replacing existing configuration.
+- [x] Check shell syntax/JSON and run environment inventory; record blocked application check attempts.
+- [x] Complete system installation and pinned pnpm/workspace dependencies; typecheck and full build pass (Expo export required sandbox escalation for its cache).
+- [ ] Resolve host Docker socket permissions, start/verify local PostgreSQL and API health without removing existing volumes.
+- [x] Compile report with XeLaTeX/Biber (42 pages), inspect warnings and sample PDF renders; correct report command to load local rc.
+- [x] Resolve report overfull-box warnings; final 44-page print layout verified on 2026-09-14. Genuine TNR/Arial remain pending.
+- [ ] Verify SDK-53-compatible mobile client, Android SDK/emulator and physical device connectivity. Go is requested tooling, not an application architecture change.
+
 ## School template review — 2026-09-10
 
 - [x] Inspect supplied school ZIP and compare margins, fonts, spacing, headings, front matter, lists and appendices; record recommendations in `docs/REPORT_TEMPLATE_REVIEW.md` without altering report files/PDF.
-- [ ] Await user's approval of template-alignment items before editing; distinguish thesis-only example components from internship requirements and preserve previous template bug fixes.
-- [ ] After approval, implement selected items and recheck figure/table wrapping, code listings, TOC and PDF page bounds; do not assume the current 32-page count will remain.
+- [x] User approved alignment and items 1–8, keeping 1.0 body spacing and confirming «Програм хангамж»; thesis-only material not added.
+- [x] Complete alignment, vector print diagrams, identifier/table/list wrapping and code pagination; verify 44-page PDF and bounds. See docs/REPORT_PRINT_CHECK.md.
+- [ ] Supply genuine TNR/Arial, actual web/mobile screenshots and signed forms/order; review physical print and optional higher-resolution logo.
 
 ## Report appendix — 2026-09-10
 
@@ -499,3 +532,5 @@ Latest direction: user rejects PAYG and wants to use existing personal $200 tria
 - [x] Fixed while inserting: ER figure moved after design-decisions list (page-gap), doc-state width 0.58\textwidth to fit, modules table col 3.6→4.7cm (`modules/conversations` overflowed — pre-existing)
 - [x] Report 32 pages, clean compile, 0 undefined refs
 - Deselected by user: code-level diagrams (component/class/DFD), Gantt
+
+- [x] Grant owner execute permission to `scripts/setup-fedora.sh` and attempt execution (2026-09-10); installation remains blocked by sudo authentication (ERR-042).

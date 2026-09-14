@@ -9,9 +9,9 @@ Gemini API-г дууддаг. Хэрэглэгч, систем, гадаад ү�
 Зураг~\ref{fig:c4-context}-д C4 загварын нэгдүгээр түвшний (System Context)
 диаграмаар үзүүлэв.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.72\textwidth]{c4-context.png}
+  \includegraphics[width=.72\textwidth]{c4-context.png}
   \caption{Системийн хүрээ (C4 Level 1 --- System Context)}
   \label{fig:c4-context}
 \end{figure}
@@ -25,9 +25,9 @@ Gemini API-г дууддаг. Хэрэглэгч, систем, гадаад ү�
 PostgreSQL санд хадгална. Аппликейшнуудын бүтцийг
 Зураг~\ref{fig:architecture}-д үзүүлэв.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.9\textwidth]{architecture.png}
+  \includegraphics[width=.9\textwidth]{architecture.png}
   \caption{Системийн ерөнхий архитектур}
   \label{fig:architecture}
 \end{figure}
@@ -49,6 +49,7 @@ MVP-г нэг сервер дээр ажиллуулахад тохируула�
 Хүснэгт~\ref{tab:techstack}-д нэгтгэв. Сонгохдоо хөгжүүлэлт, туршилтад
 төлбөр шаардахгүй байх болон локал орчинд ажиллуулах боломжийг харгалзсан.
 
+\Needspace{12\baselineskip}
 \renewcommand{\arraystretch}{1.3}
 \begin{longtable}{|>{\raggedright\arraybackslash}m{2.6cm}
                   |>{\raggedright\arraybackslash}m{4.2cm}
@@ -107,7 +108,7 @@ API, вэб, өгөгдлийн санг нэг тохиргоогоор хам�
 Өгөгдлийн сангийн бүтцийг Зураг~\ref{fig:er-diagram}-д үзүүлэв. Аппликейшны
 дөрвөн үндсэн хүснэгт (\texttt{documents}, \texttt{chunks},
 \texttt{conversations}, \texttt{messages}), холбоос хүснэгт
-(\texttt{conversation\_documents}) болон Better Auth-ийн хэрэглэгчийн
+(\texttt{conversation\_\allowbreak documents}) болон Better Auth-ийн хэрэглэгчийн
 хүснэгтүүд (\texttt{user}, \texttt{session}, \texttt{account},
 \texttt{verification}) нэг санд зэрэгцэн байрлана. Зохиомжийн гол
 шийдвэрүүд:
@@ -115,7 +116,7 @@ API, вэб, өгөгдлийн санг нэг тохиргоогоор хам�
 \begin{itemize}
 \item \textbf{VECTOR(768) багана.} Хэсэг бүрийн embedding нь
 \texttt{chunks.embedding} баганад pgvector-ийн \texttt{VECTOR(768)} төрлөөр
-хадгалагдана. Хэмжээс нь \texttt{gemini-embedding-001} загварын
+хадгалагдана. Хэмжээс нь \texttt{gemini-\allowbreak embedding-\allowbreak 001} загварын
 \texttt{outputDimensionality: 768} тохиргоотой заавал тэнцүү байх ёстой ---
 өөр хэмжээтэй вектор оруулах оролдлого сангийн түвшинд алдаа өгнө.
 \item \textbf{HNSW индекс.} Хамгийн ойрын хөршийг ойролцоогоор хайх үйлдлийг
@@ -135,10 +136,10 @@ JSONB төрөлтэй. Энд хариултын эх сурвалжуудыг 
 өгөгдлийн сангийн түвшинд тодорхойлсон.
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.95\textwidth]{er-diagram.png}
-  \caption{Өгөгдлийн сангийн ER диаграм (session, account, verification
+  \includegraphics[width=.95\textwidth]{er-diagram.png}
+  \caption[Өгөгдлийн сангийн ER диаграм]{Өгөгдлийн сангийн ER диаграм (session, account, verification
   хүснэгтүүдийг товчлов)}
   \label{fig:er-diagram}
 \end{figure}
@@ -185,7 +186,7 @@ threshold/$\lambda$ параметрүүд. \\ \hline
 RAG урсгалын зохицуулалт: валидац, баримтын төлөв шалгах, хайлт, хариулт
 үүсгэх, мессеж хадгалах. \\ \hline
 
-\texttt{modules/conversations} &
+\path{modules/conversations} &
 Харилцан ярианы түүх: жагсаалт, мессежүүдийг эх сурвалжийн хамт буцаах. \\ \hline
 
 \texttt{shared/} &
@@ -206,9 +207,9 @@ RAG урсгалын зохицуулалт: валидац, баримтын т
 endpoint-оос авдаг. Серверт эдгээр хязгаарыг өөрчлөхөд клиентийг дахин
 build хийх шаардлагагүй.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.58\textwidth]{doc-state.png}
+  \includegraphics[width=.58\textwidth]{doc-state.png}
   \caption{Баримтын төлөвийн машин (UML state diagram)}
   \label{fig:doc-state}
 \end{figure}

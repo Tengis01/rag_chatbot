@@ -935,6 +935,19 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 | Duplicate TOC headers or report text crossing margins | Use one global geometry, plain TOC pages, wrapping chapter headings and inset listing numbers; inspect the PDF after rebuilding (ERR-038) |
 | Temporary report inspection directory missing after resume | Create a new `mktemp -d` directory and regenerate inspection artifacts from the current report (ERR-039) |
 | Python PDF inspection cannot import `fitz` | Use installed Poppler tools and Python standard-library parsing; no extra dependency is needed for layout checks (ERR-040) |
+| Fedora package names differ from generic examples | Query official metadata; use nodejs24/nodejs24-npm and biber (ERR-044) |
+| DNF package query prompts for an unrelated repository signing key | Limit query/install to --repo=fedora --repo=updates; keep GPG verification enabled (ERR-045) |
+| System install cannot prompt for sudo in agent | User runs setup in their terminal; installation verified afterward (ERR-042) |
+| Expo/adb fail creating home caches in sandbox | Approved escalation permits required tool state; no application fix needed (ERR-046) |
+| latexmk -cd omits report-local rc | Launch latexmk after changing to report directory (ERR-047) |
+| QA dependency downloads fail in sandbox | Approved escalation for pip/npm; distinguish network denial from missing versions (ERR-049) |
+| PDF QA venv cannot import system Pillow | Use the interpreter with the relevant installed package (ERR-050) |
+| Mermaid ER emits NaN transforms for blank labels | Use descriptive labels and inspect rerendered output (ERR-051) |
+| Default Mermaid rerender changes old figure layout | Restore saved original exports for exact rollback; inspect future renders before replacement (ERR-052) |
+| Section indent stays zero when using parindent with raggedright | Capture body parindent in a separate length before heading formatting (ERR-053) |
+| Deleted Git metadata after laptop transfer | With explicit user confirmation and a backup, restore remote history/index without overwriting local working files (ERR-041) |
+| Full Git clones repeatedly time out | Use blob-filtered history and seed hash-verified current blobs from local files; older blobs fetch on demand (ERR-054) |
+| Missing gitlink has no .gitmodules URL | Exclude the exact index path locally; obtain its intended URL before restoring nested source (ERR-055) |
 
 ---
 
@@ -1487,6 +1500,10 @@ Locate configuration files before assuming a subdirectory has its own copy.
 
 ### ERR-038 — Report template repeated TOC headers and overflowed the text area
 
+Follow-up resolved (2026-09-14): under approved school margins, fixed long identifiers with allowbreak/path, increased emergency stretch to 6em, shortened the list-of-figures caption, and adjusted table/listing placement. Added placeins/needspace and locally adjusted appendix listing leading. Final 44-page build has no overfull boxes and all text bounds pass. Files: report/main.tex, subfiles/design.tex, research.tex, implementation.tex, results.tex, appendix.tex; print figures/config and docs/REPORT_PRINT_CHECK.md record the full layout verification.
+
+Follow-up (2026-09-10, environment verification): current user-modified layout compiles to 42 pages but has nine overfull boxes (maximum 82.67136pt). This is an OPEN layout follow-up; the earlier fix below describes its historical layout. No missing glyphs/unresolved references. Compiler setup did not edit report sources; cover/final appendix inspected.
+
 **Date**: 2026-09-10
 **Status**: ✅ Fixed
 
@@ -1519,6 +1536,10 @@ Keep page geometry global and make headings and technical identifiers breakable;
 ---
 
 ### ERR-039 — Temporary report inspection directory disappeared after environment resume
+
+Follow-up (2026-09-14 Git recovery): `/tmp/tengis-git-recovery` and its process session disappeared across user continuation. Restarted downloads into owner-only `/home/tengis/Documents/Tengis/.git-recovery-20260914/` so recovery evidence and backups survive resumes.
+
+Recurrence (2026-09-11/14): previous QA venv, contact sheets and pre-edit snapshot under /tmp were absent after resume. Initial ls/view_image failed; regenerated page renders and bounds from the persistent report PDF using Poppler and system Pillow. Old snapshots were not assumed recoverable.
 
 **Date**: 2026-09-10
 **Status**: ✅ Fixed
@@ -1574,3 +1595,480 @@ Used `pdfinfo` for page counts, `pdftoppm` for rendered-page inspection and coar
 #### Lesson
 
 Prefer existing PDF command-line utilities for simple layout checks rather than assuming optional Python PDF libraries are installed.
+
+
+---
+
+### ERR-041 — Git metadata unavailable in the agent filesystem view
+
+Follow-up (2026-09-14): the user explicitly confirmed deleting `.git` when packaging the old laptop's project files. Escalated host inspection also found no usable RAG metadata, so this was not merely a sandbox visibility issue. With the supplied SSH URL and an owner-only source/config backup, restored origin history and the index without checking out over the worktree. `main` now matches live `origin/main` at 5beb519; all archived RAG files remained byte-identical before recovery documentation updates. Current status: ✅ Fixed. Historical observations below are retained; `docs/GIT_RECOVERY.md` records the verified cause and restoration.
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+`git status --short` failed with `fatal: not a git repository` and a filesystem-boundary message. Listing `.git` showed an empty read-only directory.
+
+#### Root cause
+
+The agent filesystem view does not expose usable repository metadata; this does not establish that host Git history is lost.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the inspection limitation |
+
+#### Fix
+
+Inspected files directly and validated shell/JSON syntax. Did not initialize a replacement repository. Host Git status/diff still need checking outside this view.
+
+#### Lesson
+
+An empty sandbox Git view is not permission to recreate or overwrite repository metadata.
+
+
+---
+
+### ERR-042 — Host tool installation requires terminal sudo authentication
+
+Follow-up (2026-09-10): `chmod u+x scripts/setup-fedora.sh` succeeded. Running `./scripts/setup-fedora.sh` with escalation reached `[sudo] password for tengis:`; cancelled because authentication must be supplied in the user terminal. No packages installed by this attempt.
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+`sudo -n dnf install -y ...` returned `sudo: a password is required`. Node/npm/pnpm, Go, adb, XeLaTeX, latexmk and Biber are absent; `pnpm typecheck` and `pnpm build` both returned `pnpm: command not found` (127).
+
+#### Root cause
+
+The fresh Fedora environment lacks these tools and the agent has no authenticated sudo session; sandbox escalation alone does not grant OS root access.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `scripts/setup-fedora.sh` | Prepare installation for the user terminal |
+| `scripts/check-environment.sh` | Report absent tools and missing daemon access |
+| `package.json` | Add environment and report commands |
+| `docs/LOCAL_SETUP.md` | Explain installation, configuration and pending validation |
+| `apps/api/.env` | Append missing backend keys for host development; values remain private |
+| `docs/MEMORY.md, docs/TASKS.md, docs/DECISIONS.md, docs/ERRORS.md` | Record preparation and unresolved installation |
+
+#### Fix
+
+Pending: run `bash scripts/setup-fedora.sh` as the normal user in a terminal where sudo can prompt. Script syntax and JSON checks pass; installation and application/PDF validation have not succeeded yet.
+
+#### Lesson
+
+Distinguish permission to attempt a system install from the OS authentication needed to perform it.
+
+
+---
+
+Follow-up verified (2026-09-10): user ran the script in their terminal; required tools and dependencies now exist, typecheck/build pass. See ERR-046 for sandbox-only cache failures.
+
+### ERR-043 — Local Docker socket denies access
+
+Follow-up (2026-09-10): still denied after installation and approved escalation; `sudo -n docker info` requires password. Health request first hit sandbox socket restrictions; escalated curl confirmed connection refused on localhost:4000. No database/API was started.
+
+**Date**: 2026-09-10
+**Status**: 🔲 Open
+
+#### What happened
+
+`docker info --format ...` returned `permission denied while trying to connect to the docker API at unix:///var/run/docker.sock`, both inside the sandbox and after approved escalation. Docker CLI 29.8.0 and Compose 5.5.1 are installed.
+
+#### Root cause
+
+The current process cannot access the host Docker socket; the failure persists beyond sandbox restrictions. Daemon health cannot be inferred from installed client binaries.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `scripts/check-environment.sh` | Report daemon access failure |
+| `docs/LOCAL_SETUP.md` | Explain host-session Docker verification |
+| `docs/MEMORY.md, docs/TASKS.md, docs/ERRORS.md` | Record blocked runtime verification |
+
+#### Fix
+
+Pending host Docker permission/session configuration or authenticated individual sudo Docker commands. No socket chmod, group modification, database startup, or volume deletion performed.
+
+#### Lesson
+
+Verify Docker daemon access separately from Docker and Compose version commands.
+
+
+---
+
+### ERR-044 — Initial Fedora package names did not match repository names
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+The initial suggested install used `nodejs`, `nodejs-npm` and `texlive-biber`. The sudo attempt stopped before dependency resolution; subsequent repository queries showed the concrete available packages are `nodejs24`, `nodejs24-npm` and `biber`.
+
+#### Root cause
+
+Package naming was assumed from other distributions/versions before querying Fedora 44 metadata.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `scripts/setup-fedora.sh` | Use verified Fedora package names including algorithm packages |
+| `docs/LOCAL_SETUP.md` | Document concrete package names |
+| `docs/ERRORS.md` | Record correction |
+
+#### Fix
+
+Queried official Fedora/updates metadata, corrected the user-facing command and installer to Node 24 and `biber`, and explicitly included `texlive-algorithms`/`texlive-algorithmicx`. This fixes the command definition; actual installation remains blocked under ERR-042.
+
+#### Lesson
+
+Query distribution package metadata before giving an installation command.
+
+
+---
+
+### ERR-045 — Unrelated third-party repository prompted for a GPG key during package query
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+An unrestricted `dnf repoquery` refreshed the ChatGPT repository and printed `repomd.xml GPG signature verification error: Signing key not found` followed by a key-import prompt. The query continued using other repositories.
+
+#### Root cause
+
+DNF refreshed every enabled repository even though the requested tools are Fedora packages; this user-level query cache lacked the third-party signing key.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `scripts/setup-fedora.sh` | Restrict package operation to Fedora and updates |
+| `docs/LOCAL_SETUP.md` | Document official repository scope |
+| `docs/ERRORS.md` | Record query issue and correction |
+
+#### Fix
+
+Repeated the query using `dnf --repo=fedora --repo=updates repoquery ...`; it succeeded without the unrelated repository/key prompt. Kept signature checking enabled and did not import or replace a signing key.
+
+#### Lesson
+
+Scope package operations to the repositories that actually provide the requested tools instead of altering unrelated signing trust.
+
+---
+
+### ERR-046 — Sandbox blocks tool caches and network inspection
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+Initial `pnpm build` failed creating `/home/tengis/.expo` (ENOENT); `adb version` aborted creating `~/.android` (read-only filesystem); ss/curl could not open sockets. XeLaTeX font probing also could not write its home cache.
+
+#### Root cause
+
+The agent sandbox permits workspace and temporary writes, not tool state in the user home directory or unrestricted socket access.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/LOCAL_SETUP.md` | Record verification and limitation |
+
+#### Fix
+
+Reran the affected tools with approved escalation. All workspace builds, adb version, port inspection and report compilation succeeded. Health connection refusal and Docker permission denial are separate runtime issues in ERR-043. No app code change needed.
+
+#### Lesson
+
+Use approved escalation for home-directory tool caches instead of changing application code to compensate for sandbox restrictions.
+
+---
+
+### ERR-047 — Root report build command omitted report-local latexmk configuration
+
+**Date**: 2026-09-10
+**Status**: ✅ Fixed
+
+#### What happened
+
+`latexmk -cd -xelatex report/main.tex` reported only `/etc/latexmkrc` under rc files read, omitting report/.latexmkrc.
+
+#### Root cause
+
+Latexmk reads startup rc files before the -cd source-directory switch. Selecting XeLaTeX explicitly masked the missing project configuration.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/LOCAL_SETUP.md` | Record verification and limitation |
+| `package.json` | Run latexmk from report directory |
+
+#### Fix
+
+Changed package.json report:build to `cd report && latexmk` and corrected docs/LOCAL_SETUP.md. Verified pnpm report:build reports both system and project-local rc files and exits successfully.
+
+#### Lesson
+
+Enter the report directory before launching latexmk when configuration is stored there.
+
+---
+
+### ERR-048 — Host login shell sources missing Deno environment file
+
+**Date**: 2026-09-10
+**Status**: 🔲 Open
+
+#### What happened
+
+Escalated command startup printed `.bashrc: line 39: /home/tengis/.deno/env: No such file or directory` and the same message for `.bash_profile: line 14`.
+
+#### Root cause
+
+The host shell startup files source a Deno environment path that is absent. This is independent of Node, pnpm and LaTeX.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/LOCAL_SETUP.md` | Record verification and limitation |
+
+#### Fix
+
+No shell configuration changed. Commands still execute; a future host-shell cleanup can guard or remove the stale Deno source lines.
+
+#### Lesson
+
+Guard optional shell environment source files with an existence check.
+
+---
+
+### ERR-049 — Report QA dependency downloads blocked by sandbox networking
+
+**Date**: 2026-09-10 (recorded after resumed work on 2026-09-14)
+**Status**: ✅ Fixed
+
+#### What happened
+
+Installing PyMuPDF into /tmp/rag-report-qa-venv failed with DNS errors and `No matching distribution found`; the initial npm Mermaid invocation remained blocked and was cancelled.
+
+#### Root cause
+
+Restricted network access prevented package index/download connections; the package itself was available.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/REPORT_PRINT_CHECK.md`, `docs/MEMORY.md` | Record issue and verification |
+| `report/figures/build.sh` | Pin the working CLI for future diagram rendering |
+
+#### Fix
+
+Reran pip and npm with approved escalation. PyMuPDF 1.28.2 and Mermaid CLI 11.17.0/Chromium installed successfully for inspection/rendering. After /tmp disappeared on resume, used installed Poppler and system Pillow for final QA.
+
+#### Lesson
+
+Treat resolver/download failures in a restricted environment separately from package availability.
+
+---
+
+### ERR-050 — PDF QA venv did not contain system Pillow
+
+**Date**: 2026-09-10 (recorded after resumed work on 2026-09-14)
+**Status**: ✅ Fixed
+
+#### What happened
+
+A combined QA script run with the PyMuPDF venv failed with `ModuleNotFoundError: No module named PIL`; the dependent view_image call could not find /tmp/school-logo.png.
+
+#### Root cause
+
+Pillow was installed in system Python, not in the newly isolated PyMuPDF environment.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/REPORT_PRINT_CHECK.md`, `docs/MEMORY.md` | Record issue and verification |
+
+#### Fix
+
+Used system python3 for the Pillow/ZIP logo inspection and the venv only for PyMuPDF. Generated and inspected the logo successfully. No report logo replacement was made because the supplied ZIP artwork differs from the current seal.
+
+#### Lesson
+
+Run inspection code with the interpreter that actually owns its dependencies.
+
+---
+
+### ERR-051 — Blank Mermaid ER relationship labels caused invalid transforms
+
+**Date**: 2026-09-10 (recorded after resumed work on 2026-09-14)
+**Status**: ✅ Fixed
+
+#### What happened
+
+A draft print ER diagram with labels consisting of one space emitted `Expected number, translate(undefined, NaN)` from Chromium.
+
+#### Root cause
+
+Mermaid 11.17 could not lay out the whitespace-only edge labels in this diagram; an exported file was not sufficient evidence of a valid diagram.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/REPORT_PRINT_CHECK.md`, `docs/MEMORY.md` | Record issue and verification |
+| `report/figures/src/er-diagram-print.mmd` | Use descriptive relationship labels |
+| `report/figures/print.css` | Increase ER relationship-label size |
+| `report/figures/er-diagram-print.pdf` | Regenerate valid vector diagram |
+
+#### Fix
+
+Restored descriptive relationship labels and added print.css to raise ER edge label font size. Rerendered er-diagram-print.pdf without transform errors and inspected the resulting layout. The print ER focuses on relationships; the original detailed ER source and appendix schema remain available.
+
+#### Lesson
+
+Use nonblank Mermaid relationship labels and verify both render diagnostics and the exported figure.
+
+
+---
+
+### ERR-052 — Current default Mermaid rerender did not reproduce original diagram layout
+
+**Date**: 2026-09-14
+**Status**: ✅ Fixed
+
+#### What happened
+
+While restoring original Mermaid diagrams, rerendering the original RAG source with CLI 11.17.0 produced a tall layout instead of the saved original horizontal arrangement. Compiling that PDF at the original width emitted `Float too large for page by 87.49013pt`.
+
+#### Root cause
+
+The current renderer/environment did not reproduce the older saved export's layout. Unchanged Mermaid source and default theme alone were insufficient to guarantee the same geometry; scaling the taller result by width exceeded the page height. The exact historical renderer version was not established.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `report/subfiles/design.tex`, `report/subfiles/implementation.tex`, `report/subfiles/research.tex` | Embed saved original PNGs at original widths; restore corresponding captions and compact figure placement |
+| `report/main.tex` | Tighten float/caption gaps and permit same-page placement near section boundaries |
+| `report/figures/build.sh` | Render original sources with default theme, PNG default and optional PDF |
+| `report/main.pdf` | Rebuild verified 40-page report |
+| `docs/MEMORY.md`, `docs/TASKS.md`, `docs/DECISIONS.md`, `docs/REPORT_PRINT_CHECK.md`, `docs/REPORT_TEMPLATE_REVIEW.md`, `docs/ERRORS.md` | Record user-directed rollback and current validation |
+
+#### Fix
+
+Used all ten existing original PNG exports, which preserve the user's requested appearance, instead of embedding new rerenders. Original Mermaid source content remained unchanged. The subsequent `pnpm report:build` succeeds without oversized floats or overfull boxes; all 40 pages render correctly and text stays inside page bounds.
+
+#### Lesson
+
+For an exact visual rollback, retain the original exported assets and compare new renderer output before replacing them.
+
+
+---
+
+### ERR-053 — Section heading indent was reset by raggedright
+
+**Date**: 2026-09-14
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first PDF build after setting the section offset to `parindent` still placed section numbers at the text margin, while chapter headings and body first lines were correctly indented. The build itself succeeded; visual inspection exposed the mismatch.
+
+#### Root cause
+
+LaTeX evaluates the section offset inside the heading format. The existing `raggedright` command resets `parindent` to zero before the offset is used.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `report/dics.sty` | Capture body indent in `reportsectionindent` before applying section formatting |
+| `report/main.pdf` | Rebuild with aligned chapter/section headings |
+| `docs/MEMORY.md`, `docs/TASKS.md`, `docs/ERRORS.md` | Record completion and verification |
+
+#### Fix
+
+Store the current paragraph indent in a dedicated length at the start of the section command, then pass that length to `@startsection`. Rebuilt successfully and confirmed chapter number, section number and body first word all have xMin=102.972 pt on physical page 11; inspected long wrapped chapter heading on page 32.
+
+#### Lesson
+
+Capture layout lengths before applying formatting commands that can reset them, and verify rendered coordinates.
+
+
+---
+
+### ERR-054 — Bulk Git history downloads timed out during laptop recovery
+
+**Date**: 2026-09-14
+**Status**: ⚠️ Workaround
+
+#### What happened
+
+Bare Git clones transferred pack data slowly. The temporary ICSI304 clone raised `subprocess.TimeoutExpired` after 240 seconds; full HTTPS clones of ICSI204_AI, Probabliity_Statistiks and ECEN326_LinuxServer timed out after 180 seconds. The original slow bulk batch was stopped deliberately after completed repositories were identified.
+
+#### Root cause
+
+Full-history packs include historical binaries and generated/dependency files, while observed transfer throughput did not fit the command time limits. The exact network bottleneck was not established; switching transport alone did not resolve it. SSH authentication was working and was not the cause.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `../.git-recovery-20260914/` | Durable download staging, original-file archives and verification JSON |
+| `../ICSI304/.git`, `../ICSI207/.git`, `../ICSI204/.git`, `../ICSI203/videogamesalesprediction/.git`, `../ECEN326/.git` | Restore partial clones and seed matching HEAD blobs from existing files |
+| `docs/GIT_RECOVERY.md`, `docs/MEMORY.md`, `docs/TASKS.md`, `docs/ERRORS.md` | Record recovery procedure and partial-clone limits |
+
+#### Fix
+
+Used `git clone --bare --filter=blob:none` for the five affected repositories. Reconstructed current blob objects with `git hash-object -w --stdin` only after validating their Git object hashes against the remote tree; downloaded missing ECEN HEAD objects in a single targeted fetch. Set each final origin to the supplied SSH URL. All 14 primary heads match live GitHub and all passed `git fsck --connectivity-only --no-dangling`. Older promised blobs remain available on demand; incomplete staging clones are not the working repositories.
+
+#### Lesson
+
+For a source-only transfer with slow full-history downloads, restore commit/tree history first and reuse hash-verified local blobs instead of repeatedly downloading old binary packs.
+
+---
+
+### ERR-055 — Existing ECEN repository has a Wireshark gitlink without a submodule URL
+
+**Date**: 2026-09-14
+**Status**: ⚠️ Workaround
+
+#### What happened
+
+Remote ECEN326_LinuxServer tracks `lab1/wireshark-src` as mode 160000 at commit `daef18961001a4ab01f3c04cf7d324aac09b54c4`, but HEAD contains no `.gitmodules` file. The laptop backup also has no corresponding source tree. A directory-style sparse exclusion initially left that entry visible as a deletion.
+
+#### Root cause
+
+The upstream repository recorded a nested Git checkout as a gitlink without its remote mapping. A Gitlink is an index entry, so the trailing-slash sparse pattern alone did not exclude this missing entry.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `../ECEN326/.git/info/sparse-checkout`, `../ECEN326/.git/index` | Exclude the exact gitlink path and set its skip-worktree bit |
+| `../.git-recovery-20260914/ecen-restored.json` | Record restored files and unavailable nested checkout |
+| `docs/GIT_RECOVERY.md`, `docs/MEMORY.md`, `docs/TASKS.md`, `docs/ERRORS.md` | Record the limitation and required input for optional recovery |
+
+#### Fix
+
+Used exact sparse pattern `!/lab1/wireshark-src` and `git update-index --skip-worktree -- lab1/wireshark-src`. The parent repository is connected/current and no longer presents an accidental gitlink deletion. Did not invent a URL, initialize an unrelated repository or alter upstream history. Recovering the actual Wireshark source remains pending its intended remote URL.
+
+#### Lesson
+
+A tracked gitlink does not supply its repository URL; inspect `.gitmodules` and preserve an unavailable nested checkout as an explicit local exclusion.

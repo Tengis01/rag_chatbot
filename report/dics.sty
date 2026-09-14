@@ -303,7 +303,8 @@ IV ангийн оюутан: &\@aothura\ (\@sisiIda)
 % Бүлгийн гарчиг: 16 pt, 20 pt мөрийн өндөр; урт нэрс зүүн тийш
 % зэрэгцсэн догол мөр болж автоматаар шилжинэ. Албадсан \\ хэрэглэхгүй.
 \renewcommand{\@makechapterhead}[1]{
-  {\parindent\z@\raggedright\normalfont
+  {\@tempdima=\parindent
+   \parindent\z@\raggedright\leftskip=\@tempdima\normalfont
    \renewcommand{\baselinestretch}{1}\fontsize{16}{20}\selectfont\bfseries
    \interlinepenalty\@M
    \hangindent=1.6em\hangafter=1
@@ -312,7 +313,8 @@ IV ангийн оюутан: &\@aothura\ (\@sisiIda)
 }
 % Дугааргүй бүлгийн гарчиг (ном зүй гэх мэт) мөн ижил хэмжээтэй.
 \renewcommand{\@makeschapterhead}[1]{
-  {\parindent\z@\raggedright\normalfont
+  {\@tempdima=\parindent
+   \parindent\z@\raggedright\leftskip=\@tempdima\normalfont
    \renewcommand{\baselinestretch}{1}\fontsize{16}{20}\selectfont\bfseries
    \interlinepenalty\@M
    \noindent\MakeUppercase{#1}\par\nobreak
@@ -322,7 +324,11 @@ IV ангийн оюутан: &\@aothura\ (\@sisiIda)
 \setcounter{secnumdepth}{2}
 % Section titles: гарчгийн өмнөх зай дараахаасаа их байх нь гарчгийг
 % дараагийн бичвэртэй нь холбож харагдуулна.
-\renewcommand{\section}{\@startsection{section}{1}{0 in}%
+% 1, 2-р түвшний гарчгийн эхлэл үндсэн догол мөрийн доголтой ижил.
+% raggedright нь parindent-ийг тэглэдэг тул доголыг урьдчилан хадгална.
+\newlength{\reportsectionindent}
+\renewcommand{\section}{\setlength{\reportsectionindent}{\parindent}%
+\@startsection{section}{1}{\reportsectionindent}%
 {1.8em plus .3em minus .2em}{0.7em}{\raggedright\large\textbf}}
 \renewcommand{\subsection}{\@startsection{subsection}{2}{0 in}%
 {1.4em plus .2em minus .2em}{0.5em}{\raggedright\slshape\textbf}}

@@ -26,9 +26,9 @@ PDF дотроос текст олдохгүй бол (жишээ нь зура�
 болмогц баримтыг чатад ашиглах боломжтой болгоно. Бүрэн урсгалыг
 Зураг~\ref{fig:ingestion-flow}-д үзүүлэв.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.82\textwidth]{ingestion-flow.png}
+  \includegraphics[width=.82\textwidth]{ingestion-flow.png}
   \caption{Баримт боловсруулах урсгал ба төлөвийн шилжилт}
   \label{fig:ingestion-flow}
 \end{figure}
@@ -61,7 +61,7 @@ export function estimateTokens(text: string): number {
 \end{lstlisting}
 
 Хоёр дахь алхамд \texttt{embedder.ts} модуль хэсэг бүрийг Gemini-ийн
-\texttt{gemini-embedding-001} загвараар 768 хэмжээст embedding вектор болгон
+\texttt{gemini-\allowbreak embedding-\allowbreak 001} загвараар 768 хэмжээст embedding вектор болгон
 хөрвүүлнэ. Үнэгүй түвшний хүсэлтийн хязгаарлалтад (rate limit) тааруулан
 хүсэлтүүдийг багцалдаг: нэг багцад дээд тал нь 15 хэсэг буюу ойролцоогоор 6000
 токен багтааж, багц хооронд 3 секундын завсарлага авч, хүсэлт бүрд 30 секундын
@@ -81,7 +81,7 @@ PostgreSQL-д хадгална. Хадгалалт нэг транзакц до�
 \section{Хайлт ба хариу үүсгэлт}
 
 Хэрэглэгчийн асуултад хариулахдаа систем эхлээд асуултыг мөн адил
-\texttt{gemini-embedding-001} загвараар вектор болгож, дараа нь өгөгдлийн сангийн
+\texttt{gemini-\allowbreak embedding-\allowbreak 001} загвараар вектор болгож, дараа нь өгөгдлийн сангийн
 \texttt{match\_chunks} функцээр хамгийн төстэй хэсгүүдийг хайна
 (Код~\ref{lst:matchchunks}). Төстэй байдлыг косинус хэмжигдэхүүнээр тооцох
 бөгөөд pgvector-ийн \texttt{<=>} оператор косинус зайг буцаадаг тул
@@ -149,9 +149,9 @@ similarity\}} бүтэцтэй массив бичигдэж, клиент та�
 сурвалжийн карт хэлбэрээр харагдана. Чатын урсгалыг
 Зураг~\ref{fig:chat-sequence}-д үзүүлэв.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=\textwidth]{chat-sequence.png}
+  \includegraphics[width=1\textwidth]{chat-sequence.png}
   \caption{Чатын хүсэлтийн бүрэн дараалал (sequence diagram)}
   \label{fig:chat-sequence}
 \end{figure}
@@ -183,9 +183,9 @@ cookie-г хөтчийн стандарт механизмаар (\texttt{creden
 Бүртгэлээс хамгаалагдсан хүсэлт хүртэлх дарааллыг
 Зураг~\ref{fig:auth-sequence}-д үзүүлэв.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=\textwidth]{auth-sequence.png}
+  \includegraphics[width=1\textwidth]{auth-sequence.png}
   \caption{Нэвтрэлтийн дараалал: бүртгэл, session үүсэлт, 401 хамгаалалт}
   \label{fig:auth-sequence}
 \end{figure}
@@ -215,14 +215,14 @@ API-ийн хаягийг тогтмол бичихийн оронд ажилл�
 товчтой. Эдгээр утга \texttt{/chat} хүсэлтийн бие дотор дамждаг.
 
 % TODO(Тэнгис): вэб дэлгэцийн зургуудыг figures/ дотор хийгээд доорх мөрүүдийг тайлна уу.
-% \begin{figure}[H]
+% \begin{figure}[!htbp]
 %   \centering
 %   \includegraphics[width=\textwidth]{web-workspace.png}
 %   \caption{Ажлын талбар: чат, баримтын жагсаалт, эх сурвалжийн картууд}
 %   \label{fig:web-workspace}
 % \end{figure}
 %
-% \begin{figure}[H]
+% \begin{figure}[!htbp]
 %   \centering
 %   \includegraphics[width=0.7\textwidth]{web-settings.png}
 %   \caption{Хайлтын тохиргоо: MMR товч ба threshold/$\lambda$ гулсагчид}
@@ -241,9 +241,9 @@ Native-д зориулсан Tailwind) гүйцэтгэнэ. Апп нээгдэ
 байхгүй байх нь \ref{sec:problem-bootloop} хэсэгт өгүүлэх boot loop алдааны
 засварын гол зарчим юм.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.9\textwidth]{mobile-routing.png}
+  \includegraphics[width=.9\textwidth]{mobile-routing.png}
   \caption{Мобайл аппын чиглүүлэлтийн төлөвийн диаграм}
   \label{fig:mobile-routing}
 \end{figure}
@@ -276,7 +276,7 @@ resolving = Promise.any(candidateList().map(probe))
 
 % TODO(Тэнгис): мобайл дэлгэцийн зургуудыг (Expo Go эсвэл эмулятороос) авч
 % figures/ дотор хийгээд доорх мөрүүдийг тайлна уу.
-% \begin{figure}[H]
+% \begin{figure}[!htbp]
 %   \centering
 %   \includegraphics[width=0.32\textwidth]{mobile-onboarding.png}\hfill
 %   \includegraphics[width=0.32\textwidth]{mobile-chat.png}\hfill
@@ -297,9 +297,9 @@ tools}) асаах боломжтой. Өгөгдөл named volume-д хадга
 build хийхэд устдаггүй. Хэрэглэгчийн төхөөрөмжүүд, контейнерууд, volume-ууд
 болон Gemini API-ийн холболтыг Зураг~\ref{fig:deployment}-д үзүүлэв.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=\textwidth]{deployment.png}
+  \includegraphics[width=1\textwidth]{deployment.png}
   \caption{Байршуулалтын диаграм: Docker Compose орчин}
   \label{fig:deployment}
 \end{figure}

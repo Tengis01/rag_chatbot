@@ -27,6 +27,8 @@
 \usepackage{geometry}
 \usepackage{fancyhdr}
 \usepackage{float}
+\usepackage[section,above,below]{placeins}
+\usepackage{needspace}
 \usepackage{afterpage}
 \usepackage{graphicx}
 \graphicspath{{./}{figures/}}
@@ -47,6 +49,14 @@
 \makeatletter
 \usepackage{caption}
 \captionsetup[table]{belowskip=0.5pt}
+\captionsetup[figure]{skip=5pt}
+% Зураг/тайлбар ба бичвэрийн зай; үндсэн мөрийн зай, margin хэвээр.
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{5pt}
+\setlength{\belowcaptionskip}{2pt}
+\renewcommand{\textfraction}{0.08}
 \usepackage{subfiles}
 
 \usepackage{listings}
@@ -93,7 +103,7 @@
 \def\abs{\@ifstar{\oldabs}{\oldabs*}}
 \makeatother
 \makenomenclature
-\setlength{\emergencystretch}{3em} % шаардлагатай үед мөрийг арай уян болгож багтаана
+\setlength{\emergencystretch}{6em} % шаардлагатай үед мөрийг арай уян болгож багтаана
 \begin{document}
 
 

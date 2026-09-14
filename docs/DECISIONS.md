@@ -2,7 +2,25 @@
 
 ## Decision Log
 
+## 2026-09-14 — Restore original Mermaid appearance (supersedes print-figure choice below)
+
+User explicitly prefers the detailed original default Mermaid appearance over simplified readable print variants. Embed the ten original saved PNGs; keep the original Mermaid source content unchanged. Remove custom print theme/config and simplified sources. Tighten LaTeX float/caption spacing without changing approved margins, body spacing or prose. Current CLI rerenders can differ from older exports, so inspect their layout before replacing the canonical saved images. Raster resolution and the smaller original labels are retained with this requested rollback; previous vector/8.5 pt claims do not describe the current PDF. Application architecture is unchanged.
+
+## 2026-09-14 — School report layout and print figures
+
+Use the school 3/2/2.5/2 cm margins with includefoot and 12 pt body, preserving the user's 1.0 spacing override and wrapping 16 pt chapters. Report figures use vector PDFs and readable print variants while retaining detailed Mermaid sources. Pin figure rendering to Mermaid CLI 11.17.0; application dependencies/architecture are unchanged. Genuine TNR/Arial and actual screenshots remain pending; do not claim complete font compliance from a Liberation fallback.
+
+
 This file records important project decisions.
+
+## 2026-09-10 — Reproducible Fedora host preparation
+
+- Match existing Dockerfiles with Node.js 24; install the `packageManager` pnpm version (currently 11.6.0) and use the existing frozen workspace lockfile. Frameworks and TypeScript stay workspace-local.
+- Use Fedora's XeLaTeX, latexmk and Biber packages for the existing report. Use existing Liberation fallback unless licensed Times fonts are supplied; preserve report layout/content.
+- `scripts/setup-fedora.sh` runs as the normal user, uses sudo only for Fedora packages, and installs pnpm under `~/.local`. Go is an extra tool requested by the user; no Go service/module or stack replacement.
+- Follow-up: user completed installation; typecheck, all workspace builds and report compile verified. Docker access remains unresolved. Run the report command from `report/` so latexmk loads the project-local rc.
+
+---
 
 ---
 
