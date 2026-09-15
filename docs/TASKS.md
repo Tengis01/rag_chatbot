@@ -10,7 +10,8 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [ ] Record exact Azure expiry and inspect Azure NSG before publishing.
 - [x] Prepare production Docker/Compose/Nginx, environment validation, auth/proxy/CORS, upload/request bounds and migration packaging; run relevant tests/builds.
 - [x] Manually build and deploy to `/home/tengis/rag-chatbot` as Compose project `rag-prod`; verify DB persistence and Valheim isolation.
-- [ ] Connect domain, Cloudflare Tunnel and HTTPS; verify browser and mobile auth/RAG flows plus user isolation.
+- [x] Verify public Cloudflare NS delegation after user changes Name.com: both public resolvers return marek/mckinley (2026-09-15).
+- [ ] Confirm Cloudflare zone Active, connect named Tunnel and HTTPS; verify browser and mobile auth/RAG flows plus user isolation.
 - [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.
 - [ ] Verify maintenance rejection with active ingestion, manual previous-image rollback, daily backup/retention and recurring off-VM copies.
 - [ ] Add Actions CI and SHA-tagged GHCR images; verify VM can pull and manually deploy the same artifacts.

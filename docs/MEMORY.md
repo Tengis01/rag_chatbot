@@ -21,6 +21,13 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### Cloudflare delegation and report follow-up (2026-09-15)
+
+- User entered Cloudflare nameservers at Name.com and requested an activation check; dashboard result still pending per user. Independent `dig` queries against both 1.1.1.1 and 8.8.8.8 return `marek.ns.cloudflare.com` and `mckinley.ns.cloudflare.com` for ragchatbot.dev. This confirms public NS visibility, not authenticated zone Active status or a working tunnel/HTTPS route.
+- Overall deployment progress is roughly 45–50% by phase, not a measured completion metric. Manual VM deployment and initial backup/restore checks passed; HTTPS/browser/mobile/live RAG, rollback/scheduled backups and CI/CD remain.
+- Report still describes local-only deployment (introduction/conclusion) and has a Docker deployment section. Recommend updating these plus results/skills once public deployment/CI checks are verified; user asked for advice, so no report edits made. Record completed and future work honestly.
+- Local worktree was clean at `e3eb63a` (`vm configure`) before this documentation follow-up; earlier uncommitted-source notes describe the first build, whose VM image still has the manual archive revision.
+
 ### Jarvis first manual production deployment (2026-09-15)
 
 - User has registered `ragchatbot.dev` at Name.com and is adding it to Cloudflare; assigned nameservers/token still pending. Target web is apex domain, API `api.ragchatbot.dev`. No passwords/tokens should be sent in chat.

@@ -2,7 +2,7 @@
 
 ## Current state
 
-Manual production build/deploy runs on `jarvis` under `/home/tengis/rag-chatbot`, Compose `rag-prod`. The user registered **ragchatbot.dev at Name.com** and is adding it to Cloudflare. No Cloudflare token, tunnel, DNS change, public HTTPS test or GitHub workflow has been completed by this task.
+Manual production build/deploy runs on `jarvis` under `/home/tengis/rag-chatbot`, Compose `rag-prod`. The user registered **ragchatbot.dev at Name.com** and changed its nameservers to Cloudflare. On 2026-09-15, both 1.1.1.1 and 8.8.8.8 return `marek.ns.cloudflare.com` and `mckinley.ns.cloudflare.com`. Cloudflare dashboard Active status remains unverified; no connector token, tunnel, public HTTPS test or GitHub workflow has been completed by the agent.
 
 - API: `rag-api:manual-60653da1fc21`, web: `rag-web:manual-60653da1fc21`.
 - Source archive SHA-256: `60653da1fc21a4b88036bb8a989aa87d27070aca0a766b1fa87e5ea78cb9a5b5`, 94 selected source files, 191,657 bytes. Contains no env, dependencies, Git metadata or report. Built **on the VM**. This is a worktree archive, not a committed Git revision. Compose's tmpfs/network fixes and later verification scripts were transferred separately.
@@ -40,7 +40,7 @@ Private laptop copies belong under the Git-ignored `backups/` directory with the
 
 ## Required before calling the deployment complete
 
-- Receive Cloudflare's assigned nameservers, finish registrar delegation and named tunnel. Token goes into a private VM file, not chat.
+- Confirm Cloudflare zone Active and configure the named tunnel; public NS delegation is already visible. Token goes into a private VM file, not chat.
 - Real HTTPS browser and mobile session/cookie checks; small live document ingestion/chat/source test using the verified Gemini credential. Credential acceptance alone does not prove selected model availability, embedding quota or RAG correctness.
 - Demonstrate maintenance rejection during active work and a compatible previous-image rollback. First release has no previous production version; no claim of zero downtime.
 - Configure daily backup/retention, offsite cadence and final-week restore/export. Confirm exact Azure expiry and NSG rules.
