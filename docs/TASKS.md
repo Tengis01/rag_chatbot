@@ -1,5 +1,22 @@
 # TASKS.md
 
+## Jarvis deployment — manual first, then CI/CD (2026-09-14)
+
+Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/git-pull/on-VM-CI-build details in Priority 4/5 below. The first deployment deliberately builds on the VM for learning; later CI builds on GitHub and deploys versioned GHCR images.
+
+- [x] Confirm learning objective, SSH alias, active Student Pack and lack of domain; inspect Jarvis resources/Valheim/Docker/UFW read-only.
+- [x] Prepare phased plan with acceptance gates, domain costs, backup/restore, rollback, CI/CD and 27-day exit preparation.
+- [x] Claim Student Pack domain: user registered `ragchatbot.dev` at Name.com (2026-09-15).
+- [ ] Record exact Azure expiry and inspect Azure NSG before publishing.
+- [x] Prepare production Docker/Compose/Nginx, environment validation, auth/proxy/CORS, upload/request bounds and migration packaging; run relevant tests/builds.
+- [x] Manually build and deploy to `/home/tengis/rag-chatbot` as Compose project `rag-prod`; verify DB persistence and Valheim isolation.
+- [ ] Connect domain, Cloudflare Tunnel and HTTPS; verify browser and mobile auth/RAG flows plus user isolation.
+- [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.
+- [ ] Verify maintenance rejection with active ingestion, manual previous-image rollback, daily backup/retention and recurring off-VM copies.
+- [ ] Add Actions CI and SHA-tagged GHCR images; verify VM can pull and manually deploy the same artifacts.
+- [ ] Add restricted SSH deployment script/workflow with pinned host key and serialized releases; validate workflow_dispatch before main auto deploy.
+- [ ] Record monitoring/demo evidence; rehearse restore in final week and export final backups before expiry.
+
 ## Git recovery after laptop transfer — 2026-09-14
 
 - [x] Verify existing SSH identity; map and reconnect all 14 supplied repositories to the correct primary folders, preserving ICSI405's existing metadata.

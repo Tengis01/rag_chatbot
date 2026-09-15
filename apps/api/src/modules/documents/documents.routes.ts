@@ -5,7 +5,10 @@ import { db } from "../../shared/db/db.js";
 import { requireUser } from "../../shared/session.js";
 import { processDocument } from "../ingestion/pipeline.js";
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024;
+import { config } from "../../shared/config.js";
+import { ingestionWork, isDraining } from "../../shared/workload.js";
+
+const MAX_FILE_SIZE = config.maxUploadSizeMb * 1024 * 1024;
 
 export async function documentsRoute(app: FastifyInstance): Promise<void> {
 
@@ -13,6 +16,9 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
         const user = await requireUser(req, reply);
         if (!user) return;
 
+        const release = ingestionWork.acquire(user.id);
+        if (!release) return reply.header("Retry-After", "30").status(isDraining() ? 503 : 429).send({ error: "Боловсруулалт завгүй байна. Түр хүлээгээд дахин оролдоно уу." });
+        let background = false;
         try {
             const data = await req.file();
 
@@ -32,8 +38,8 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
             }
             const buffer = Buffer.concat(chunks);
 
-            if (buffer.length > MAX_FILE_SIZE) {
-                return reply.status(400).send({ error: "Файл хэт том байна (20MB-с ихгүй байх ёстой)"});
+            if (data.file.truncated || buffer.length > MAX_FILE_SIZE) {
+                return reply.status(413).send({ error: `Файл хэт том байна (${config.maxUploadSizeMb}MB-с ихгүй байх ёстой)` });
             }
 
             let extractedText: string;
@@ -54,11 +60,12 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
 
             storeDocumentText(documentId, extractedText);
 
-            // Start pipeline in the background using setImmediate
+            // Keep the admission slot until the asynchronous pipeline finishes.
+            background = true;
             setImmediate(() => {
                 processDocument(documentId, extractedText).catch((err) => {
                     console.error("upload pipeline error:", err);
-                });
+                }).finally(release);
             });
 
             return reply.status(201).send({
@@ -69,8 +76,13 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
                 extractedTextLength: extractedText.length,
             });
         } catch (err) {
+            if (err instanceof app.multipartErrors.RequestFileTooLargeError) {
+                return reply.status(413).send({ error: `Файл хэт том байна (${config.maxUploadSizeMb}MB-с ихгүй байх ёстой)` });
+            }
             req.log.error(err);
             return reply.status(500).send({ error: "Файл боловсруулах явцад алдаа гарлаа" });
+        } finally {
+            if (!background) release();
         }
     });
 
@@ -79,8 +91,8 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
         if (!user) return;
 
         const body = req.body as { text?: string; title?: string };
-        const text = body?.text?.trim() ?? "";
-        const title = body?.title?.trim() || "Хуулсан текст";
+        const text = typeof body?.text === "string" ? body.text.trim() : "";
+        const title = typeof body?.title === "string" ? body.title.trim().slice(0, 255) || "Хуулсан текст" : "Хуулсан текст";
 
         if (!text) {
             return reply.status(400).send({ error: "Текст хоосон байна"});
@@ -88,10 +100,13 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
         if (text.length < 10) {
             return reply.status(400).send({ error: "Текст маш богино байна (10 тэмдэгтээс их байх ёстой)"});
         }
-        if (text.length > 500000) {
-            return reply.status(400).send({ error: "Текст хэт урт байна (500,000 тэмдэгтээс ихгүй байх ёстой)"});
+        if (text.length > config.maxPasteLength) {
+            return reply.status(400).send({ error: `Текст хэт урт байна (${config.maxPasteLength} тэмдэгтээс ихгүй байх ёстой)`});
         }
 
+        const release = ingestionWork.acquire(user.id);
+        if (!release) return reply.header("Retry-After", "30").status(isDraining() ? 503 : 429).send({ error: "Боловсруулалт завгүй байна. Түр хүлээгээд дахин оролдоно уу." });
+        let background = false;
         try {
             const insertResult = await db.query(
                 `INSERT INTO documents (user_id, filename, source_type, status)
@@ -104,11 +119,12 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
 
             storeDocumentText(documentId, text);
 
-            // Start pipeline in the background using setImmediate
+            // Keep the admission slot until the asynchronous pipeline finishes.
+            background = true;
             setImmediate(() => {
                 processDocument(documentId, text).catch((err) => {
                     console.error("paste pipeline error:", err);
-                });
+                }).finally(release);
             });
 
             return reply.status(201).send({
@@ -121,6 +137,8 @@ export async function documentsRoute(app: FastifyInstance): Promise<void> {
         } catch (err) {
             req.log.error(err);
             return reply.status(500).send({ error: "Текст боловсруулах явцад алдаа гарлаа" });
+        } finally {
+            if (!background) release();
         }
     });
 

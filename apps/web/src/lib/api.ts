@@ -1,8 +1,6 @@
 import type { ChatMessage, Conversation, DocumentItem } from "@/types";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ??
-  `http://${window.location.hostname}:4000`;
+import { API_BASE } from "./api-base";
 
 // MVP үед ашиглах тогтмол demo хэрэглэгч.
 export const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";

@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+FROM node:24-bookworm-slim AS base
+ENV CI=true
+WORKDIR /app
+RUN npm install --global pnpm@11.6.0
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY apps/mobile/package.json apps/mobile/package.json
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/api-client/package.json packages/api-client/package.json
+
+FROM base AS api-deps
+RUN --mount=type=cache,id=rag-pnpm,target=/pnpm/store pnpm --filter api install --prod --frozen-lockfile --store-dir=/pnpm/store
+
+FROM base AS build
+RUN --mount=type=cache,id=rag-pnpm,target=/pnpm/store pnpm --filter api --filter web... install --frozen-lockfile --store-dir=/pnpm/store
+COPY apps/api apps/api
+COPY apps/web apps/web
+COPY packages/shared packages/shared
+RUN pnpm --filter api build
+ARG VITE_API_BASE_URL=https://api.ragchatbot.dev
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+RUN pnpm --filter web... build
+
+FROM node:24-bookworm-slim AS api
+ENV NODE_ENV=production PORT=4000
+WORKDIR /app/apps/api
+COPY --from=api-deps /app/node_modules /app/node_modules
+COPY --from=api-deps /app/apps/api/node_modules ./node_modules
+COPY --from=build /app/apps/api/dist ./dist
+COPY apps/api/package.json ./package.json
+COPY infra/postgres/migrations /app/infra/postgres/migrations
+ARG APP_REVISION=manual
+ENV APP_REVISION=$APP_REVISION
+LABEL org.opencontainers.image.source="https://github.com/Tengis01/rag_chatbot"
+LABEL org.opencontainers.image.revision=$APP_REVISION
+USER node
+EXPOSE 4000
+CMD ["node", "dist/index.js"]
+
+FROM nginx:stable-alpine AS web
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+COPY infra/nginx/default.conf /etc/nginx/conf.d/default.conf
+ARG APP_REVISION=manual
+LABEL org.opencontainers.image.source="https://github.com/Tengis01/rag_chatbot"
+LABEL org.opencontainers.image.revision=$APP_REVISION
+EXPOSE 8080

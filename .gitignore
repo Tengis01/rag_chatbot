@@ -67,3 +67,7 @@ expo-env.d.ts
 *.pem
 apps/mobile/ios/
 apps/mobile/android/
+.env.production
+/secrets/
+/state/
+/backups/

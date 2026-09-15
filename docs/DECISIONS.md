@@ -2,6 +2,21 @@
 
 ## Decision Log
 
+## 2026-09-15 — First manual Jarvis release and domain
+
+User selected `ragchatbot.dev` at Name.com; apex serves web and `api.ragchatbot.dev` serves API/auth. Production now uses a separate Compose file and multi-stage Debian Node 24 API / Nginx static image, preserving development commands. Named Cloudflare Tunnel remains pending account setup. Nginx joins private backend/tunnel networks plus an ordinary egress bridge so the explicit 127.0.0.1 port binding works; database stays internal and neither DB nor API publishes a port.
+
+A source-only worktree archive was transferred over the existing SSH connection and manually built on VM to validate uncommitted changes. Its manual archive-hash revision is explicitly not a Git commit; there is no copied personal Git key or invented committed release. Commit reviewed source and establish the project-specific checkout/CI path before automation. Keep one API, bounded per-user/global admission, filesystem maintenance drain, consistent file limits and one 90-second deadline across chat embedding/generation retries. First backup/restore and DB persistence checks passed; public HTTPS/live RAG/manual rollback gates remain.
+
+
+## 2026-09-14 — Jarvis deployment learning sequence
+
+User explicitly chooses manual VM deployment first, then CI/CD, to demonstrate Ubuntu service administration. Current target is SSH alias `jarvis` (`tengis`, Standard_D4as_v5, Ubuntu 24.04), sharing the VM with existing Valheim; old Monarch connection details are historical. No new VM or subscription upgrade is planned.
+
+The implementation plan in `docs/DEPLOYMENT_PLAN.md` proposes separate `rag-prod` Compose resources, manual on-VM image builds first, Nginx with Cloudflare Tunnel/HTTPS, then GitHub-hosted Actions builds and SHA/digest-pinned GHCR images. Automate a tested release script over a dedicated restricted SSH key, starting with workflow_dispatch; verify runner networking before choosing final transport. Keep one API instance until in-memory ingestion/startup recovery can safely support multiple instances. Backup restore and manual rollback are prerequisites for automatic deployment.
+
+This records the agreed sequence and proposed architecture; deployment/configuration is not yet implemented. Preserve Valheim volumes/configuration, the current report, local development workflow and application stack. This supersedes old git-pull-and-build-on-VM CI/CD instructions, not the general requirement to verify manual deployment first.
+
 ## 2026-09-14 — Restore original Mermaid appearance (supersedes print-figure choice below)
 
 User explicitly prefers the detailed original default Mermaid appearance over simplified readable print variants. Embed the ten original saved PNGs; keep the original Mermaid source content unchanged. Remove custom print theme/config and simplified sources. Tighten LaTeX float/caption spacing without changing approved margins, body spacing or prose. Current CLI rerenders can differ from older exports, so inspect their layout before replacing the canonical saved images. Raster resolution and the smaller original labels are retained with this requested rollback; previous vector/8.5 pt claims do not describe the current PDF. Application architecture is unchanged.

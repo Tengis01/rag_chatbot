@@ -1,3 +1,5 @@
+import { config } from "../../shared/config.js";
+import { chatWork, isDraining } from "../../shared/workload.js";
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 
@@ -16,8 +18,8 @@ import {
 
 const chatBodySchema = z.object({
   conversationId: z.string().uuid().optional(),
-  documentIds: z.array(z.string().uuid()).min(1),
-  message: z.string().trim().min(1),
+  documentIds: z.array(z.string().uuid()).min(1).max(50),
+  message: z.string().trim().min(1).max(10000),
   useMMR: z.boolean().optional().default(true),
   // Power-user retrieval controls (Priority 9). Defaults match the
   // interim cross-lingual fix (ERR-021) — see DECISIONS.md before changing.
@@ -85,6 +87,12 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
       lambda,
     } = parsed.data;
 
+    const release = chatWork.acquire(user.id);
+    if (!release) return reply.header("Retry-After", "10").status(isDraining() ? 503 : 429).send({ error: "Чат завгүй байна. Түр хүлээгээд дахин оролдоно уу." });
+    const disconnected = new AbortController();
+    const onClose = () => { if (!reply.raw.writableEnded) disconnected.abort(); };
+    reply.raw.once("close", onClose);
+    const signal = AbortSignal.any([AbortSignal.timeout(config.chatTimeoutMs), disconnected.signal]);
     try {
       const readyDocumentIds = await getReadyDocumentIds(user.id, documentIds);
       if (readyDocumentIds.length !== documentIds.length) {
@@ -103,7 +111,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
         }
       }
 
-      const embedding = await embedText(message);
+      const embedding = await embedText(message, signal);
       const chunks = await retrieveChunks(
         embedding,
         user.id,
@@ -114,6 +122,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
         useMMR
       );
 
+      signal.throwIfAborted();
       if (chunks.length === 0) {
         const conversationId = await resolveConversationId(
           user.id,
@@ -143,7 +152,7 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const assistantReply = await generateAnswer(message, chunks);
+      const assistantReply = await generateAnswer(message, chunks, signal);
       const conversationId = await resolveConversationId(
         user.id,
         requestedConversationId,
@@ -178,10 +187,14 @@ export async function chatRoute(app: FastifyInstance): Promise<void> {
         })),
       });
     } catch (err) {
+      if (signal.aborted) return reply.status(504).send({ error: "Хариулт хүлээх хугацаа дууслаа. Дахин оролдоно уу." });
       req.log.error(err);
       const message =
-        err instanceof Error ? err.message : "chat хүсэлт амжилтгүй боллоо";
+        !config.production && err instanceof Error ? err.message : "chat хүсэлт амжилтгүй боллоо";
       return reply.status(500).send({ error: message });
+    } finally {
+      reply.raw.off("close", onClose);
+      release();
     }
   });
 }

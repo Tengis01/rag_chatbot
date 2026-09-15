@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { API_BASE } from "../lib/api-base";
 
 // Shape of the config returned by GET /config
 export interface AppConfig {
@@ -26,10 +27,6 @@ const ConfigContext = createContext<ConfigState>({
   error: null,
 });
 
-const API_URL =
-  import.meta.env.VITE_API_BASE_URL ??
-  `http://${window.location.hostname}:4000`;
-
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConfigState>({
     config: null,
@@ -38,7 +35,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    fetch(`${API_URL}/config`)
+    fetch(`${API_BASE}/config`)
       .then((res) => {
         if (!res.ok) throw new Error(`/config returned ${res.status}`);
         return res.json() as Promise<AppConfig>;

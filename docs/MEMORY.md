@@ -21,6 +21,25 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### Jarvis first manual production deployment (2026-09-15)
+
+- User has registered `ragchatbot.dev` at Name.com and is adding it to Cloudflare; assigned nameservers/token still pending. Target web is apex domain, API `api.ragchatbot.dev`. No passwords/tokens should be sent in chat.
+- Implemented separate `compose.prod.yml`, multi-stage `infra/docker/Dockerfile.prod`, static Nginx/proxy, strict production auth/CORS/settings, correct multipart limit/413, shared 90s chat embedding/generation cancellation, single-process admission/drain and migration packaging. Development Dockerfiles/Compose and report unchanged.
+- Manually built worktree archive `60653da1fc21...` on Jarvis; API/web tag `manual-60653da1fc21` is NOT a Git commit. Services now healthy under `/home/tengis/rag-chatbot`, project `rag-prod`; Nginx only 127.0.0.1:8080, API/DB no host publish, DB volume persistent. VM env is mode 600 with fresh DB/auth secrets and the existing backend Gemini credential. Valheim stayed up throughout.
+- Typecheck/build 5/5 each pass; 3 named regression tests pass. Nginx auth/cookie/origin/isolation/413/422 smoke passes with synthetic data cleaned up. Gemini model listing HTTP 200 verifies credential only, no generation/embedding calls. DB scratch restore and Postgres recreation persistence pass; maintenance removed and API reopened.
+- `scripts/deploy/` includes production Compose wrapper, drain, dump, scratch-restore and no-Gemini smoke helpers. Instructions/evidence: `DEPLOYMENT_RUNBOOK.md`, `DEPLOYMENT_VERIFICATION.md`. Runtime/probe issues and fixes: ERR-056 through ERR-061. Image inspection confirms API uid 1000, packaged migration and no env/source/report/Git/tsx in the runtime.
+- Off-VM backup copies are in local Git-ignored `backups/`, owner-only directory. Both the scratch-restore-tested `rag-20260915T115617-217610.dump` and clean `rag-20260915T115636-218392.dump` match their SHA-256 checksums. Daily scheduling/recurring offsite copies remain pending.
+- Next: finish Cloudflare nameservers/named tunnel/HTTPS with the user, test browser/mobile/live RAG, then manual rollback/daily backups and CI/GHCR/CD in the agreed order. Source/archive/Compose are not yet committed or pushed. Exact Azure expiry/NSG still pending. Do not claim full public deployment or CI/CD is complete.
+
+### Jarvis deployment plan — manual first, CI/CD second (2026-09-14)
+
+- User confirmed the goal is demonstrating practical Ubuntu VM administration/deployment, then automating the same proven process. Plan is in `docs/DEPLOYMENT_PLAN.md`; implementation has not started. Student Pack is active, domain not selected yet, VM has 27 days remaining per user (exact expiry pending).
+- Read-only SSH inspection of `jarvis` succeeds as `tengis`: Standard_D4as_v5, 4 vCPU, Ubuntu 24.04.5, ~13 GiB available RAM and 53 GB free root disk at inspection. Docker/Compose work. Valheim runs separately in `/home/tengis/valheim`, using config/data bind mounts and published UDP 2456–2457. UFW allows SSH and those game ports; Azure NSG still needs inspection. Historical Monarch host/IP is not this deployment target.
+- Sequence: production Docker/auth/proxy preparation → manual image build/deploy on VM → Student domain + Cloudflare Tunnel/Nginx/HTTPS → auth/RAG/isolation/persistence/backup restore/manual rollback → Actions/GHCR → SSH release script with manual trigger, then auto deploy after successful main CI. Production keeps one API instance because of in-memory ingestion/startup orphan handling.
+- Keep Valheim project/data separate, secrets out of images/Git, and DB volumes persistent. Bound Gemini request duration, align upload limits, verify migration paths in compiled images, and drain ingestion before updates. Off-VM backup and a final-week exit plan are required deliverables.
+- Repo was clean at 7bc797b (reportv3) before planning; prior recovery notes about uncommitted RAG work are historical. This task changed planning docs only; no VM/DNS/account/workflow changes, purchases, app edits or report rebuild. No new runtime/build error encountered.
+- Next: implement production configuration locally while user claims a domain, then follow the manual deployment acceptance gates. Do not jump directly to automated deployment or infer a domain name.
+
 ### Git restored after laptop backup transfer (2026-09-14)
 
 - Restored 13 missing primary Git checkouts and verified the existing ICSI405 checkout: all 14 main branches match live GitHub origin/main, SSH authenticates as Tengis01, no unmerged entries, Git connectivity checks pass. See `docs/GIT_RECOVERY.md` for exact folder → repo mapping.

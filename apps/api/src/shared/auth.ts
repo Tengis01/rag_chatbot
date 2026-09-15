@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { expo } from "@better-auth/expo";
 
 import { db } from "./db/db.js";
+import { config } from "./config.js";
 
 /**
  * Better Auth server instance.
@@ -14,6 +15,7 @@ import { db } from "./db/db.js";
  */
 export const auth = betterAuth({
   database: db,
+  baseURL: config.authURL,
   secret: process.env.BETTER_AUTH_SECRET ?? "dev-insecure-secret-change-me",
   emailAndPassword: {
     enabled: true,
@@ -22,12 +24,15 @@ export const auth = betterAuth({
   // Dev/MVP: reflect the request origin (matches CORS `origin: true`) so the
   // app keeps working from LAN IPs on phones. Tighten to an allowlist in prod.
   // "ragchatbot://" is the Expo app scheme used by the expo plugin.
-  trustedOrigins: (request) => {
+  trustedOrigins: config.production ? [config.frontendURL!, "ragchatbot://"] : (request) => {
     const origin = request?.headers.get("origin");
     return origin ? ["ragchatbot://", origin] : ["ragchatbot://"];
   },
   plugins: [expo()],
+  rateLimit: { enabled: config.production, window: 60, max: 60 },
   advanced: {
+    useSecureCookies: config.production,
+    ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
     database: {
       // Keep ids as UUIDs so they are compatible with the existing
       // UUID user_id columns on documents/chunks/conversations/messages.

@@ -1,0 +1,113 @@
+name: rag-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_DB: rag_chatbot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Use --env-file apps/api/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U rag -d rag_chatbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [database]
+    mem_limit: 2g
+    logging: *logging
+
+  api:
+    image: ${API_IMAGE:-rag-api:manual}
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.prod
+      target: api
+      args:
+        APP_REVISION: ${APP_REVISION:-manual}
+    restart: unless-stopped
+    init: true
+    env_file: apps/api/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DRAIN_FILE: /run/rag/drain
+    volumes:
+      - ./state:/run/rag:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    stop_grace_period: 30s
+    networks: [database, backend, egress]
+    mem_limit: 1536m
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+
+  web:
+    image: ${WEB_IMAGE:-rag-web:manual}
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.prod
+      target: web
+      args:
+        APP_REVISION: ${APP_REVISION:-manual}
+        VITE_API_BASE_URL: https://api.ragchatbot.dev
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports: ["127.0.0.1:8080:8080"]
+    # A non-internal bridge is needed for Docker's loopback port publishing.
+    networks: [backend, tunnel, egress]
+    mem_limit: 256m
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: [tunnel]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel_token
+    volumes:
+      - ./secrets/cloudflare-tunnel-token:/run/secrets/tunnel_token:ro
+    user: "0:0"
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    networks: [tunnel, egress]
+    mem_limit: 256m
+    logging: *logging
+
+networks:
+  database:
+    internal: true
+  backend:
+    internal: true
+  tunnel:
+    internal: true
+  egress: {}
+
+volumes:
+  postgres_data:

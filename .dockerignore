@@ -8,3 +8,17 @@ dist
 .env.local
 *.log
 coverage
+**/.env
+**/.env.*
+**/.turbo
+**/.expo
+report
+docs
+.agents
+.codex
+secrets
+state
+backups
+**/*.pem
+**/*.key
+**/*.zip

@@ -34,7 +34,7 @@ Fastify backend
         |---- Gemini API
         |
         v
-Supabase Postgres + pgvector
+Local Postgres + pgvector (Docker)
 ```
 
 ## Main Data Concepts
@@ -67,19 +67,9 @@ A chunk used by the assistant to answer a question.
 - messages
 - conversation_documents
 
-## First Production-Like Deploy Target
+## Production Deployment Target
 
-Frontend:
-
-- Vercel
-
-Backend:
-
-- Render or Railway
-
-Database:
-
-- Supabase
+Azure Ubuntu VM (`jarvis`) with separate RAG Docker Compose services: Nginx + compiled Vite frontend, Fastify API and local PostgreSQL/pgvector. Public domains: `ragchatbot.dev` and `api.ragchatbot.dev` via Cloudflare Tunnel (public connection pending). Manual VM build/deployment first, then GitHub Actions + GHCR. See `DEPLOYMENT_PLAN.md` and current `DEPLOYMENT_VERIFICATION.md`.
 
 ## MVP Principle
 

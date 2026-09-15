@@ -30,7 +30,8 @@ export async function runMigrations(): Promise<void> {
   let files: string[];
   try {
     files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith(".sql")).sort();
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV === "production" || (err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     console.warn(`[migrate] migrations dir not found (${MIGRATIONS_DIR}) — skipping`);
     return;
   }

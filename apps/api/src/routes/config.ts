@@ -1,12 +1,13 @@
 import { FastifyInstance } from "fastify";
+import { config } from "../shared/config.js";
 
 export async function configRoute(app: FastifyInstance): Promise<void> {
     app.get("/config", async (_req, reply) => {
         return reply.send({
             appName: "Баримтын RAG Чатбот",
-            maxUploadSizeMb: Number(process.env.MAX_UPLOAD_SIZE_MB ?? 20),
+            maxUploadSizeMb: config.maxUploadSizeMb,
             supportedFileTypes: ["pdf"],
-            maxPasteLength: Number(process.env.MAX_PASTE_LENGTH ?? 500000),
+            maxPasteLength: config.maxPasteLength,
         })
     })
 }

@@ -12,6 +12,8 @@
  * and clients poll status, so slow-but-successful beats failing.
  */
 
+import { pause, requestSignal } from "../../shared/deadline.js";
+
 import { estimateTokens } from "./chunker.js";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -34,7 +36,7 @@ interface GeminiBatchResponse {
   embeddings: { values: number[] }[];
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = pause;
 
 /** Split texts into batches capped by both item count and estimated tokens. */
 function buildBatches(texts: string[]): string[][] {
@@ -66,7 +68,7 @@ function parseRetryDelayMs(errBody: string): number | null {
   return match ? Math.ceil(parseFloat(match[1]) * 1000) : null;
 }
 
-async function embedBatch(batch: string[]): Promise<number[][]> {
+async function embedBatch(batch: string[], signal?: AbortSignal): Promise<number[][]> {
   const body = JSON.stringify({
     requests: batch.map((text) => ({
       model: "models/gemini-embedding-001",
@@ -78,15 +80,15 @@ async function embedBatch(batch: string[]): Promise<number[][]> {
   let lastError: Error = new Error("embedBatch: no attempts made");
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    signal?.throwIfAborted();
+    const attemptSignal = requestSignal(signal, REQUEST_TIMEOUT_MS);
 
     try {
       const res = await fetch(BATCH_EMBED_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
-        signal: controller.signal,
+        signal: attemptSignal,
       });
 
       if (res.ok) {
@@ -101,7 +103,7 @@ async function embedBatch(batch: string[]): Promise<number[][]> {
 
       const errText = await res.text();
       lastError = new Error(
-        `Gemini batchEmbedContents failed [${res.status}]: ${errText.slice(0, 500)}`
+        `Gemini batchEmbedContents failed [${res.status}]`
       );
 
       // Only rate limits / transient server errors are worth retrying
@@ -114,20 +116,19 @@ async function embedBatch(batch: string[]): Promise<number[][]> {
       console.warn(
         `[embedder] ${res.status} on batch of ${batch.length}, attempt ${attempt}/${MAX_ATTEMPTS}, retrying in ${Math.round((backoff + jitter) / 1000)}s`
       );
-      await sleep(backoff + jitter);
+      await sleep(backoff + jitter, signal);
     } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
+      signal?.throwIfAborted();
+      if (attemptSignal.aborted) {
         lastError = new Error(`Gemini batchEmbedContents timed out after ${REQUEST_TIMEOUT_MS}ms`);
-        await sleep(Math.min(2 ** attempt * 1000, MAX_BACKOFF_MS));
+        await sleep(Math.min(2 ** attempt * 1000, MAX_BACKOFF_MS), signal);
       } else if (err === lastError) {
         throw err; // non-retryable HTTP error from above
       } else {
         // network failure — retry with backoff
         lastError = err instanceof Error ? err : new Error(String(err));
-        await sleep(Math.min(2 ** attempt * 1000, MAX_BACKOFF_MS));
+        await sleep(Math.min(2 ** attempt * 1000, MAX_BACKOFF_MS), signal);
       }
-    } finally {
-      clearTimeout(timer);
     }
   }
 
@@ -138,15 +139,15 @@ async function embedBatch(batch: string[]): Promise<number[][]> {
  * Embed multiple texts in token-budgeted, paced batches.
  * Returns a parallel array of 768-dim float arrays.
  */
-export async function embedTexts(texts: string[]): Promise<number[][]> {
+export async function embedTexts(texts: string[], signal?: AbortSignal): Promise<number[][]> {
   if (texts.length === 0) return [];
 
   const batches = buildBatches(texts);
   const results: number[][] = [];
 
   for (let i = 0; i < batches.length; i++) {
-    if (i > 0) await sleep(INTER_BATCH_DELAY_MS);
-    const embeddings = await embedBatch(batches[i]);
+    if (i > 0) await sleep(INTER_BATCH_DELAY_MS, signal);
+    const embeddings = await embedBatch(batches[i], signal);
     results.push(...embeddings);
     if (batches.length > 1) {
       console.log(`[embedder] batch ${i + 1}/${batches.length} done (${results.length}/${texts.length} chunks)`);
@@ -159,7 +160,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
 /**
  * Convenience wrapper — embed a single text string.
  */
-export async function embedText(text: string): Promise<number[]> {
-  const [embedding] = await embedTexts([text]);
+export async function embedText(text: string, signal?: AbortSignal): Promise<number[]> {
+  const [embedding] = await embedTexts([text], signal);
   return embedding;
 }

@@ -895,6 +895,12 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Incorrect migration packaging probe | Use the exact migration filename; inspect schema_migrations (ERR-061) |
+| Unquoted Compose tmpfs options became two YAML list items | Quote comma-containing options in YAML flow lists and verify actual container creation, not just Compose syntax. (ERR-056) |
+| Nginx internal-only networks suppressed loopback port publishing | A healthy in-container probe does not verify a published host port; inspect actual bindings and test the intended host path. (ERR-057) |
+| Node fetch virtual-host smoke reached the default Nginx server | For internal virtual-host tests, use a transport that demonstrably sends the intended Host header. (ERR-058) |
+| tsx CLI test launcher needed a sandbox-blocked IPC socket | Use the Node tsx loader directly when the CLI IPC server is unavailable; verify named assertions actually ran. (ERR-059) |
+| Deployment credential copy rejected an opaque env value with a format heuristic | Preserve opaque credentials exactly with the application parser and test service acceptance separately instead of inventing a format validator. (ERR-060) |
 | Vite not reachable from host in Docker | Set `server.host: "0.0.0.0"` and `watch.usePolling: true` in `vite.config.ts` (ERR-001) |
 | pgAdmin can't connect to localhost Postgres | Use host `postgres` (service name), not `localhost`, from inside Docker network (ERR-002) |
 | Port 5432 already in use on host | Change host port mapping in `docker-compose.yml` (ERR-003) |
@@ -2072,3 +2078,188 @@ Used exact sparse pattern `!/lab1/wireshark-src` and `git update-index --skip-wo
 #### Lesson
 
 A tracked gitlink does not supply its repository URL; inspect `.gitmodules` and preserve an unavailable nested checkout as an explicit local exclusion.
+
+
+---
+
+### ERR-056 — Unquoted Compose tmpfs options became two YAML list items
+
+**Date**: 2026-09-15
+**Status**: ✅ Fixed
+
+#### What happened
+
+First `compose.sh up -d --wait` failed with `invalid mount path: mode=1777 mount path must be absolute` after creating RAG resources; Valheim stayed running.
+
+#### Root cause
+
+A comma in the flow-style list `[/tmp:size=64m,mode=1777]` separated the mount into two YAML values. Compose config --quiet did not catch the runtime-invalid second mount.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `compose.prod.yml` | Quote the full tmpfs mount string |
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/TASKS.md` | Record progress and verification |
+
+#### Fix
+
+Changed the entry to `["/tmp:size=64m,mode=1777"]`, transferred only the corrected production Compose file and retried. API starts healthy with a read-only root and writable bounded /tmp.
+
+#### Lesson
+
+Quote comma-containing options in YAML flow lists and verify actual container creation, not just Compose syntax.
+
+
+---
+
+### ERR-057 — Nginx internal-only networks suppressed loopback port publishing
+
+**Date**: 2026-09-15
+**Status**: ✅ Fixed
+
+#### What happened
+
+All three RAG containers were healthy but host curl to 127.0.0.1:8080 failed. Docker inspect showed the requested HostConfig binding while NetworkSettings.Ports remained null.
+
+#### Root cause
+
+Nginx was attached only to internal Docker networks. In this Docker configuration it had no ordinary bridge for port publishing, so the configured host binding was not activated.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `compose.prod.yml` | Attach web to the existing RAG egress bridge in addition to its private networks |
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/TASKS.md` | Record progress and verification |
+
+#### Fix
+
+Recreated only the RAG web service with the ordinary bridge attached. Host curl with Host: api.ragchatbot.dev returns the API health JSON. The binding remains 127.0.0.1; no public listener/firewall change.
+
+#### Lesson
+
+A healthy in-container probe does not verify a published host port; inspect actual bindings and test the intended host path.
+
+
+---
+
+### ERR-058 — Node fetch virtual-host smoke reached the default Nginx server
+
+**Date**: 2026-09-15
+**Status**: ✅ Fixed
+
+#### What happened
+
+The production smoke probe expected 200 from /health but got Nginx 404 when fetching http://web:8080 with a Host header; VM curl with the same explicit Host reached the API successfully.
+
+#### Root cause
+
+The Node 24.21 fetch transport used by the probe did not preserve the Host override as needed for this internal virtual-host request. This was a smoke transport issue, not a public hostname routing failure.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `scripts/deploy/smoke.mjs` | Use node:http for explicit Host probes while preserving multipart data and individual Set-Cookie headers |
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/TASKS.md` | Record progress and verification |
+
+#### Fix
+
+Switched internal probes to http.request and retained native Request/FormData for request encoding. Explicitly targets the API virtual host without changing production routing or DNS.
+
+#### Lesson
+
+For internal virtual-host tests, use a transport that demonstrably sends the intended Host header.
+
+
+---
+
+### ERR-059 — tsx CLI test launcher needed a sandbox-blocked IPC socket
+
+**Date**: 2026-09-15
+**Status**: ✅ Fixed
+
+#### What happened
+
+`pnpm --filter api exec tsx --test tests/production.test.ts` failed with listen EPERM on /tmp/tsx-1000/56.pipe.
+
+#### Root cause
+
+The tsx CLI creates an IPC listener that the current sandbox disallows; application assertions had not run.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/api/tests/production.test.ts`, `docs/DEPLOYMENT_RUNBOOK.md` | Regression tests and working Node loader invocation |
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/TASKS.md` | Record progress and verification |
+
+#### Fix
+
+Ran `node --import tsx tests/production.test.ts` from apps/api, bypassing the CLI IPC launcher. All three named Node tests passed (production validation, workload/drain semantics, cancellation across Gemini retries); mocked fetch prevents real Gemini calls.
+
+#### Lesson
+
+Use the Node tsx loader directly when the CLI IPC server is unavailable; verify named assertions actually ran.
+
+
+---
+
+### ERR-060 — Deployment credential copy rejected an opaque env value with a format heuristic
+
+**Date**: 2026-09-15
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first production-env preparation helper stopped before writing because its alphanumeric/underscore/hyphen regex rejected the existing Gemini setting; no secret value was printed.
+
+#### Root cause
+
+The ad hoc helper assumed a credential format and initially parsed dotenv with a simple line split. Credential validity cannot be established by this assumed character pattern.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `/tmp/rag-production.env` (temporary, removed), VM `apps/api/.env` | Serialize with dotenv, verify exact round-trip, install owner-only settings |
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/TASKS.md` | Record progress and verification |
+
+#### Fix
+
+Used dotenv.parse, checked presence/single-line form, JSON-quoted env serialization and exact parser round-trip equality, then transferred privately over SSH. Generated independent DB/auth secrets, verified VM mode 600, removed local temporary env. A later read-only Gemini model listing returned HTTP 200 with 50 models, confirming this credential is accepted; no generation call was made.
+
+#### Lesson
+
+Preserve opaque credentials exactly with the application parser and test service acceptance separately instead of inventing a format validator.
+
+
+---
+
+### ERR-061 — Packaging probe used an abbreviated migration filename
+
+**Date**: 2026-09-15
+**Status**: ✅ Fixed
+
+#### What happened
+
+The image-inspection helper failed an existence assertion for `003_error_message.sql`, despite the API starting and applying migrations successfully.
+
+#### Root cause
+
+The ad hoc verification command used an abbreviated filename from planning notes. The repository and compiled image contain `003_document_error_message.sql`; the database records that exact migration name.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/DEPLOYMENT_VERIFICATION.md` | Record the corrected probe and actual result; no application/image fix needed |
+
+#### Fix
+
+Checked the actual database migration name and reran the image probe with `003_document_error_message.sql`. It passes: migration present, env/source/report/Git/tsx absent, API process uid 1000.
+
+#### Lesson
+
+Use actual repository or database filenames in packaging checks rather than abbreviations from narrative notes.
