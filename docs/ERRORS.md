@@ -10,6 +10,37 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-085 — Report patch targeted the same TeX file twice in one operation
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first report patch was rejected before editing with `invalid patch: multiple operations target ... conclusion.tex`. A follow-up combined patch also stopped before editing because one Skills paragraph did not match its exact current line wrapping.
+
+#### Root cause
+
+The patch format permits one operation per file, and the second patch used an incomplete multi-line context match. Neither rejection changed the report sources.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `report/subfiles/implementation.tex` | Add verified production deployment and controlled-release implementation detail |
+| `report/subfiles/conclusion.tex`, `report/subfiles/skills.tex` | Remove unverified physical-device completion claim and align status with pending APK acceptance |
+| `docs/ERRORS.md` | Record the non-mutating patch correction |
+
+#### Fix
+
+Reread the exact TeX paragraphs, then applied one operation per file with complete context. `pnpm report:build` passed and rendered deployment, skills, and conclusion pages were inspected.
+
+#### Lesson
+
+When patching multiple TeX sections, group each file into one operation and reread the exact surrounding lines after a rejected hunk.
+
+---
+
 ### ERR-084 — Android EAS build generated an obsolete Expo Android autolinking import
 
 **Date**: 2026-09-16
@@ -1196,6 +1227,7 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Report patch rejects duplicate file operations or stale text context | Use one complete operation per TeX file and reread the target text before retrying (ERR-085) |
 | Android release compile misses `expo.core.ExpoModulesPackage` | Align `expo-document-picker` to Expo SDK 53's `^13.1.6`, then rerun Expo Doctor before EAS (ERR-084) |
 | EAS refuses an APK build because the worktree is dirty | Commit the complete intended change first; `requireCommit` protects release traceability (ERR-083) |
 | EAS reads a placeholder app in this monorepo | Keep `eas.json` beside `apps/mobile/app.json` and run EAS from `apps/mobile` (ERR-082) |

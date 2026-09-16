@@ -19,6 +19,7 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Verify real browser session and UI flow (user acceptance, 2026-09-16).
 - [ ] Verify mobile session plus live document ingestion/chat/source flows (deferred by user).
 - [ ] Create one replacement signed Android APK with the linked EAS `preview` profile after the verified Expo Android autolinking override (ERR-084), complete installed-device production acceptance, and publish the verified asset as GitHub Release `v1.0.0-demo`.
+- [x] Update the report with verified Azure/Cloudflare/GitHub Actions/GHCR deployment, controlled-release, backup and rollback evidence; omit unrelated VM services and leave mobile acceptance pending (2026-09-16).
 - [x] Review, commit and push validated Cloudflare production Compose and deployment evidence; no VM redeploy (2026-09-16).
 - [x] Install and verify the daily 03:00 Ulaanbaatar backup cron with seven-day retention; new dump scratch restore and owner-only laptop checksum passed (2026-09-16).
 - [ ] Choose and configure an always-available encrypted destination for recurring offsite backup replication.
