@@ -10,6 +10,38 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-084 — Android EAS build used an Expo SDK-incompatible Document Picker
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first signed Android EAS build reached `:app:compileReleaseJavaWithJavac` but failed because generated autolinking code imported the missing `expo.core.ExpoModulesPackage`. Its follow-up Expo Doctor check reported `expo-document-picker@56.0.4 - expected version: ~13.1.6` for the installed Expo SDK 53.
+
+#### Root cause
+
+`expo-document-picker@56.0.4` targets a newer Expo SDK while the mobile application uses Expo SDK 53. Its incompatible native/autolinking metadata caused the Android release compile failure.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `apps/mobile/package.json` | Align `expo-document-picker` with Expo SDK 53 at `^13.1.6` |
+| `pnpm-lock.yaml` | Replace only the Document Picker resolution and integrity entry |
+| `docs/ERRORS.md` | Record the failed build and compatibility repair |
+| `docs/MEMORY.md` | Record the validated repair and pending replacement build |
+
+#### Fix
+
+Installed `expo-document-picker@~13.1.6`, then removed pnpm's unrelated `latest`-dependency lockfile churn and retained only the required picker lock entries. Expo Doctor now passes all 18 checks; mobile TypeScript and the production Android bundle pass with `https://api.ragchatbot.dev` embedded.
+
+#### Lesson
+
+For Expo native modules, use the SDK-matched version reported by Expo Doctor; a permissive peer dependency does not guarantee compatible Android autolinking.
+
+---
+
 ### ERR-083 — EAS correctly rejected an APK build from a dirty worktree
 
 **Date**: 2026-09-16
@@ -1163,6 +1195,7 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Android release compile misses `expo.core.ExpoModulesPackage` | Align `expo-document-picker` to Expo SDK 53's `^13.1.6`, then rerun Expo Doctor before EAS (ERR-084) |
 | EAS refuses an APK build because the worktree is dirty | Commit the complete intended change first; `requireCommit` protects release traceability (ERR-083) |
 | EAS reads a placeholder app in this monorepo | Keep `eas.json` beside `apps/mobile/app.json` and run EAS from `apps/mobile` (ERR-082) |
 | EAS cannot resolve `api.expo.dev` in the restricted shell | Retry the same authorized command with network access; do not change EAS configuration (ERR-081) |
