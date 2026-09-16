@@ -45,6 +45,20 @@ VM-only `apps/api/.env`, mode 600, holds production DB password/URL, Better Auth
 
 `API_IMAGE`, `WEB_IMAGE` select the release. For Compose builds/deployments, `APP_REVISION_OVERRIDE` records its identity and safely overrides the VM env-file fallback; do not pass `APP_REVISION` directly because the production `--env-file` supplies that name. Public web API URL is baked into Vite at image build time. Mobile uses `EXPO_PUBLIC_API_URL=https://api.ragchatbot.dev` when running/building a compatible Expo client; no Metro service is deployed on the VM. Native device testing remains a separate acceptance gate.
 
+## GHCR image pull (after the first green CI run)
+
+Images are private by default. On Jarvis, create a GitHub **classic** personal access token with only `read:packages`; do not grant repository, write, delete, workflow, or admin scopes. Keep it private and do not paste it into chat. Give Docker a RAG-specific owner-only credential location, then log in and pull an immutable full SHA:
+
+```bash
+mkdir -p -m 700 ~/.config/rag-chatbot/ghcr-docker
+export DOCKER_CONFIG="$HOME/.config/rag-chatbot/ghcr-docker"
+printf '%s' 'PASTE_TOKEN_PRIVATELY_HERE' | docker login ghcr.io --username Tengis01 --password-stdin
+cd /home/tengis/rag-chatbot
+scripts/deploy/pull-ghcr.sh EXACT_40_CHARACTER_COMMIT_SHA
+```
+
+The helper pulls `ghcr.io/tengis01/rag-api:sha-<commit>` and `rag-web:sha-<commit>`, then requires both OCI revision labels to match. It deliberately does **not** restart or deploy any container. Keep `DOCKER_CONFIG` set for future GHCR pulls, or export it again in the same shell. After the pull check, use the normal drain/backup procedure and explicitly review the image switch; image pull is not automatic deployment.
+
 ## Cloudflare + Name.com (user account step)
 
 1. Add `ragchatbot.dev` to Cloudflare and choose Free. Keep any existing DNS/email records that are needed.
@@ -85,6 +99,6 @@ Rollback uses the previous API/web references only if the existing schema is com
 
 ## Remaining automation and exit
 
-After HTTPS/manual acceptance: GitHub Actions checks/builds → GHCR images with SHA/digests → manual release workflow → automatic main releases using the same proven procedure. Dedicated restricted deployment SSH credentials, runner reachability/NSG review, lock/rollback tests and workflow pinning remain to be implemented.
+After HTTPS/manual acceptance: GitHub Actions checks/builds → GHCR images with SHA/digests → manual release workflow → automatic main releases using the same proven procedure. Dedicated restricted deployment SSH credentials, runner reachability/NSG review, lock/rollback tests and automatic deployment remain to be implemented.
 
 Confirm exact Azure expiry. During the last week, rehearse restore again; export DB, needed secrets/configs and image references off VM 2–3 days before expiry. Verify Valheim world backup separately. Azure resource deletion or subscription changes require a separate user instruction.

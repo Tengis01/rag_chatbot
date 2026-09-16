@@ -895,6 +895,7 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| GitHub CLI is absent on the workstation | Use GitHub's web/API status surface for read-only workflow checks; do not install it solely for one check (ERR-073) |
 | Tool sandbox cannot create Git's index lock | Use the approved Git execution context; do not delete lock files or alter repository permissions (ERR-072) |
 | Local tool sandbox cannot access Docker configuration/socket | Treat it as a local verification boundary; validate Docker builds on the real Docker host or GitHub-hosted runner without weakening socket permissions (ERR-071) |
 | Host API port is intentionally private in production | Probe API through Nginx at `127.0.0.1:8080` with the API Host header, not host port 4000 (ERR-069) |
@@ -2603,3 +2604,63 @@ Use the approved Git execution context for staging and committing. No lock file 
 #### Lesson
 
 Treat Git's index lock as an integrity mechanism; change the execution context rather than deleting lock files to bypass it.
+
+---
+
+### ERR-073 — Authenticated GitHub Actions status interface was unavailable
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+After pushing the CI workflow, `gh run list` returned `/bin/bash: gh: command not found`. A public GitHub API request from Jarvis then returned 404 because the repository is private.
+
+#### Root cause
+
+GitHub CLI is not installed on this workstation, and no authenticated browser or GitHub API token is available to the coding environment. GitHub does not disclose a private repository's Actions runs anonymously.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the authenticated status-inspection boundary |
+
+#### Fix
+
+The user checked the authenticated GitHub Actions UI and reported the initial run completed without issue. Do not install unrelated tooling or create a new token merely for this inspection.
+
+#### Lesson
+
+Keep project dependencies minimal; private workflow status needs an authenticated account surface, not an unauthenticated workaround.
+
+---
+
+### ERR-074 — Jarvis could not pull private GHCR images anonymously
+
+**Date**: 2026-09-16
+**Status**: ⚠️ Workaround
+
+#### What happened
+
+After the successful initial CI run, Jarvis attempted to pull `ghcr.io/tengis01/rag-api:sha-7395fe0...` and the matching web image. Docker returned `unauthorized` before downloading layers.
+
+#### Root cause
+
+GHCR packages created from the private repository require authentication. The VM had no Docker credential for GitHub Packages, which is correct before explicitly granting it read access.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `scripts/deploy/pull-ghcr.sh` | Add exact-SHA pull and OCI revision-label verification without deployment |
+| `docs/DEPLOYMENT_RUNBOOK.md` | Add least-privilege Jarvis GHCR login and pull procedure |
+| `docs/ERRORS.md` | Record the private-package access boundary |
+
+#### Fix
+
+Prepare a Jarvis-only Docker credential directory and use a GitHub classic PAT limited to `read:packages`. Then run `pull-ghcr.sh` with the full commit SHA before any drained deployment.
+
+#### Lesson
+
+Keep private registry access separate from repository access, grant the VM only package-read capability, and verify immutable images before replacing running containers.

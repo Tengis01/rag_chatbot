@@ -25,7 +25,8 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Verify drained API/web operational rollback: pre-deploy backup, candidate image switch, healthy baseline restoration, no Postgres/Cloudflare/Valheim restart (2026-09-16).
 - [ ] Verify maintenance rejection with active ingestion and a compatible version-to-version rollback after GHCR publishes two releases.
 - [x] Add SHA-pinned GitHub Actions CI workflow: Node 24/pnpm frozen install, typecheck, build and API/web production-image build; publishing is limited to `main` and manual dispatch (2026-09-16).
-- [ ] Run the first GitHub Actions workflow, confirm two SHA-tagged GHCR packages, then verify Jarvis can pull and manually deploy the same artifacts.
+- [x] Run the initial GitHub Actions workflow successfully (user confirmed, 2026-09-16).
+- [ ] Create a read-only GHCR Docker credential on Jarvis, verify pull/labels for two SHA-tagged images, then manually deploy the exact artifacts.
 - [ ] Add restricted SSH deployment script/workflow with pinned host key and serialized releases; validate workflow_dispatch before main auto deploy.
 - [ ] Record monitoring/demo evidence; rehearse restore in final week and export final backups before expiry.
 
