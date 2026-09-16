@@ -2,6 +2,10 @@
 
 ## Decision Log
 
+## 2026-09-16 — Android demo APK distribution
+
+Use EAS Build's Android internal-distribution APK profile for the instructor demo. The profile embeds the public `https://api.ragchatbot.dev` endpoint, while the ignored mobile development `.env` keeps local Expo Go/LAN probing unchanged. Distribute only a phone-tested APK as a public GitHub Release `v1.0.0-demo`; the repository is intentionally made public for that download path after a tracked-file secret scan. This is a temporary Android demo release, not a Play Store submission or a promise of service after the short-lived Azure VM is shut down.
+
 ## 2026-09-16 — Validated release state and manual deployment gate
 
 Persist the API image, web image and revision only after a release or restored rollback passes healthchecks, in the Git-ignored owner-only `state/release.env` file on Jarvis. `scripts/deploy/compose.sh` accepts explicitly supplied release values first, then validated state, preventing incidental Compose commands from selecting historical `manual` image defaults. The release test successfully moved between two schema-compatible immutable GHCR SHA images and returned to the current image without restarting Postgres, Cloudflare Tunnel or Valheim.

@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@babel/code-frame':
+        specifier: 7.29.7
+        version: 7.29.7
+      nanoid:
+        specifier: 3.3.12
+        version: 3.3.12
       turbo:
         specifier: latest
         version: 2.10.4

@@ -10,6 +10,96 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-080 — EAS config script received an unsupported `--non-interactive` flag
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+Running `pnpm mobile:apk:config -- --non-interactive` stopped immediately with `Unexpected argument: --non-interactive`.
+
+#### Root cause
+
+The `eas config` command does not support that flag. The package script correctly invokes `pnpm dlx eas-cli@24.5.0 config --platform android --profile preview`; the added script argument was invalid.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the invalid verification invocation and supported command |
+
+#### Fix
+
+Reran `pnpm mobile:apk:config` without the unsupported flag. EAS accepted the command and then reached its expected account-login requirement, so no configuration or code change was needed.
+
+#### Lesson
+
+Use the documented package script verbatim for EAS configuration checks; do not assume every EAS subcommand supports non-interactive mode.
+
+---
+
+### ERR-079 — Expo Metro export could not resolve `@babel/code-frame` in pnpm's strict layout
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+`EXPO_PUBLIC_API_URL=https://api.ragchatbot.dev pnpm --filter mobile build` passed TypeScript checks but Metro first stopped at bundle time with `Cannot find module '@babel/code-frame'` from Expo Metro's CSS modules transformer. After that was fixed, Expo Router similarly failed to resolve `nanoid/non-secure`.
+
+#### Root cause
+
+The installed Expo SDK 53 `@expo/metro-config` source requires `@babel/code-frame`, and Expo Router requires `nanoid/non-secure`, but neither package manifest declares the runtime dependency. pnpm correctly keeps transitive packages inaccessible from the root worker unless the root declares them directly.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `package.json`, `pnpm-lock.yaml` | Declare the already locked `@babel/code-frame@7.29.7` and `nanoid@3.3.12` as root development dependencies used by Metro's root worker |
+| `apps/mobile/app.json` | Explicitly select automatic device color-scheme behavior |
+| `docs/ERRORS.md` | Record the bundling failure and fix |
+
+#### Fix
+
+Added the exact existing `@babel/code-frame@7.29.7` and `nanoid@3.3.12` packages to root development dependencies, where Metro's worker resolves them, preserving all other locked versions. The production export command also sets `EXPO_NO_DOTENV=1` so the ignored local Expo Go environment cannot affect the release check.
+
+#### Lesson
+
+When a package performs an undeclared runtime require under pnpm, add the minimal exact dependency at the consuming workspace rather than flattening or loosening pnpm's resolver.
+
+---
+
+### ERR-078 — Sandboxed pnpm could not open its store index during EAS CLI install
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first `pnpm add --workspace-root --save-dev eas-cli@latest` attempt stopped with `ERR_SQLITE_ERROR unable to open database file` before dependency resolution completed.
+
+#### Root cause
+
+The filesystem sandbox could not write pnpm's user-level store index, even though the repository itself is writable.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml` | Evaluated then reverted the project-local EAS CLI installation to avoid unrelated dependency resolution |
+| `docs/ERRORS.md` | Record the sandbox boundary and retry |
+
+#### Fix
+
+Retried in the approved host context, then observed that adding EAS CLI caused the monorepo's `latest` dependencies to resolve to newer versions. Reverted that dependency/lockfile change and use the exact temporary command `pnpm dlx eas-cli@24.5.0` for APK operations instead. Its optional native build scripts remain unapproved because EAS cloud builds do not need them locally.
+
+#### Lesson
+
+When pnpm fails before resolution on its store database, change execution context; keep one-off build tooling outside a lockfile when adding it would churn unrelated application dependencies.
+
+---
+
 ### ERR-077 — Temporary rollback verifier expected a stale diagnostic string
 
 **Date**: 2026-09-16
@@ -982,6 +1072,9 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| EAS config rejects an assumed non-interactive flag | Run `pnpm mobile:apk:config` exactly; authenticate separately with `pnpm dlx eas-cli@24.5.0 login` (ERR-080) |
+| Expo Metro cannot resolve `@babel/code-frame` or `nanoid/non-secure` under pnpm | Keep their exact root development dependencies for Metro's root worker (ERR-079) |
+| One-off EAS CLI install churns unrelated `latest` lock entries | Use the exact ephemeral command `pnpm dlx eas-cli@24.5.0` rather than adding it to the workspace (ERR-078) |
 | Restricted SSH command rejected or host pin missing | Match the workflow command to the allowlist, explicitly select the intended key, and use a verified durable host pin (ERR-075) |
 | GitHub CLI is absent on the workstation | Use GitHub's web/API status surface for read-only workflow checks; do not install it solely for one check (ERR-073) |
 | Tool sandbox cannot create Git's index lock | Use the approved Git execution context; do not delete lock files or alter repository permissions (ERR-072) |

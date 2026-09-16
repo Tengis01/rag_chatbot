@@ -9,12 +9,16 @@
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
     "report:build": "cd report && latexmk",
+    "mobile:apk": "pnpm dlx eas-cli@24.5.0 build --platform android --profile preview",
+    "mobile:apk:config": "pnpm dlx eas-cli@24.5.0 config --platform android --profile preview",
     "env:check": "bash scripts/check-environment.sh",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"
   },
   "devDependencies": {
+    "@babel/code-frame": "7.29.7",
+    "nanoid": "3.3.12",
     "turbo": "latest"
   }
 }

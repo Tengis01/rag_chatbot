@@ -23,6 +23,8 @@ Document RAG Chatbot MVP
 
 ### Restricted SSH preparation follow-up (2026-09-16)
 
+- Mobile APK release preparation is validated locally: the app is named `RAG Chatbot`; `eas.json` has an Android internal-distribution APK profile that bakes in `https://api.ragchatbot.dev` without changing Expo Go's ignored local-IP `.env`. Production-configured Expo export, full workspace build, typecheck, report rebuild and PDF page inspection pass. The only external blocker is an Expo account login: after `pnpm dlx eas-cli@24.5.0 login`, run `pnpm dlx eas-cli@24.5.0 init`, commit its non-secret project ID, start the cloud APK build, then complete installed-device acceptance and public GitHub Release. See `docs/MOBILE_APK_RELEASE.md`.
+
 - Dedicated key exists at `/home/tengis/.ssh/ragchatbot-deploy`; its public key is installed with forced-command restrictions. Explicit-key SSH verified arbitrary commands are rejected with exit 64. Operator access should explicitly use `-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519` because the default connection offered the restricted key.
 - Verified Jarvis ED25519 host fingerprint over operator SSH: `SHA256:dTBJlqsSGUp80Zz7sjI03YTbzq7X8E8AXteMKhPRtyQ`. Use the matching existing known_hosts entry; the old `/tmp` host-key file no longer exists.
 - Fixed workflow command mismatch and serialized manual workflows. Rollback retains maintenance if restoration or revision verification fails. The restricted GitHub `workflow_dispatch` path has passed once; automatic `main` deployment remains disabled.
