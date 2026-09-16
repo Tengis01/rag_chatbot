@@ -2,6 +2,12 @@
 
 ## Decision Log
 
+## 2026-09-16 — Validated release state and manual deployment gate
+
+Persist the API image, web image and revision only after a release or restored rollback passes healthchecks, in the Git-ignored owner-only `state/release.env` file on Jarvis. `scripts/deploy/compose.sh` accepts explicitly supplied release values first, then validated state, preventing incidental Compose commands from selecting historical `manual` image defaults. The release test successfully moved between two schema-compatible immutable GHCR SHA images and returned to the current image without restarting Postgres, Cloudflare Tunnel or Valheim.
+
+Keep deployment manual through the restricted `workflow_dispatch` route even though its first run passed. Automatic deployment from `main` remains off until a deliberately failing candidate proves automatic restoration behavior and the release is reviewed.
+
 ## 2026-09-16 — Initial GitHub Actions and GHCR release boundary
 
 Use one SHA-pinned workflow with two jobs. The quality job runs Node 24, Corepack-selected pnpm 11.6.0, frozen install, typecheck and build for pull requests, `main` pushes and manual dispatch. The image job always builds the existing API and web production Docker targets after quality succeeds, but logs in and publishes only for `main` or manual dispatch. Publish immutable full-commit `sha-<commit>` tags to `ghcr.io/tengis01/rag-api` and `ghcr.io/tengis01/rag-web`; do not publish mutable `latest` tags or deploy from this workflow yet.

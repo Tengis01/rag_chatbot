@@ -108,6 +108,8 @@ Copy both dump and checksum off the VM (private laptop directory). A dump remain
 
 After a successful drain/backup and migration compatibility review, change only the selected image references, then `scripts/deploy/compose.sh up -d --no-deps --wait api web`. Check health/revision and smoke tests, then remove `state/drain`. Keep current and previous images. PostgreSQL stays running with the same volume.
 
+`release-ghcr.sh` writes the validated API image, web image and revision to the Git-ignored owner-only `state/release.env` only after final health passes. `compose.sh` uses that state as its default, while explicitly supplied release values still take priority. This prevents an ordinary Compose command from falling back to the historical `manual` images.
+
 Rollback uses the previous API/web references only if the existing schema is compatible. If a migration is destructive/incompatible, stop and plan recovery explicitly; do not automatically restore a database over new user data. The same-source operational rollback and the first GHCR release are now demonstrated. Never `down -v`, globally prune Docker, or modify Valheim resources.
 
 ## Remaining automation and exit

@@ -41,6 +41,19 @@ if [[ -z "$old_revision" ]]; then
   exit 1
 fi
 
+write_release_state() {
+  local state_file=state/release.env
+  local temporary_file
+  temporary_file="$(mktemp state/.release.env.XXXXXX)"
+  chmod 600 "$temporary_file"
+  {
+    printf 'API_IMAGE=%s\n' "$1"
+    printf 'WEB_IMAGE=%s\n' "$2"
+    printf 'APP_REVISION_OVERRIDE=%s\n' "$3"
+  } > "$temporary_file"
+  mv "$temporary_file" "$state_file"
+}
+
 docker pull "$api_image"
 docker pull "$web_image"
 for image in "$api_image" "$web_image"; do
@@ -70,6 +83,7 @@ rollback_previous() {
     printf 'Rollback health failed; maintenance remains enabled.\n' >&2
     return 1
   fi
+  write_release_state "$old_api_image" "$old_web_image" "$old_revision"
   rm -f state/drain
 }
 
@@ -102,4 +116,5 @@ if [[ "$final_health" != *"\"revision\":\"$release_tag\""* || "$final_health" !=
   exit 1
 fi
 
+write_release_state "$api_image" "$web_image" "$release_tag"
 printf 'Released %s\n' "$release_tag"

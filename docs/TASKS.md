@@ -23,13 +23,14 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [ ] Choose and configure an always-available encrypted destination for recurring offsite backup replication.
 - [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.
 - [x] Verify drained API/web operational rollback: pre-deploy backup, candidate image switch, healthy baseline restoration, no Postgres/Cloudflare/Valheim restart (2026-09-16).
-- [ ] Verify maintenance rejection with active ingestion and a compatible version-to-version rollback after GHCR publishes two releases.
+- [x] Verify compatible version-to-version rollback using two GHCR releases (`7395fe0…` → `37e3fca…`), with drain, fresh backups, final public health and Valheim checks (2026-09-16).
+- [ ] Verify maintenance rejection while an active ingestion is in progress.
 - [x] Add SHA-pinned GitHub Actions CI workflow: Node 24/pnpm frozen install, typecheck, build and API/web production-image build; publishing is limited to `main` and manual dispatch (2026-09-16).
 - [x] Run the initial GitHub Actions workflow successfully (user confirmed, 2026-09-16).
 - [x] Create a read-only GHCR Docker credential on Jarvis, verify pull/labels for two SHA-tagged images, and manually deploy the exact artifacts with drain/backup (2026-09-16).
 - [x] Add restricted SSH release script/entrypoint and `workflow_dispatch` workflow with pinned host key input, serialized release lock, drain/backup/health and failure rollback (2026-09-16).
 - [x] Create/install separate deployment key; verify host fingerprint and arbitrary-command rejection from laptop.
-- [ ] Configure GitHub production secrets, verify runner-to-VM reachability, then run `workflow_dispatch`; keep main auto-deploy disabled until that passes.
+- [x] Configure GitHub production secrets, verify runner-to-VM reachability, and pass one restricted `workflow_dispatch`; main auto-deploy remains disabled (2026-09-16).
 - [ ] Record monitoring/demo evidence; rehearse restore in final week and export final backups before expiry.
 
 ## Git recovery after laptop transfer — 2026-09-14
