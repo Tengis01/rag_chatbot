@@ -2,7 +2,7 @@
 
 Target: `ssh jarvis`, `/home/tengis/rag-chatbot`, Compose project `rag-prod`.
 Web: `https://ragchatbot.dev`; API: `https://api.ragchatbot.dev`.
-Public HTTPS is pending Cloudflare setup; localhost origin can be tested now.
+Public web/API HTTPS, synthetic API smoke and user-reported real web acceptance passed on 2026-09-16. Mobile and live RAG acceptance remain pending; see DEPLOYMENT_VERIFICATION.md.
 
 ## What runs where
 
@@ -50,8 +50,8 @@ VM-only `apps/api/.env`, mode 600, holds production DB password/URL, Better Auth
 1. Add `ragchatbot.dev` to Cloudflare and choose Free. Keep any existing DNS/email records that are needed.
 2. Copy the **two nameservers assigned to this zone** into Name.com's domain nameserver settings, replacing the old authoritative nameservers. Do not invent nameserver values. Wait until Cloudflare reports the zone Active.
 3. Create a named remotely managed Cloudflare Tunnel, e.g. `jarvis-rag`. Set two published application routes: `ragchatbot.dev` → `http://web:8080`, and `api.ragchatbot.dev` → `http://web:8080`. This hostname resolves inside the Compose network. Preserve the original HTTP Host header; Nginx uses it to select the web/API virtual host.
-4. Save just the connector token privately on Jarvis at `secrets/cloudflare-tunnel-token`, mode 600. Token is not an account password or the whole generated install command. Do not send it in chat. The connector reads it using `--token-file`; it is not in command-line arguments or image layers.
-5. Run `scripts/deploy/compose.sh --profile tunnel up -d cloudflared`. Confirm Tunnel Healthy and edge certificate Active. Enable HTTPS redirect in Cloudflare. Avoid cache rules covering API/auth; origin returns `Cache-Control: no-store`.
+4. Retrieve the full `eyJ...` token from Tunnel → Add a replica → Docker installation command (the value after `--token`), **not the tunnel UUID**. Save just the connector token privately on Jarvis at `secrets/cloudflare-tunnel-token`, mode 600. The file owner must match the connector UID/GID: Jarvis uses 1000:1000. Token is not an account password or the whole generated install command. Do not send it in chat. The connector reads it using `--token-file`; it is not in command-line arguments or image layers.
+5. Run `scripts/deploy/compose.sh --profile tunnel up -d --no-deps --force-recreate cloudflared` (recreation remounts a token file replaced by the editor). Confirm Tunnel Healthy and edge certificate Active. Enable HTTPS redirect in Cloudflare. Avoid cache rules covering API/auth; origin returns `Cache-Control: no-store`.
 6. Test real browser signup/login/logout/session refresh, document ingestion/chat/sources and cross-user isolation over HTTPS, then a real mobile client. An HTTP localhost smoke does not prove browser TLS/cookie behavior. Do not open API/DB or Valheim-related ports for this task.
 
 [Cloudflare Tunnel setup](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/get-started/create-remote-tunnel/), [full DNS setup](https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/).

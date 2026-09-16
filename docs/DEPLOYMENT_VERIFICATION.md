@@ -2,7 +2,13 @@
 
 ## Current state
 
-Manual production build/deploy runs on `jarvis` under `/home/tengis/rag-chatbot`, Compose `rag-prod`. The user registered **ragchatbot.dev at Name.com** and changed its nameservers to Cloudflare. On 2026-09-15, both 1.1.1.1 and 8.8.8.8 return `marek.ns.cloudflare.com` and `mckinley.ns.cloudflare.com`. Cloudflare dashboard Active status remains unverified; no connector token, tunnel, public HTTPS test or GitHub workflow has been completed by the agent.
+Public web and API are reachable over HTTPS as of 2026-09-16. Laptop and Jarvis probes return HTTP 200 with valid TLS for `https://ragchatbot.dev` and `https://api.ragchatbot.dev/health`. The web serves the expected Mongolian Vite HTML; `/assets/index-3IXtBdTv.js` returns 200 with `application/javascript`.
+
+Tunnel `jarvis-rag` is running with zero restarts and four registered QUIC connections. Configuration version 2 routes both hostnames to `http://web:8080`. The user corrected the apex's old proxied A record (`91.195.240.94`) to the tunnel CNAME `ccff4150-cbf8-4f18-af7f-e9b19b81d469.cfargotunnel.com`; transient 525 responses cleared on subsequent probes. ERR-062 through ERR-064 are fixed. Wildcard/www records were not changed or accepted as working application routes.
+
+The existing synthetic smoke script also passed through the public HTTPS API: health/config, signup/session and secure cookies, hostile-origin rejection, user isolation, oversized upload 413, malformed PDF 422 and admission cleanup. The script was transformed in memory to use `node:https` and the public API base, then run in the VM API container; no script source changed. Its synthetic data was cleaned up and no Gemini calls were made. The user also completed a real web acceptance test without issues. Mobile session and live RAG acceptance remain pending.
+
+Manual production deployment runs on `jarvis` under `/home/tengis/rag-chatbot`, Compose `rag-prod`. Cloudflare zone activation and nameservers `marek.ns.cloudflare.com` / `mckinley.ns.cloudflare.com` are confirmed. CI/GHCR/CD are not configured yet.
 
 - API: `rag-api:manual-60653da1fc21`, web: `rag-web:manual-60653da1fc21`.
 - Source archive SHA-256: `60653da1fc21a4b88036bb8a989aa87d27070aca0a766b1fa87e5ea78cb9a5b5`, 94 selected source files, 191,657 bytes. Contains no env, dependencies, Git metadata or report. Built **on the VM**. This is a worktree archive, not a committed Git revision. Compose's tmpfs/network fixes and later verification scripts were transferred separately.
@@ -40,8 +46,7 @@ Private laptop copies belong under the Git-ignored `backups/` directory with the
 
 ## Required before calling the deployment complete
 
-- Confirm Cloudflare zone Active and configure the named tunnel; public NS delegation is already visible. Token goes into a private VM file, not chat.
-- Real HTTPS browser and mobile session/cookie checks; small live document ingestion/chat/source test using the verified Gemini credential. Credential acceptance alone does not prove selected model availability, embedding quota or RAG correctness.
+- Real mobile session/cookie check; small live document ingestion/chat/source test using the verified Gemini credential. The user reports the real web acceptance test passed. Credential acceptance alone does not prove selected model availability, embedding quota or RAG correctness.
 - Demonstrate maintenance rejection during active work and a compatible previous-image rollback. First release has no previous production version; no claim of zero downtime.
 - Configure daily backup/retention, offsite cadence and final-week restore/export. Confirm exact Azure expiry and NSG rules.
 - Commit reviewed deployment source; project-specific checkout key, CI/GHCR, restricted SSH release workflow, pinned actions/images and failed-CI/deploy/rollback demonstrations.

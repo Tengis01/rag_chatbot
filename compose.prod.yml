@@ -92,7 +92,8 @@ services:
     command: tunnel --no-autoupdate run --token-file /run/secrets/tunnel_token
     volumes:
       - ./secrets/cloudflare-tunnel-token:/run/secrets/tunnel_token:ro
-    user: "0:0"
+    # Match Jarvis's tengis-owned 0600 token; root without DAC_OVERRIDE cannot read it.
+    user: "1000:1000"
     cap_drop: [ALL]
     read_only: true
     security_opt: [no-new-privileges:true]

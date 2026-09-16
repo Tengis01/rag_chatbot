@@ -2,6 +2,10 @@
 
 ## Decision Log
 
+## 2026-09-16 — Cloudflared secret ownership
+
+Run cloudflared as UID/GID 1000:1000 on Jarvis, matching the owner of its mode-600 bind-mounted token. Keep capability dropping, read-only filesystem/mount and no-new-privileges. A future host with a different operator UID must align this setting with token ownership; do not make tokens world-readable or restore broad root capabilities to bypass access errors.
+
 ## 2026-09-15 — First manual Jarvis release and domain
 
 User selected `ragchatbot.dev` at Name.com; apex serves web and `api.ragchatbot.dev` serves API/auth. Production now uses a separate Compose file and multi-stage Debian Node 24 API / Nginx static image, preserving development commands. Named Cloudflare Tunnel remains pending account setup. Nginx joins private backend/tunnel networks plus an ordinary egress bridge so the explicit 127.0.0.1 port binding works; database stays internal and neither DB nor API publishes a port.

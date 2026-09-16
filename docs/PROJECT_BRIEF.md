@@ -69,7 +69,7 @@ A chunk used by the assistant to answer a question.
 
 ## Production Deployment Target
 
-Azure Ubuntu VM (`jarvis`) with separate RAG Docker Compose services: Nginx + compiled Vite frontend, Fastify API and local PostgreSQL/pgvector. Public domains: `ragchatbot.dev` and `api.ragchatbot.dev` via Cloudflare Tunnel (public connection pending). Manual VM build/deployment first, then GitHub Actions + GHCR. See `DEPLOYMENT_PLAN.md` and current `DEPLOYMENT_VERIFICATION.md`.
+Azure Ubuntu VM (`jarvis`) with separate RAG Docker Compose services: Nginx + compiled Vite frontend, Fastify API and local PostgreSQL/pgvector. Public domains: `ragchatbot.dev` and `api.ragchatbot.dev` via Cloudflare Tunnel (public HTTPS and real web acceptance verified 2026-09-16; mobile and live RAG acceptance pending). Manual VM build/deployment first, then GitHub Actions + GHCR. See `DEPLOYMENT_PLAN.md` and current `DEPLOYMENT_VERIFICATION.md`.
 
 ## MVP Principle
 

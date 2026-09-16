@@ -21,6 +21,34 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### Public HTTPS web/API working (2026-09-16)
+
+- User saved the apex tunnel CNAME after the screenshot confirmed an old A record to 91.195.240.94. Subsequent laptop and VM probes return web/API HTTP 200 with valid TLS; expected Vite HTML and JavaScript asset load correctly. ERR-064 fixed.
+- Tunnel jarvis-rag has both hostname routes to http://web:8080, four registered connections and zero restarts. Apex target is ccff4150-cbf8-4f18-af7f-e9b19b81d469.cfargotunnel.com. Wildcard/www were not changed or verified as app routes.
+- Public HTTPS API smoke passed: auth/session/secure cookies, hostile origin, user isolation, upload bounds, malformed PDF and admission cleanup. Synthetic fixtures removed; no Gemini calls. See DEPLOYMENT_VERIFICATION.md.
+- User completed the real web acceptance test without issues. Mobile login and live document ingestion/chat/source acceptance remain deferred, then manual rollback, daily backups and CI/GHCR/CD follow. No browser surface is connected for automated UI verification. Valheim unchanged.
+- The current reviewed commit records the Cloudflare production configuration and deployment evidence. It has not been pushed or deployed; the first manual VM images still use their earlier archive revision.
+
+## Historical progress (superseded by current status above)
+
+### Tunnel connected; public routes pending (2026-09-16)
+
+- User corrected the token and connector is running as 1000:1000, restart count 0, with four registered QUIC connections. ERR-063 fixed; no permission/token issue remains.
+- Logs show no ingress rules. Public HTTPS to apex and API /health returns 525 despite valid client-to-edge TLS; local API remains healthy. ERR-064 tracks missing route configuration and possible existing non-tunnel DNS origin (not yet inspected).
+- Next user account step: Tunnel jarvis-rag → Routes → Add route → Published application; apex and api.ragchatbot.dev both HTTP web:8080, path/Host override empty. Inspect conflicting existing DNS records if the dashboard refuses a duplicate. Public UI/auth/RAG remains unverified. No additional VM app changes needed for the confirmed connector fix.
+
+### Cloudflared restart diagnosis (2026-09-16)
+
+- Fixed ERR-062 in repo and VM Compose: connector now runs as 1000:1000, matching tengis-owned 0600 token, with ALL capabilities still dropped. Initial root-with-no-capabilities config could not read the token.
+- A second issue remains (ERR-063): file contains a UUID, confirmed without printing it; cloudflared rejects it as an invalid token. Stopped only the connector to end the restart loop. API/DB/web remain healthy (12h uptime), Valheim remains up (4 days).
+- User must privately replace the file with the full `eyJ...` connector token from Cloudflare → Networking → Tunnels → jarvis-rag → Add a replica / Docker installation command. Do not send it in chat. Recreate only cloudflared after replacement to remount the file, then verify registered connections and the two published routes. No connected/healthy tunnel or public UI claim yet.
+
+### Cloudflare zone activated (2026-09-16)
+
+- User supplied the Cloudflare overview reporting ragchatbot.dev is now protected/active. Nameserver delegation step is complete; this does not itself connect the Jarvis origin.
+- Next account step: Networking → Tunnels → create `jarvis-rag`; privately save the connector token on VM at `secrets/cloudflare-tunnel-token` (mode 600), then start the existing Compose tunnel profile. Published application routes must map apex and api.ragchatbot.dev to HTTP `web:8080` with their original Host headers. Never request the token in chat.
+- HTTPS/UI verification and subsequent Actions/GHCR work remain pending. User is following the manual deployment learning sequence; avoid a second host-installed cloudflared service alongside the prepared Compose connector.
+
 ### Cloudflare delegation and report follow-up (2026-09-15)
 
 - User entered Cloudflare nameservers at Name.com and requested an activation check; dashboard result still pending per user. Independent `dig` queries against both 1.1.1.1 and 8.8.8.8 return `marek.ns.cloudflare.com` and `mckinley.ns.cloudflare.com` for ragchatbot.dev. This confirms public NS visibility, not authenticated zone Active status or a working tunnel/HTTPS route.
@@ -36,7 +64,7 @@ Document RAG Chatbot MVP
 - Typecheck/build 5/5 each pass; 3 named regression tests pass. Nginx auth/cookie/origin/isolation/413/422 smoke passes with synthetic data cleaned up. Gemini model listing HTTP 200 verifies credential only, no generation/embedding calls. DB scratch restore and Postgres recreation persistence pass; maintenance removed and API reopened.
 - `scripts/deploy/` includes production Compose wrapper, drain, dump, scratch-restore and no-Gemini smoke helpers. Instructions/evidence: `DEPLOYMENT_RUNBOOK.md`, `DEPLOYMENT_VERIFICATION.md`. Runtime/probe issues and fixes: ERR-056 through ERR-061. Image inspection confirms API uid 1000, packaged migration and no env/source/report/Git/tsx in the runtime.
 - Off-VM backup copies are in local Git-ignored `backups/`, owner-only directory. Both the scratch-restore-tested `rag-20260915T115617-217610.dump` and clean `rag-20260915T115636-218392.dump` match their SHA-256 checksums. Daily scheduling/recurring offsite copies remain pending.
-- Next: finish Cloudflare nameservers/named tunnel/HTTPS with the user, test browser/mobile/live RAG, then manual rollback/daily backups and CI/GHCR/CD in the agreed order. Source/archive/Compose are not yet committed or pushed. Exact Azure expiry/NSG still pending. Do not claim full public deployment or CI/CD is complete.
+- Next at that point was to finish Cloudflare nameservers/named tunnel/HTTPS with the user, test browser/mobile/live RAG, then manual rollback/daily backups and CI/GHCR/CD in the agreed order. The first manual source archive remains a non-Git revision; the reviewed production configuration was later committed but is not pushed. Exact Azure expiry/NSG still pending. Do not claim full public deployment or CI/CD is complete.
 
 ### Jarvis deployment plan — manual first, CI/CD second (2026-09-14)
 

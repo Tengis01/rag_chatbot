@@ -895,6 +895,10 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Local production Compose config lacks its required VM-only environment | Validate locally only with an intentionally supplied non-secret test environment, or validate the deployed configuration on the VM without printing its secrets (ERR-065) |
+| Active tunnel but apex returns 525 | Confirm ingress and replace the proven old apex origin with the correct tunnel CNAME (ERR-064) |
+| Tunnel token rejected when an ID was copied | Use full encoded connector token, then recreate to remount the file (ERR-063) |
+| Cloudflared cannot read a 0600 token with cap_drop ALL | Match container UID to the token owner; root lacks DAC_OVERRIDE (ERR-062) |
 | Incorrect migration packaging probe | Use the exact migration filename; inspect schema_migrations (ERR-061) |
 | Unquoted Compose tmpfs options became two YAML list items | Quote comma-containing options in YAML flow lists and verify actual container creation, not just Compose syntax. (ERR-056) |
 | Nginx internal-only networks suppressed loopback port publishing | A healthy in-container probe does not verify a published host port; inspect actual bindings and test the intended host path. (ERR-057) |
@@ -2263,3 +2267,125 @@ Checked the actual database migration name and reran the image probe with `003_d
 #### Lesson
 
 Use actual repository or database filenames in packaging checks rather than abbreviations from narrative notes.
+
+
+---
+
+### ERR-062 — Cloudflared could not read the owner-only connector token
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+After the user saved the token file and started the tunnel profile, cloudflared repeatedly exited 255. Logs reported `Failed to read token file: open /run/secrets/tunnel_token: permission denied`.
+
+#### Root cause
+
+The initial Compose configuration selected UID/GID 0:0 while dropping ALL capabilities, including DAC_OVERRIDE. The mounted mode-600 file belongs to Jarvis user tengis (1000:1000). Root without that capability cannot bypass the file owner's read permissions.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `compose.prod.yml` (repository and VM) | Run connector as 1000:1000, matching token owner; keep cap_drop ALL, read-only mount/root and mode 600 |
+| `docs/DEPLOYMENT_RUNBOOK.md`, `docs/DEPLOYMENT_VERIFICATION.md` | Explain UID ownership and current connector status |
+| `docs/MEMORY.md`, `docs/TASKS.md`, `docs/DECISIONS.md`, `docs/ERRORS.md` | Record fix and pending credential correction |
+
+#### Fix
+
+Confirmed host UID/GID and file ownership, changed only cloudflared's user, validated Compose and recreated only the connector. Logs now show the token is read and rejected as invalid (separate ERR-063), with no permission-denied error. API/DB/web remain healthy and Valheim remains running.
+
+#### Lesson
+
+Match the runtime UID to the owner of a mode-600 bind-mounted secret when dropping all capabilities; UID 0 alone does not bypass file permissions.
+
+---
+
+### ERR-063 — Connector token file contains a UUID instead of the Tunnel token
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+After fixing file access, cloudflared reports `Provided Tunnel token is not valid` and exits 255. A non-disclosing format check confirms the file contains a UUID (36 characters plus newline), not the encoded connector token.
+
+#### Root cause
+
+A UUID identifier was copied into the token file. The connector requires the encoded token from the dashboard installation command, normally beginning `eyJ`; an identifier alone does not authenticate it. No token/UUID value was printed.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/DEPLOYMENT_RUNBOOK.md`, `docs/DEPLOYMENT_VERIFICATION.md`, `docs/MEMORY.md`, `docs/TASKS.md`, `docs/ERRORS.md` | Document diagnosis and exact private replacement steps |
+| VM connector state | Stop only cloudflared to end the invalid-token restart loop; secret file not modified |
+
+#### Fix
+
+User corrected the private token file and recreated the connector. Verified on 2026-09-16: running as 1000:1000 with restart count 0 and four registered QUIC connections across icn01/icn05/icn06. Original remediation steps: Networking → Tunnels → jarvis-rag → Add a replica; copy only the full `eyJ...` value after `--token` into VM `secrets/cloudflare-tunnel-token`. Keep owner 1000:1000 and mode 600. Recreate with `scripts/deploy/compose.sh --profile tunnel up -d --no-deps --force-recreate cloudflared` so a file replaced by the editor is remounted. Verify registered connections and steady restart count before marking fixed. Do not request the token in chat.
+
+#### Lesson
+
+Distinguish the tunnel's UUID from its connector token, and recreate a container after replacing a bind-mounted secret file.
+
+
+---
+
+### ERR-064 — Missing tunnel ingress and old apex DNS caused public failures
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The connector registered four connections but initially warned `No ingress rules were defined`. Both public HTTPS hostnames returned 525 while local API health passed. After the user added both hostname routes, the API returned 200 but the apex still returned 525. Client-to-edge certificate verification succeeded throughout.
+
+#### Root cause
+
+Two setup steps were incomplete: published application ingress was initially absent, and the apex retained a proxied A record pointing to the old origin 91.195.240.94. The user's DNS screenshot confirmed that record after ingress version 2 was already correct. Tunnel registration alone does not connect existing DNS records to the tunnel.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md`, `docs/MEMORY.md`, `docs/TASKS.md`, `docs/DEPLOYMENT_VERIFICATION.md` | Record diagnosis, DNS correction and successful public checks |
+| `docs/DEPLOYMENT_RUNBOOK.md`, `docs/PROJECT_BRIEF.md` | Update public deployment status |
+
+#### Fix
+
+The user configured ragchatbot.dev and api.ragchatbot.dev to route through jarvis-rag to http://web:8080 with original Host headers, then replaced only the apex A record with a proxied CNAME to ccff4150-cbf8-4f18-af7f-e9b19b81d469.cfargotunnel.com. After a transient 525 on the first recheck, laptop and VM probes returned web/API 200 with valid TLS. Expected web HTML and JavaScript asset loaded; public API auth/isolation/upload smoke passed without Gemini calls. Browser/mobile and live RAG testing remain separate pending acceptance steps. Wildcard/www records were not changed.
+
+#### Lesson
+
+Validate connector registration, hostname DNS/ingress and public application response as separate deployment gates; inspect existing origin records when an active tunnel still gives 525.
+
+---
+
+### ERR-065 — Local production Compose validation lacks VM-only secrets
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+Running `scripts/deploy/compose.sh config --quiet` from the laptop stopped before validation because `POSTGRES_PASSWORD` is required and `apps/api/.env` is intentionally absent locally.
+
+#### Root cause
+
+The production wrapper explicitly loads `apps/api/.env`; production credentials are VM-only and Git-ignored. The failure is expected isolation, not a missing production configuration.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the validation boundary and safe resolution |
+
+#### Fix
+
+Ran syntax checks locally and validated Compose on Jarvis, where the owner-only production environment file exists, without printing any values. Jarvis returned `Jarvis production Compose: valid`.
+
+#### Lesson
+
+Do not copy VM credentials to the laptop just to validate Compose; validate the deployed configuration remotely or use deliberately non-secret values in an isolated test environment.

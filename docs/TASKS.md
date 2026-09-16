@@ -11,7 +11,14 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Prepare production Docker/Compose/Nginx, environment validation, auth/proxy/CORS, upload/request bounds and migration packaging; run relevant tests/builds.
 - [x] Manually build and deploy to `/home/tengis/rag-chatbot` as Compose project `rag-prod`; verify DB persistence and Valheim isolation.
 - [x] Verify public Cloudflare NS delegation after user changes Name.com: both public resolvers return marek/mckinley (2026-09-15).
-- [ ] Confirm Cloudflare zone Active, connect named Tunnel and HTTPS; verify browser and mobile auth/RAG flows plus user isolation.
+- [x] Confirm Cloudflare zone Active from user dashboard (2026-09-16).
+- [x] Diagnose/fix connector file permissions (ERR-062); preserve owner-only token and non-root connector.
+- [x] Replace UUID in token file with real connector token (ERR-063), recreate connector and verify four registered connections and zero restarts.
+- [x] Verify both published ingress routes and public API HTTPS health/CORS/unauthenticated rejection.
+- [x] Replace old apex A with tunnel CNAME; verify public web/API HTTPS 200, frontend JS, and public API auth/isolation/upload smoke (ERR-064 fixed, 2026-09-16).
+- [x] Verify real browser session and UI flow (user acceptance, 2026-09-16).
+- [ ] Verify mobile session plus live document ingestion/chat/source flows (deferred by user).
+- [x] Review and commit validated Cloudflare production Compose and deployment evidence; no push or redeploy (2026-09-16).
 - [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.
 - [ ] Verify maintenance rejection with active ingestion, manual previous-image rollback, daily backup/retention and recurring off-VM copies.
 - [ ] Add Actions CI and SHA-tagged GHCR images; verify VM can pull and manually deploy the same artifacts.
