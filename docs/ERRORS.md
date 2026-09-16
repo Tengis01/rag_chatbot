@@ -10,18 +10,18 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
-### ERR-084 — Android EAS build used an Expo SDK-incompatible Document Picker
+### ERR-084 — Android EAS build generated an obsolete Expo Android autolinking import
 
 **Date**: 2026-09-16
 **Status**: ✅ Fixed
 
 #### What happened
 
-The first signed Android EAS build reached `:app:compileReleaseJavaWithJavac` but failed because generated autolinking code imported the missing `expo.core.ExpoModulesPackage`. Its follow-up Expo Doctor check reported `expo-document-picker@56.0.4 - expected version: ~13.1.6` for the installed Expo SDK 53.
+The first signed Android EAS build reached `:app:compileReleaseJavaWithJavac` but failed because generated autolinking code imported the missing `expo.core.ExpoModulesPackage`. Its follow-up Expo Doctor check also reported `expo-document-picker@56.0.4 - expected version: ~13.1.6` for the installed Expo SDK 53. Aligning Document Picker removed the Doctor mismatch, but the second build produced the same obsolete import.
 
 #### Root cause
 
-`expo-document-picker@56.0.4` targets a newer Expo SDK while the mobile application uses Expo SDK 53. Its incompatible native/autolinking metadata caused the Android release compile failure.
+Document Picker 56 did target a newer Expo SDK, but was not the final cause. In this pnpm monorepo, EAS's generated Android PackageList resolved Expo with the obsolete `expo.core.ExpoModulesPackage` path despite Expo SDK 53's installed configuration specifying `expo.modules.ExpoModulesPackage`.
 
 #### Files changed
 
@@ -29,16 +29,17 @@ The first signed Android EAS build reached `:app:compileReleaseJavaWithJavac` bu
 |---|---|
 | `apps/mobile/package.json` | Align `expo-document-picker` with Expo SDK 53 at `^13.1.6` |
 | `pnpm-lock.yaml` | Replace only the Document Picker resolution and integrity entry |
+| `apps/mobile/react-native.config.js` | Explicitly retain Expo SDK 53's Android PackageList import and instance |
 | `docs/ERRORS.md` | Record the failed build and compatibility repair |
 | `docs/MEMORY.md` | Record the validated repair and pending replacement build |
 
 #### Fix
 
-Installed `expo-document-picker@~13.1.6`, then removed pnpm's unrelated `latest`-dependency lockfile churn and retained only the required picker lock entries. Expo Doctor now passes all 18 checks; mobile TypeScript and the production Android bundle pass with `https://api.ragchatbot.dev` embedded.
+Installed `expo-document-picker@~13.1.6`, then removed pnpm's unrelated `latest`-dependency lockfile churn and retained only the required picker lock entries. Expo Doctor now passes all 18 checks; mobile TypeScript and the production Android bundle pass with `https://api.ragchatbot.dev` embedded. Added the minimal `react-native.config.js` override for Expo's Android `packageImportPath` and `packageInstance`; an isolated React Native CLI config inspection now produces the SDK 53 `expo.modules.ExpoModulesPackage` import exactly.
 
 #### Lesson
 
-For Expo native modules, use the SDK-matched version reported by Expo Doctor; a permissive peer dependency does not guarantee compatible Android autolinking.
+For Expo native modules, use the SDK-matched version reported by Expo Doctor and inspect the generated autolinking configuration directly when a monorepo EAS build emits an obsolete native import.
 
 ---
 
