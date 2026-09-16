@@ -19,6 +19,8 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Verify real browser session and UI flow (user acceptance, 2026-09-16).
 - [ ] Verify mobile session plus live document ingestion/chat/source flows (deferred by user).
 - [x] Review and commit validated Cloudflare production Compose and deployment evidence; no push or redeploy (2026-09-16).
+- [x] Install and verify the daily 03:00 Ulaanbaatar backup cron with seven-day retention; new dump scratch restore and owner-only laptop checksum passed (2026-09-16).
+- [ ] Choose and configure an always-available encrypted destination for recurring offsite backup replication.
 - [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.
 - [ ] Verify maintenance rejection with active ingestion, manual previous-image rollback, daily backup/retention and recurring off-VM copies.
 - [ ] Add Actions CI and SHA-tagged GHCR images; verify VM can pull and manually deploy the same artifacts.

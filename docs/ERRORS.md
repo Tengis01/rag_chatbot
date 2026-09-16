@@ -895,6 +895,8 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Checksum file contains paths relative to the project root | Run `sha256sum -c` from that root, not from the `backups/` subdirectory (ERR-067) |
+| Patch tool rejects an added file before any edit | Correct the malformed hunk and rerun validation; no partial filesystem change occurred (ERR-066) |
 | Local production Compose config lacks its required VM-only environment | Validate locally only with an intentionally supplied non-secret test environment, or validate the deployed configuration on the VM without printing its secrets (ERR-065) |
 | Active tunnel but apex returns 525 | Confirm ingress and replace the proven old apex origin with the correct tunnel CNAME (ERR-064) |
 | Tunnel token rejected when an ID was copied | Use full encoded connector token, then recreate to remount the file (ERR-063) |
@@ -2389,3 +2391,61 @@ Ran syntax checks locally and validated Compose on Jarvis, where the owner-only 
 #### Lesson
 
 Do not copy VM credentials to the laptop just to validate Compose; validate the deployed configuration remotely or use deliberately non-secret values in an isolated test environment.
+
+---
+
+### ERR-066 — Backup automation patch had an invalid hunk
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first attempt to add the daily backup scripts was rejected by the patch tool because one new-file line lacked the required patch prefix. No repository file changed.
+
+#### Root cause
+
+The patch payload was malformed before it reached the filesystem.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the failed edit and correction |
+
+#### Fix
+
+Resubmitted a syntactically valid patch, then ran `bash -n` and `git diff --check` on the resulting scripts.
+
+#### Lesson
+
+Keep every content line in an added-file patch explicitly prefixed so validation rejects mistakes before partial edits occur.
+
+---
+
+### ERR-067 — Local backup checksum was checked from the wrong directory
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+After copying the new Jarvis dump and checksum to the laptop, `sha256sum -c` failed with `backups/...dump: No such file or directory` even though both copied files existed.
+
+#### Root cause
+
+The checksum file records the dump path as `backups/rag-...dump`, relative to the project root. Running the command after `cd backups` made it look for `backups/backups/rag-...dump`.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the path convention and correct verification command |
+
+#### Fix
+
+Ran `sha256sum -c backups/rag-20260916T053557-584015.dump.sha256` from the repository root; it returned `OK`.
+
+#### Lesson
+
+Keep checksum verification in the working directory implied by the paths stored inside the checksum file.

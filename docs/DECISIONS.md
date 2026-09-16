@@ -2,6 +2,10 @@
 
 ## Decision Log
 
+## 2026-09-16 — Daily RAG backup schedule
+
+Use a user-level Jarvis cron entry at `19:00 UTC` (03:00 Asia/Ulaanbaatar) to run the RAG daily backup wrapper. It creates a custom-format PostgreSQL dump, verifies its checksum, retains seven calendar days only when an older checksum validates, and logs to the Git-ignored `backups/` directory. Keep recurring offsite replication separate until an always-available encrypted destination is selected. Do not schedule VM-wide or Valheim backup commands through this RAG job.
+
 ## 2026-09-16 — Cloudflared secret ownership
 
 Run cloudflared as UID/GID 1000:1000 on Jarvis, matching the owner of its mode-600 bind-mounted token. Keep capability dropping, read-only filesystem/mount and no-new-privileges. A future host with a different operator UID must align this setting with token ownership; do not make tokens world-readable or restore broad root capabilities to bypass access errors.

@@ -41,8 +41,9 @@ Backups on VM under `backups/`:
 
 - `rag-20260915T115617-217610.dump`: restored successfully in scratch DB; includes the synthetic persistence fixture only.
 - `rag-20260915T115636-218392.dump`: clean database after test fixture removal.
+- `rag-20260916T053557-584015.dump`: created by the daily wrapper after lock/retention changes; checksum and scratch restore passed with one document and one applied migration.
 
-Private laptop copies belong under the Git-ignored `backups/` directory with their `.sha256` files. Both named dumps were copied successfully and passed local SHA-256 verification. No automated daily schedule is installed yet.
+Private laptop copies belong under the Git-ignored `backups/` directory with their `.sha256` files. The new daily-wrapper dump was copied and passed local SHA-256 verification. Jarvis user cron runs `daily-backup.sh` at 19:00 UTC / 03:00 Asia/Ulaanbaatar with seven-day checksum-guarded retention; cron service is active and a repeated installer call created no duplicate entry. Recurring offsite replication remains unconfigured because no always-available encrypted destination has been selected.
 
 ## Required before calling the deployment complete
 

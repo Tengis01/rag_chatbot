@@ -75,7 +75,9 @@ The dump is an owner-only custom-format `pg_dump` plus SHA-256 file under `backu
 scripts/deploy/restore-check.sh backups/rag-EXACT_FILENAME.dump
 ```
 
-Copy both dump and checksum off the VM (private laptop directory). A dump remaining on the 27-day VM is not an offsite backup. Daily scheduling/retention is still to be configured; scripts alone do not make backups automatic.
+Run `scripts/deploy/daily-backup.sh` for a verified dump plus retention. It keeps the latest seven calendar days, validates a dump checksum before removing its older pair, and uses locks so a scheduled/manual backup cannot overlap. On Jarvis, install the user cron once with `scripts/deploy/install-backup-cron.sh`; it runs daily at **03:00 Asia/Ulaanbaatar** (`19:00 UTC`) and writes `backups/daily-backup.log`. Confirm it with `crontab -l` and inspect the first scheduled log the next day.
+
+Copy both dump and checksum off the VM (private laptop directory). A dump remaining on the 27-day VM is not an offsite backup. The initial laptop copy exists; recurring offsite transfer requires an always-available, encrypted destination and is deliberately not pretended to be automatic.
 
 After a successful drain/backup and migration compatibility review, change only the selected image references, then `scripts/deploy/compose.sh up -d --no-deps --wait api web`. Check health/revision and smoke tests, then remove `state/drain`. Keep current and previous images. PostgreSQL stays running with the same volume.
 
