@@ -18,7 +18,7 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Replace old apex A with tunnel CNAME; verify public web/API HTTPS 200, frontend JS, and public API auth/isolation/upload smoke (ERR-064 fixed, 2026-09-16).
 - [x] Verify real browser session and UI flow (user acceptance, 2026-09-16).
 - [ ] Verify mobile session plus live document ingestion/chat/source flows (deferred by user).
-- [x] Review and commit validated Cloudflare production Compose and deployment evidence; no push or redeploy (2026-09-16).
+- [x] Review, commit and push validated Cloudflare production Compose and deployment evidence; no VM redeploy (2026-09-16).
 - [x] Install and verify the daily 03:00 Ulaanbaatar backup cron with seven-day retention; new dump scratch restore and owner-only laptop checksum passed (2026-09-16).
 - [ ] Choose and configure an always-available encrypted destination for recurring offsite backup replication.
 - [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.

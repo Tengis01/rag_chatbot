@@ -27,7 +27,7 @@ Document RAG Chatbot MVP
 - Tunnel jarvis-rag has both hostname routes to http://web:8080, four registered connections and zero restarts. Apex target is ccff4150-cbf8-4f18-af7f-e9b19b81d469.cfargotunnel.com. Wildcard/www were not changed or verified as app routes.
 - Public HTTPS API smoke passed: auth/session/secure cookies, hostile origin, user isolation, upload bounds, malformed PDF and admission cleanup. Synthetic fixtures removed; no Gemini calls. See DEPLOYMENT_VERIFICATION.md.
 - User completed the real web acceptance test without issues. Mobile login and live document ingestion/chat/source acceptance remain deferred, then manual rollback, daily backups and CI/GHCR/CD follow. No browser surface is connected for automated UI verification. Valheim unchanged.
-- The current reviewed commit records the Cloudflare production configuration and deployment evidence. It has not been pushed or deployed; the first manual VM images still use their earlier archive revision.
+- The reviewed Cloudflare and daily-backup commits are pushed to `origin/main`; they have not been deployed. The first manual VM images still use their earlier archive revision.
 - Daily RAG backup is installed as user cron at 03:00 Ulaanbaatar time (19:00 UTC), with seven-day checksum-guarded retention. A new `rag-20260916T053557-584015.dump` restored successfully into a scratch database and its owner-only laptop copy passed SHA-256 verification. Recurring offsite replication still needs an always-available encrypted destination.
 
 ## Historical progress (superseded by current status above)

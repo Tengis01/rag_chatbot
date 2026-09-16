@@ -895,6 +895,7 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Tool payload fails before a Git command starts | Correct the local invocation syntax, then verify the remote branch after the successful retry (ERR-068) |
 | Checksum file contains paths relative to the project root | Run `sha256sum -c` from that root, not from the `backups/` subdirectory (ERR-067) |
 | Patch tool rejects an added file before any edit | Correct the malformed hunk and rerun validation; no partial filesystem change occurred (ERR-066) |
 | Local production Compose config lacks its required VM-only environment | Validate locally only with an intentionally supplied non-secret test environment, or validate the deployed configuration on the VM without printing its secrets (ERR-065) |
@@ -2449,3 +2450,32 @@ Ran `sha256sum -c backups/rag-20260916T053557-584015.dump.sha256` from the repos
 #### Lesson
 
 Keep checksum verification in the working directory implied by the paths stored inside the checksum file.
+
+---
+
+### ERR-068 — Git push tool payload had invalid JavaScript syntax
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first attempt to invoke `git push origin main` was rejected locally with `SyntaxError: Unexpected string` before the command ran.
+
+#### Root cause
+
+The tool invocation payload was malformed, so no shell process or GitHub request was created.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the failed invocation and verification requirement |
+
+#### Fix
+
+Retried with a valid tool payload. GitHub accepted `3a0d77a..88261e2` on `main`; local status now matches `origin/main`.
+
+#### Lesson
+
+Treat a client-side tool syntax failure as distinct from a Git failure and verify the branch state after retrying.

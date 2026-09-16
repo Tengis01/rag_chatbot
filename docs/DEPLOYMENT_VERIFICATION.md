@@ -50,6 +50,6 @@ Private laptop copies belong under the Git-ignored `backups/` directory with the
 - Real mobile session/cookie check; small live document ingestion/chat/source test using the verified Gemini credential. The user reports the real web acceptance test passed. Credential acceptance alone does not prove selected model availability, embedding quota or RAG correctness.
 - Demonstrate maintenance rejection during active work and a compatible previous-image rollback. First release has no previous production version; no claim of zero downtime.
 - Configure daily backup/retention, offsite cadence and final-week restore/export. Confirm exact Azure expiry and NSG rules.
-- Commit reviewed deployment source; project-specific checkout key, CI/GHCR, restricted SSH release workflow, pinned actions/images and failed-CI/deploy/rollback demonstrations.
+- Reviewed deployment source is pushed to `origin/main`; project-specific checkout key, CI/GHCR, restricted SSH release workflow, pinned actions/images and failed-CI/deploy/rollback demonstrations remain.
 
 Report sources and PDF are unchanged. No Git commit/push, GitHub configuration, domain purchase, account credentials disclosure or Azure firewall/subscription mutation was performed.
