@@ -6,7 +6,7 @@ This is an Android-only, directly installable demo release. It does not use Expo
 
 1. Create an Expo account at [expo.dev](https://expo.dev/signup), then verify the email address.
 2. From the repository root, run `pnpm dlx eas-cli@24.5.0 login` and sign in.
-3. Run `pnpm dlx eas-cli@24.5.0 init`. Confirm the account/project name in the interactive prompt. This writes the non-secret EAS project ID into `apps/mobile/app.json`.
+3. Run `cd apps/mobile && pnpm dlx eas-cli@24.5.0 init`. Confirm the account/project name in the interactive prompt. This writes the non-secret EAS project ID into `apps/mobile/app.json`.
 4. Commit and push that change before building. `eas.json` deliberately requires a clean committed worktree.
 
 ## Build and verify

@@ -18,7 +18,7 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Replace old apex A with tunnel CNAME; verify public web/API HTTPS 200, frontend JS, and public API auth/isolation/upload smoke (ERR-064 fixed, 2026-09-16).
 - [x] Verify real browser session and UI flow (user acceptance, 2026-09-16).
 - [ ] Verify mobile session plus live document ingestion/chat/source flows (deferred by user).
-- [ ] Create a signed Android APK with EAS `preview`, complete installed-device production acceptance, and publish the verified asset as GitHub Release `v1.0.0-demo`.
+- [ ] Create a signed Android APK with the linked EAS `preview` profile, complete installed-device production acceptance, and publish the verified asset as GitHub Release `v1.0.0-demo`.
 - [x] Review, commit and push validated Cloudflare production Compose and deployment evidence; no VM redeploy (2026-09-16).
 - [x] Install and verify the daily 03:00 Ulaanbaatar backup cron with seven-day retention; new dump scratch restore and owner-only laptop checksum passed (2026-09-16).
 - [ ] Choose and configure an always-available encrypted destination for recurring offsite backup replication.
@@ -426,7 +426,7 @@ Latest direction: user rejects PAYG and wants to use existing personal $200 tria
 ### Priority 6 — Native App Build / EAS (Phase 5)
 > Currently running via Expo Go. Goal: standalone APK installable without Expo Go.
 
-- [ ] Configure EAS Build (`eas.json`, `eas build:configure`)
+- [x] Configure and link EAS Build from `apps/mobile` (`eas.json`, EAS project ID, Android APK profile)
 - [ ] Build Android APK via `eas build -p android --profile preview`
 - [ ] Test install on physical device
 - [ ] App Store / Google Play — post-MVP

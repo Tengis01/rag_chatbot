@@ -10,6 +10,68 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-082 — EAS was initialized from the monorepo root instead of the Expo app directory
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+Running `eas init` from the repository root created an untracked root `app.json`; `eas config` then reported a placeholder app with `name: "document-rag-chatbot"`, version `0.1.0`, and no platforms instead of the Android app settings.
+
+#### Root cause
+
+The Expo configuration belongs to `apps/mobile/app.json`, but EAS resolves the current directory as the project root. The root-level `eas.json` and scripts therefore made EAS read the wrong application configuration in this monorepo.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `eas.json`, `app.json` | Remove the accidental root-level EAS configuration and generated app metadata |
+| `apps/mobile/eas.json` | Place the APK build profile beside the real Expo app configuration |
+| `apps/mobile/app.json` | Link the real app to the non-secret EAS project ID and owner |
+| `package.json`, `docs/MOBILE_APK_RELEASE.md` | Run EAS from `apps/mobile` |
+| `docs/ERRORS.md` | Record the monorepo configuration correction |
+
+#### Fix
+
+Moved `eas.json` to `apps/mobile`, changed root scripts to explicitly `cd apps/mobile` before invoking EAS, removed the accidental root `app.json`, then linked `apps/mobile/app.json` to the existing EAS project. `pnpm --dir apps/mobile` was insufficient because its child process retained the root working directory; the explicit directory change makes `pnpm mobile:apk:config` report `RAG Chatbot`, Android package `com.tengis.ragchatbot`, the APK build type, and the production API URL.
+
+#### Lesson
+
+In a monorepo, run EAS from the directory that contains the Expo app configuration; otherwise it can initialize a different project at the repository root.
+
+---
+
+### ERR-081 — Sandboxed EAS CLI could not resolve Expo's API hostname
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first `pnpm dlx eas-cli@24.5.0 init` attempt failed with `getaddrinfo EAI_AGAIN api.expo.dev`.
+
+#### Root cause
+
+The restricted tool network could not resolve Expo's API endpoint, although the signed-in EAS CLI and project configuration were valid.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the restricted-network retry boundary |
+
+#### Fix
+
+Retried the same account-authorized EAS command in the approved network context. It connected to Expo and created the project successfully.
+
+#### Lesson
+
+Treat a DNS failure from a restricted automation context as a connectivity boundary; retry the identical account-authorized command before changing project configuration.
+
+---
+
 ### ERR-080 — EAS config script received an unsupported `--non-interactive` flag
 
 **Date**: 2026-09-16
@@ -1072,6 +1134,8 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| EAS reads a placeholder app in this monorepo | Keep `eas.json` beside `apps/mobile/app.json` and run EAS from `apps/mobile` (ERR-082) |
+| EAS cannot resolve `api.expo.dev` in the restricted shell | Retry the same authorized command with network access; do not change EAS configuration (ERR-081) |
 | EAS config rejects an assumed non-interactive flag | Run `pnpm mobile:apk:config` exactly; authenticate separately with `pnpm dlx eas-cli@24.5.0 login` (ERR-080) |
 | Expo Metro cannot resolve `@babel/code-frame` or `nanoid/non-secure` under pnpm | Keep their exact root development dependencies for Metro's root worker (ERR-079) |
 | One-off EAS CLI install churns unrelated `latest` lock entries | Use the exact ephemeral command `pnpm dlx eas-cli@24.5.0` rather than adding it to the workspace (ERR-078) |

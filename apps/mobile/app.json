@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RAG Chatbot",
-    "slug": "rag-chatbot",
+    "slug": "document-rag-chatbot",
     "version": "1.0.0",
     "scheme": "ragchatbot",
     "userInterfaceStyle": "automatic",
@@ -30,6 +30,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9762753c-42e1-4197-80b2-aa320c3bb9fc"
+      }
+    },
+    "owner": "tengis08"
   }
 }
