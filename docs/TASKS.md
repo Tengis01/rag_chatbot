@@ -31,6 +31,7 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Add restricted SSH release script/entrypoint and `workflow_dispatch` workflow with pinned host key input, serialized release lock, drain/backup/health and failure rollback (2026-09-16).
 - [x] Create/install separate deployment key; verify host fingerprint and arbitrary-command rejection from laptop.
 - [x] Configure GitHub production secrets, verify runner-to-VM reachability, and pass one restricted `workflow_dispatch`; main auto-deploy remains disabled (2026-09-16).
+- [x] Verify failed-candidate automatic rollback with existing immutable GHCR images: candidate revision validation failed, API/web automatically restored `37e3fca…`, drain cleared, public health/web and Valheim passed (2026-09-16).
 - [ ] Record monitoring/demo evidence; rehearse restore in final week and export final backups before expiry.
 
 ## Git recovery after laptop transfer — 2026-09-14

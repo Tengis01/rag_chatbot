@@ -6,7 +6,7 @@
 
 Persist the API image, web image and revision only after a release or restored rollback passes healthchecks, in the Git-ignored owner-only `state/release.env` file on Jarvis. `scripts/deploy/compose.sh` accepts explicitly supplied release values first, then validated state, preventing incidental Compose commands from selecting historical `manual` image defaults. The release test successfully moved between two schema-compatible immutable GHCR SHA images and returned to the current image without restarting Postgres, Cloudflare Tunnel or Valheim.
 
-Keep deployment manual through the restricted `workflow_dispatch` route even though its first run passed. Automatic deployment from `main` remains off until a deliberately failing candidate proves automatic restoration behavior and the release is reviewed.
+Keep deployment manual through the restricted `workflow_dispatch` route. Its first run and a deliberately failing candidate's automatic restoration have passed; automatic deployment from `main` remains off until the release process is reviewed and explicitly enabled.
 
 ## 2026-09-16 — Initial GitHub Actions and GHCR release boundary
 

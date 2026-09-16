@@ -10,6 +10,35 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-077 — Temporary rollback verifier expected a stale diagnostic string
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The controlled failed-release exercise restored production successfully, but its temporary verifier exited nonzero after looking for `final health check did not confirm revision and open admission`. The release log instead reported `candidate health revision did not match ...`.
+
+#### Root cause
+
+The disposable verifier matched an earlier draft of the release script's diagnostic text instead of checking the stable outcome: nonzero candidate result, restored release state, cleared drain marker, and healthy current revision.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the temporary assertion mismatch and outcome-based verification rule |
+
+#### Fix
+
+Inspected the retained VM audit: it shows candidate replacement, failed revision validation, automatic API/web restoration, and a clean final state. Public API reports `sha-37e3…`, web returns 200, and Valheim remains up. No production script change was needed.
+
+#### Lesson
+
+For release recovery tests, assert externally observable restored state rather than fragile wording from an implementation diagnostic.
+
+---
+
 ### ERR-076 — Local shell quoting broke the first remote admission-test invocation
 
 **Date**: 2026-09-16
