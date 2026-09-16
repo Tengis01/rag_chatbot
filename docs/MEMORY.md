@@ -21,6 +21,19 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### Standalone Android APK verified on physical hardware; v1.0.0-demo release prepared (2026-09-17)
+
+- EAS preview signed build (`RAG-Chatbot-v1.0.0.apk`) was downloaded and installed directly on an Android device, connecting to production `https://api.ragchatbot.dev`.
+- Physical device acceptance testing passed:
+  - User signup and authentication work properly.
+  - Document and text upload process to `ready`.
+  - Grounded chat Q&A generates answers strictly with source citations.
+  - Cross-account testing verified strict user data isolation (documents/conversations are not accessible across accounts).
+  - An initial post-install screen render glitch occurred on first launch, resolving completely after killing and reopening the app (recorded as ERR-086).
+  - UI limitations noted as non-blocking areas for future polish.
+- Academic report updated: `results.tex`, `conclusion.tex`, `skills.tex`, and `implementation.tex` now record the physical-device standalone APK acceptance, cross-account validation, and UI limitations/cold-start workaround. `pnpm report:build` verified clean compilation with 40 A4 pages and zero overfull hbox warnings.
+- Release preparation: `v1.0.0-demo` git tag created, `*.apk` added to `.gitignore`, APK staged at `/home/tengis/Downloads/RAG-Chatbot-v1.0.0.apk` and repository root for public GitHub Release distribution.
+
 ### Restricted SSH preparation follow-up (2026-09-16)
 
 - Report deployment update completed: `implementation.tex` now has section 5.6.1 covering the verified Azure production Compose topology, Nginx private ingress, Cloudflare Tunnel HTTPS, GitHub Actions/GHCR immutable image path, restricted SSH release, drain, checksum-checked backup and tested rollback. It deliberately contains no reference to unrelated VM services. Conclusion/skills now say physical standalone-APK acceptance remains pending. `pnpm report:build` passed; the 40-page A4 PDF was rendered and the new page layout visually inspected.

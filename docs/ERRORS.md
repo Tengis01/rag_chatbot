@@ -10,6 +10,38 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-086 — Mobile standalone APK initial post-install screen render glitch
+
+**Date**: 2026-09-17
+**Status**: ⚠️ Workaround
+
+#### What happened
+
+After installing the standalone Android APK (`RAG-Chatbot-v1.0.0.apk`) on a physical device, launching the application for the first time resulted in a screen rendering/display glitch where the UI failed to lay out cleanly.
+
+#### Root cause
+
+First-launch cold-start race condition on a clean install before local storage, Better Auth session state, or font/asset hydration fully completed before the root view mounted.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record ERR-086 and cold-start workaround |
+| `docs/MEMORY.md` | Record mobile acceptance testing results and release |
+| `report/subfiles/results.tex` | Document real-device APK acceptance and UI limitations |
+| `report/subfiles/conclusion.tex` | Update conclusion and future work with APK delivery and glitch fix |
+
+#### Fix
+
+Closing/killing the app from Android's recent tasks list and reopening it cleanly bypassed the initial race condition. All subsequent operations (signup, login, document/text upload, processing to `ready`, grounded chat with sources, and cross-account data isolation) functioned normally. The underlying cold-start hydration synchronization is documented as a future polish item.
+
+#### Lesson
+
+Clean-install cold starts must explicitly keep the native splash screen visible until font loading, storage hydration, and authentication routing are fully resolved.
+
+---
+
 ### ERR-085 — Report patch targeted the same TeX file twice in one operation
 
 **Date**: 2026-09-16

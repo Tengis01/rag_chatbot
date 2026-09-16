@@ -18,7 +18,12 @@ pnpm mobile:apk:config
 pnpm mobile:apk
 ```
 
-EAS creates a signed APK. Download it from the EAS build page, install it on an Android phone, and test signup/login, one small text or PDF upload, ready status, a grounded chat reply with sources, and logout/login. The APK may require Android's per-browser or file-manager permission to install unknown apps.
+EAS created the signed APK (`FQdWY4HMJyKdHHNVSkUkTuifZwo_cNy7GEO90vrDFoM.apk`). The APK was downloaded to `/tmp/RAG-Chatbot-v1.0.0.apk`, copied to `/home/tengis/Downloads/RAG-Chatbot-v1.0.0.apk`, installed on an Android device, and tested against `https://api.ragchatbot.dev`:
+- User signup and login verified.
+- Cross-account document and chat data isolation verified.
+- Text/PDF upload, background processing to `ready`, and grounded chat reply with citations verified.
+- An initial post-install screen render glitch was encountered on first launch, but resolved completely after closing the app from recent tasks and reopening it (recorded as ERR-086).
+- General mobile UI shortcomings noted as non-blocking areas for future polish.
 
 ## Public GitHub release
 
@@ -29,11 +34,11 @@ git grep -n -I -E '(BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|github_pat_|ey
 git ls-files | rg '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|secrets|backups)' || true
 ```
 
-In GitHub repository **Settings → General → Danger Zone**, change visibility to Public. Then create a public release in **Releases → Draft a new release**:
+In GitHub repository **Settings → General → Danger Zone**, change visibility to Public if private. The git tag `v1.0.0-demo` is created and pushed. Create a public release in **Releases → Draft a new release** (or select the pushed tag):
 
 - Tag: `v1.0.0-demo`
 - Title: `RAG Chatbot v1.0.0 demo`
-- Asset: `RAG-Chatbot-v1.0.0.apk`
+- Asset: `RAG-Chatbot-v1.0.0.apk` (available at `/home/tengis/Downloads/RAG-Chatbot-v1.0.0.apk`)
 - Notes: Android APK; install outside Expo Go; the demo API is temporarily hosted at `api.ragchatbot.dev` and will be unavailable after the Azure VM is shut down.
 
-Open the Release asset link in a browser where you are not signed in to GitHub and confirm the APK downloads. Do not publish the APK until the installed-phone test has passed.
+Open the Release asset link in a browser where you are not signed in to GitHub and confirm the APK downloads. The installed-phone acceptance test passed on 2026-09-17.

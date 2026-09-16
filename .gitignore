@@ -53,6 +53,7 @@ report/**/*.synctex.gz
 report/**/*.synctex(busy)
 
 # Expo / Mobile
+*.apk
 .expo/
 web-build/
 expo-env.d.ts

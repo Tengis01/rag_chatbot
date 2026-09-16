@@ -2,6 +2,10 @@
 
 ## Decision Log
 
+## 2026-09-17 — Android standalone APK acceptance and release v1.0.0-demo
+
+The EAS `preview` signed build (`RAG-Chatbot-v1.0.0.apk`) was installed and verified on physical Android hardware connected to the live production endpoint `https://api.ragchatbot.dev`. Acceptance testing confirmed functional user authentication, document/text processing to `ready`, grounded chat Q&A with citations, and strict cross-account user data isolation. An initial post-install screen render glitch was resolved by an app restart (documented as ERR-086 and a cold-start hydration limitation), and general mobile UI shortcomings are documented in the academic report as non-blocking areas for future polish. The release is tagged as `v1.0.0-demo` on GitHub for demonstration purposes.
+
 ## 2026-09-16 — Android demo APK distribution
 
 Use EAS Build's Android internal-distribution APK profile for the instructor demo. The profile embeds the public `https://api.ragchatbot.dev` endpoint, while the ignored mobile development `.env` keeps local Expo Go/LAN probing unchanged. Distribute only a phone-tested APK as a public GitHub Release `v1.0.0-demo`; the repository is intentionally made public for that download path after a tracked-file secret scan. This is a temporary Android demo release, not a Play Store submission or a promise of service after the short-lived Azure VM is shut down.
