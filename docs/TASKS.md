@@ -22,8 +22,10 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Install and verify the daily 03:00 Ulaanbaatar backup cron with seven-day retention; new dump scratch restore and owner-only laptop checksum passed (2026-09-16).
 - [ ] Choose and configure an always-available encrypted destination for recurring offsite backup replication.
 - [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.
-- [ ] Verify maintenance rejection with active ingestion, manual previous-image rollback, daily backup/retention and recurring off-VM copies.
-- [ ] Add Actions CI and SHA-tagged GHCR images; verify VM can pull and manually deploy the same artifacts.
+- [x] Verify drained API/web operational rollback: pre-deploy backup, candidate image switch, healthy baseline restoration, no Postgres/Cloudflare/Valheim restart (2026-09-16).
+- [ ] Verify maintenance rejection with active ingestion and a compatible version-to-version rollback after GHCR publishes two releases.
+- [x] Add SHA-pinned GitHub Actions CI workflow: Node 24/pnpm frozen install, typecheck, build and API/web production-image build; publishing is limited to `main` and manual dispatch (2026-09-16).
+- [ ] Run the first GitHub Actions workflow, confirm two SHA-tagged GHCR packages, then verify Jarvis can pull and manually deploy the same artifacts.
 - [ ] Add restricted SSH deployment script/workflow with pinned host key and serialized releases; validate workflow_dispatch before main auto deploy.
 - [ ] Record monitoring/demo evidence; rehearse restore in final week and export final backups before expiry.
 

@@ -43,7 +43,7 @@ The smoke script creates and removes its own synthetic accounts/documents, verif
 
 VM-only `apps/api/.env`, mode 600, holds production DB password/URL, Better Auth secret and Gemini key. Start from `apps/api/.env.production.example`; create independent random DB/auth secrets. API startup rejects absent production secrets, insecure public origins and unsupported limits. Never use development DB credentials for this deployment. Changing `POSTGRES_PASSWORD` in env does not rotate an existing database password; coordinate an explicit DB password change.
 
-`API_IMAGE`, `WEB_IMAGE` select the release. `APP_REVISION` records its identity. Public web API URL is baked into Vite at image build time. Mobile uses `EXPO_PUBLIC_API_URL=https://api.ragchatbot.dev` when running/building a compatible Expo client; no Metro service is deployed on the VM. Native device testing remains a separate acceptance gate.
+`API_IMAGE`, `WEB_IMAGE` select the release. For Compose builds/deployments, `APP_REVISION_OVERRIDE` records its identity and safely overrides the VM env-file fallback; do not pass `APP_REVISION` directly because the production `--env-file` supplies that name. Public web API URL is baked into Vite at image build time. Mobile uses `EXPO_PUBLIC_API_URL=https://api.ragchatbot.dev` when running/building a compatible Expo client; no Metro service is deployed on the VM. Native device testing remains a separate acceptance gate.
 
 ## Cloudflare + Name.com (user account step)
 

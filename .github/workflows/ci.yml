@@ -1,0 +1,98 @@
+name: CI and GHCR images
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "11.6.0"
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/tengis01/rag-api
+  WEB_IMAGE: ghcr.io/tengis01/rag-web
+  IMAGE_TAG: sha-${{ github.sha }}
+
+jobs:
+  quality:
+    name: Typecheck and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install workspace dependencies
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+          pnpm --version
+          pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+  images:
+    name: Build${{ github.event_name == 'pull_request' && '' || ' and publish' }} images
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login "$REGISTRY" --username "${{ github.actor }}" --password-stdin
+
+      - name: Build API image
+        run: |
+          docker build \
+            --file infra/docker/Dockerfile.prod \
+            --target api \
+            --build-arg "APP_REVISION=$IMAGE_TAG" \
+            --tag "$API_IMAGE:$IMAGE_TAG" \
+            .
+
+      - name: Build web image
+        run: |
+          docker build \
+            --file infra/docker/Dockerfile.prod \
+            --target web \
+            --build-arg "APP_REVISION=$IMAGE_TAG" \
+            --build-arg "VITE_API_BASE_URL=https://api.ragchatbot.dev" \
+            --tag "$WEB_IMAGE:$IMAGE_TAG" \
+            .
+
+      - name: Inspect image revision labels
+        run: |
+          test "$(docker image inspect "$API_IMAGE:$IMAGE_TAG" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')" = "$IMAGE_TAG"
+          test "$(docker image inspect "$WEB_IMAGE:$IMAGE_TAG" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')" = "$IMAGE_TAG"
+
+      - name: Push immutable images to GHCR
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push "$API_IMAGE:$IMAGE_TAG"
+          docker push "$WEB_IMAGE:$IMAGE_TAG"

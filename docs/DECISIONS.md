@@ -2,6 +2,18 @@
 
 ## Decision Log
 
+## 2026-09-16 — Initial GitHub Actions and GHCR release boundary
+
+Use one SHA-pinned workflow with two jobs. The quality job runs Node 24, Corepack-selected pnpm 11.6.0, frozen install, typecheck and build for pull requests, `main` pushes and manual dispatch. The image job always builds the existing API and web production Docker targets after quality succeeds, but logs in and publishes only for `main` or manual dispatch. Publish immutable full-commit `sha-<commit>` tags to `ghcr.io/tengis01/rag-api` and `ghcr.io/tengis01/rag-web`; do not publish mutable `latest` tags or deploy from this workflow yet.
+
+Use only GitHub's `GITHUB_TOKEN` with job-scoped `packages: write`, not a personal access token. Docker commands run directly on the hosted runner, leaving the initial workflow with only immutable-SHA-pinned GitHub `checkout` and `setup-node` actions. First package visibility, Jarvis package-read credential, manual GHCR pull and release script come after the workflow has a successful run.
+
+## 2026-09-16 — Rollback scope and revision evidence
+
+Use a filesystem drain marker, a fresh verified database dump, and API/web image replacement for one-VM RAG rollback. Do not automatically restore PostgreSQL for an image rollback; database restore is a separately chosen recovery action. The first test rebuilt the same source archive under a candidate tag and restored the existing manual image, proving the operational sequence while leaving Postgres, Cloudflare Tunnel, and Valheim untouched. A future GHCR rollout must repeat the check with two schema-compatible versioned images.
+
+Set `APP_REVISION` explicitly in the Compose API environment and use the wrapper's tag-safe `APP_REVISION_OVERRIDE` for a selected build tag. The wrapper writes it to a private temporary second Compose env file, which takes precedence over the persistent VM `env_file` without editing secrets.
+
 ## 2026-09-16 — Daily RAG backup schedule
 
 Use a user-level Jarvis cron entry at `19:00 UTC` (03:00 Asia/Ulaanbaatar) to run the RAG daily backup wrapper. It creates a custom-format PostgreSQL dump, verifies its checksum, retains seven calendar days only when an older checksum validates, and logs to the Git-ignored `backups/` directory. Keep recurring offsite replication separate until an always-available encrypted destination is selected. Do not schedule VM-wide or Valheim backup commands through this RAG job.

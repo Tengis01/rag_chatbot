@@ -895,6 +895,10 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Tool sandbox cannot create Git's index lock | Use the approved Git execution context; do not delete lock files or alter repository permissions (ERR-072) |
+| Local tool sandbox cannot access Docker configuration/socket | Treat it as a local verification boundary; validate Docker builds on the real Docker host or GitHub-hosted runner without weakening socket permissions (ERR-071) |
+| Host API port is intentionally private in production | Probe API through Nginx at `127.0.0.1:8080` with the API Host header, not host port 4000 (ERR-069) |
+| Health revision differs from the deployed image label | Use the Compose wrapper's tag-safe `APP_REVISION_OVERRIDE`, which supplies a higher-precedence temporary env file (ERR-070) |
 | Tool payload fails before a Git command starts | Correct the local invocation syntax, then verify the remote branch after the successful retry (ERR-068) |
 | Checksum file contains paths relative to the project root | Run `sha256sum -c` from that root, not from the `backups/` subdirectory (ERR-067) |
 | Patch tool rejects an added file before any edit | Correct the malformed hunk and rerun validation; no partial filesystem change occurred (ERR-066) |
@@ -2393,6 +2397,8 @@ Ran syntax checks locally and validated Compose on Jarvis, where the owner-only 
 
 Do not copy VM credentials to the laptop just to validate Compose; validate the deployed configuration remotely or use deliberately non-secret values in an isolated test environment.
 
+**Repeat note (2026-09-16)**: A later local rollback-config validation encountered the same intentional missing-secret boundary. It was rerun with a non-secret `POSTGRES_PASSWORD` value; no credential was copied or exposed.
+
 ---
 
 ### ERR-066 — Backup automation patch had an invalid hunk
@@ -2479,3 +2485,121 @@ Retried with a valid tool payload. GitHub accepted `3a0d77a..88261e2` on `main`;
 #### Lesson
 
 Treat a client-side tool syntax failure as distinct from a Git failure and verify the branch state after retrying.
+
+---
+
+### ERR-069 — Rollback health probe targeted the API's private host port
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+During the candidate-image rollback test, `curl http://127.0.0.1:4000/health` failed with `curl: (7) Failed to connect`. Docker had already marked the API and web containers healthy.
+
+#### Root cause
+
+Production deliberately publishes only Nginx on `127.0.0.1:8080`; Fastify port 4000 is private to the Compose networks and has no host binding.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the correct production health-probe route |
+
+#### Fix
+
+Probed `http://127.0.0.1:8080/health` with `Host: api.ragchatbot.dev`, which returned a DB-connected response, then restored the baseline image and rechecked the same route.
+
+#### Lesson
+
+Use the intended ingress path when testing production services that intentionally keep backend ports private.
+
+---
+
+### ERR-070 — Runtime revision was overridden by the production env file
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The candidate images carried `org.opencontainers.image.revision=rollback-test-20260916-1e81efb`, but `/health` reported `manual-60653da1fc21` after deployment.
+
+#### Root cause
+
+`apps/api/.env` supplies `APP_REVISION`. Docker Compose's explicit `--env-file` was also used for interpolation and took precedence over a same-named shell value, while the image's embedded `ENV` is lower precedence than the container environment.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `compose.prod.yml` | Pass the selected `APP_REVISION` explicitly to the API container |
+| `scripts/deploy/compose.sh` | Accept and safely apply `APP_REVISION_OVERRIDE` through a private second env file |
+| `docs/ERRORS.md` | Record diagnosis and verification requirement |
+
+#### Fix
+
+Added `APP_REVISION: ${APP_REVISION:-manual}` to the API Compose environment. The wrapper accepts a Docker-tag-safe `APP_REVISION_OVERRIDE`, writes `APP_REVISION` to a mode-600 temporary env file and passes it after the persistent env file. This makes the caller's selected release value visible from `/health` without modifying VM secrets.
+
+#### Lesson
+
+Treat image labels and runtime environment as separate release metadata paths, and verify that the health endpoint reports the chosen release tag.
+
+---
+
+### ERR-071 — Local tool sandbox could not perform Docker image verification
+
+**Date**: 2026-09-16
+**Status**: ⚠️ Workaround
+
+#### What happened
+
+The local CI-equivalent `docker build` first failed trying to create `/home/tengis/.docker` in the filesystem sandbox. Retrying outside that sandbox then failed with `permission denied while trying to connect to the docker API at unix:///var/run/docker.sock`.
+
+#### Root cause
+
+The coding tool's sandbox and elevated execution context do not inherit the interactive user's Docker configuration/socket access. The failure occurred before Docker read the production Dockerfile; it is not an application or image-build defect.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the local Docker verification boundary |
+
+#### Fix
+
+Kept the validated Jarvis production-build evidence and configured GitHub-hosted Actions to perform the same Docker builds. Do not loosen Docker socket permissions or copy local Docker configuration into the repository merely to satisfy this tool environment.
+
+#### Lesson
+
+Distinguish a restricted automation shell from the interactive Docker host, and verify container builds where the intended Docker daemon is available.
+
+---
+
+### ERR-072 — Tool sandbox could not create Git's index lock
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+Staging the CI workflow failed before a commit with `Unable to create .../.git/index.lock: Read-only file system`.
+
+#### Root cause
+
+The standard tool sandbox grants read-only access to `.git`, so Git cannot create its normal short-lived index lock there.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the repository-metadata execution boundary |
+
+#### Fix
+
+Use the approved Git execution context for staging and committing. No lock file was created, removed, or manually modified.
+
+#### Lesson
+
+Treat Git's index lock as an integrity mechanism; change the execution context rather than deleting lock files to bypass it.
