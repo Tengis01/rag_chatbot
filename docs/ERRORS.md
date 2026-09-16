@@ -10,6 +10,35 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-083 — EAS correctly rejected an APK build from a dirty worktree
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+After recording the corrected EAS build invocation, `eas build --platform android --profile preview --non-interactive --no-wait` stopped with `This operation needs to be run on a clean working tree` and listed `docs/ERRORS.md`.
+
+#### Root cause
+
+The `preview` build profile deliberately sets `cli.requireCommit: true`. The operational error record had not yet been committed, so EAS refused to build an APK from source that did not correspond to a Git commit.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the required clean-worktree gate |
+
+#### Fix
+
+Commit and push this record before retrying the unchanged EAS build command. The build will then be tied to the exact reviewable commit.
+
+#### Lesson
+
+When `requireCommit` is enabled, commit every intended source and documentation change before starting an EAS release build.
+
+---
+
 ### ERR-082 — EAS was initialized from the monorepo root instead of the Expo app directory
 
 **Date**: 2026-09-16
@@ -79,11 +108,11 @@ Treat a DNS failure from a restricted automation context as a connectivity bound
 
 #### What happened
 
-Running `pnpm mobile:apk:config -- --non-interactive` stopped immediately with `Unexpected argument: --non-interactive`.
+Running `pnpm mobile:apk:config -- --non-interactive` stopped immediately with `Unexpected argument: --non-interactive`. Later, `pnpm mobile:apk -- --non-interactive --no-wait` passed a literal extra `--` through the package script and EAS rejected both valid build flags as unexpected.
 
 #### Root cause
 
-The `eas config` command does not support that flag. The package script correctly invokes `pnpm dlx eas-cli@24.5.0 config --platform android --profile preview`; the added script argument was invalid.
+The `eas config` command does not support that flag. For the build command, `--non-interactive` and `--no-wait` are valid EAS options but `pnpm ... -- --flag` appended an additional separator inside an already-complete shell command. The package scripts themselves correctly invoke their EAS commands; the added invocation syntax was invalid.
 
 #### Files changed
 
@@ -93,7 +122,7 @@ The `eas config` command does not support that flag. The package script correctl
 
 #### Fix
 
-Reran `pnpm mobile:apk:config` without the unsupported flag. EAS accepted the command and then reached its expected account-login requirement, so no configuration or code change was needed.
+Reran `pnpm mobile:apk:config` without the unsupported flag. For the signed build, invoke EAS directly from `apps/mobile` with its supported flags. EAS accepted the corrected command, so no application configuration change was needed.
 
 #### Lesson
 
@@ -1134,6 +1163,7 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| EAS refuses an APK build because the worktree is dirty | Commit the complete intended change first; `requireCommit` protects release traceability (ERR-083) |
 | EAS reads a placeholder app in this monorepo | Keep `eas.json` beside `apps/mobile/app.json` and run EAS from `apps/mobile` (ERR-082) |
 | EAS cannot resolve `api.expo.dev` in the restricted shell | Retry the same authorized command with network access; do not change EAS configuration (ERR-081) |
 | EAS config rejects an assumed non-interactive flag | Run `pnpm mobile:apk:config` exactly; authenticate separately with `pnpm dlx eas-cli@24.5.0 login` (ERR-080) |
