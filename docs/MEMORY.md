@@ -28,6 +28,7 @@ Document RAG Chatbot MVP
 - Fixed workflow command mismatch and serialized manual workflows. Rollback retains maintenance if restoration or revision verification fails. The restricted GitHub `workflow_dispatch` path has passed once; automatic `main` deployment remains disabled.
 - Production health rechecked after the successful manual dispatch: API/Web both run `ghcr.io/tengis01` image tag `sha-37e3fca3f10de6b0ab1ebab79201c27b85f4fd38`; public API and web return 200, admission is open. Compose/release scripts now persist that validated release state to avoid accidental fallback to historical manual images.
 - A compatible real version rollback is now demonstrated: `7395fe042204af07b853fe06b9bf1f413dade8cd` deployed after drain and backup, then `37e3fca3f10de6b0ab1ebab79201c27b85f4fd38` was restored the same way. Both API/web healthchecks passed; final public API reports the expected revision and `draining:false`. Backups from the exercise are retained on Jarvis. Automatic deployment remains deliberately disabled pending future release review.
+- Production admission behavior is also demonstrated with a temporary synthetic account: an admitted paste held `activeIngestion:1`; after the drain marker was set, a second authenticated paste returned `503` and `Retry-After: 30`. The first workload finished, its account/document were deleted, and final health returned `draining:false`, both active counters zero (ERR-076 records the harmless first local shell quoting failure).
 
 ### Public HTTPS web/API working (2026-09-16)
 

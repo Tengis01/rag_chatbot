@@ -24,7 +24,7 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Implement admission/drain, backup/scratch-restore helpers, initial restore and checksum-verified off-VM copies; write runbook/evidence.
 - [x] Verify drained API/web operational rollback: pre-deploy backup, candidate image switch, healthy baseline restoration, no Postgres/Cloudflare/Valheim restart (2026-09-16).
 - [x] Verify compatible version-to-version rollback using two GHCR releases (`7395fe0…` → `37e3fca…`), with drain, fresh backups, final public health and Valheim checks (2026-09-16).
-- [ ] Verify maintenance rejection while an active ingestion is in progress.
+- [x] Verify maintenance rejection during an active synthetic ingestion: authenticated request returned `503` with `Retry-After: 30`; workload completed, synthetic data was removed, and admission reopened (2026-09-16).
 - [x] Add SHA-pinned GitHub Actions CI workflow: Node 24/pnpm frozen install, typecheck, build and API/web production-image build; publishing is limited to `main` and manual dispatch (2026-09-16).
 - [x] Run the initial GitHub Actions workflow successfully (user confirmed, 2026-09-16).
 - [x] Create a read-only GHCR Docker credential on Jarvis, verify pull/labels for two SHA-tagged images, and manually deploy the exact artifacts with drain/backup (2026-09-16).

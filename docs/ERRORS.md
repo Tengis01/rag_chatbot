@@ -10,6 +10,35 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-076 — Local shell quoting broke the first remote admission-test invocation
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+The first attempt to launch the temporary Jarvis admission test failed locally with `syntax error near unexpected token 'then'`. The remote command never started and no maintenance marker was created.
+
+#### Root cause
+
+Nested single quotes used to match JSON fragments inside an already single-quoted SSH command terminated the local Bash string before SSH executed it.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `docs/ERRORS.md` | Record the command-construction failure and safe retry pattern |
+
+#### Fix
+
+Transferred the non-secret temporary Node test script separately, then sent the remote control logic through `ssh ... 'bash -s'` with a quoted heredoc. The controlled test observed an active synthetic ingestion, verified an authenticated second request returned `503` with `Retry-After: 30`, waited for completion, deleted synthetic data, and removed the drain marker.
+
+#### Lesson
+
+For multi-line remote operations, pass a quoted script to `bash -s` instead of nesting shell and JSON quotes in one SSH argument.
+
+---
+
 ### ERR-075 — Manual deployment preflight defects
 
 **Date**: 2026-09-16

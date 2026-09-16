@@ -39,6 +39,7 @@ Manual production deployment runs on `jarvis` under `/home/tengis/rag-chatbot`, 
 | Manual GHCR release | Pulled and OCI-label-verified API/Web SHA images, drained admission, created `rag-20260916T072841-627051.dump`, recreated only API/Web, and confirmed internal/public health at revision `sha-37e3fca3f10de6b0ab1ebab79201c27b85f4fd38`. Postgres, Cloudflare and Valheim were unchanged. |
 | Restricted GitHub deployment | Dedicated forced-command key and production environment secrets were configured. One `workflow_dispatch` deployment passed. `main` auto-deploy remains disabled. |
 | Compatible version rollback | `release-ghcr.sh` deployed GHCR release `sha-7395fe042204af07b853fe06b9bf1f413dade8cd`, then deployed `sha-37e3fca3f10de6b0ab1ebab79201c27b85f4fd38` again. Each transition drained the API, created a dump, recreated only API/web, and passed healthchecks. Final public API reports `37e3…`, web is HTTP 200, and Valheim stayed up. |
+| Active-work maintenance | A synthetic authenticated paste held `activeIngestion:1`. After enabling drain, another authenticated paste returned `503` with `Retry-After: 30`. The admitted workload completed, its synthetic account/documents were deleted, the marker was removed, and final health reported `draining:false` with zero active work. |
 
 Snapshot after checks: API ~86 MiB / 1.5 GiB cap, PostgreSQL ~25 MiB / 2 GiB, Nginx ~6 MiB / 256 MiB; Valheim ~1.48 GiB. Root disk ~13 GB used, 49 GB free. These are idle snapshots, not load-test results.
 
@@ -54,7 +55,7 @@ Private laptop copies belong under the Git-ignored `backups/` directory with the
 ## Required before calling the deployment complete
 
 - Real mobile session/cookie check; small live document ingestion/chat/source test using the verified Gemini credential. The user reports the real web acceptance test passed. Credential acceptance alone does not prove selected model availability, embedding quota or RAG correctness.
-- Demonstrate maintenance rejection during active work. No claim of zero downtime: the single API intentionally drains before replacement.
+- No claim of zero downtime: the single API intentionally drains before replacement.
 - Configure daily backup/retention, offsite cadence and final-week restore/export. Confirm exact Azure expiry and NSG rules.
 - Demonstrate an intentionally failed candidate release and its automatic rollback before enabling automatic deployment. Mobile/live RAG acceptance is still deferred.
 
