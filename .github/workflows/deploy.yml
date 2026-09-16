@@ -10,6 +10,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: jarvis-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy verified GHCR release
@@ -46,7 +50,7 @@ jobs:
             -o UserKnownHostsFile="$known_hosts_file" \
             -i "$key_file" \
             "$JARVIS_USER@$JARVIS_HOST" \
-            /home/tengis/rag-chatbot/scripts/deploy/ssh-release-entrypoint.sh "$RELEASE_SHA"
+            /home/tengis/rag-chatbot/scripts/deploy/release-ghcr.sh "$RELEASE_SHA"
 
       - name: Verify public release revision
         env:

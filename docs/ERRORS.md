@@ -10,6 +10,35 @@ Use this file to avoid repeating the same mistakes and to quickly remember conte
 
 ## Error Log
 
+### ERR-075 — Manual deployment preflight defects
+
+**Date**: 2026-09-16
+**Status**: ✅ Fixed
+
+#### What happened
+
+Review found the workflow requested `ssh-release-entrypoint.sh` while the forced command only accepts `release-ghcr.sh`. Rollback cleared maintenance even after failed restoration. A default operator SSH probe returned exit 64, and a dedicated-key probe failed strict host checking with the old temporary host-key path.
+
+#### Root cause
+
+Caller/allowlist paths differed; recovery did not check restoration success. SSH offered the restricted key by default; the temporary known-hosts file no longer existed.
+
+#### Files changed
+
+| File | Change |
+|---|---|
+| `.github/workflows/deploy.yml` | Match allowed command and serialize workflows |
+| `scripts/deploy/release-ghcr.sh` | Preserve existing maintenance; verify rollback before reopening |
+| `docs/MEMORY.md`, `docs/TASKS.md`, `docs/ERRORS.md` | Record verified state and pending account setup |
+
+#### Fix
+
+Aligned workflow command with the allowlist. Failed rollback now retains drain. Explicit operator key restored read-only access; existing known_hosts matched the host fingerprint verified over operator SSH. Dedicated deployment-key arbitrary-command rejection passed (64). Script syntax/YAML checks passed; actual failed-release recovery remains pending integration testing.
+
+#### Lesson
+
+Verify the SSH caller, forced-command allowlist and recovery failure path before enabling dispatch.
+
 ---
 
 ### ERR-001 — Frontend not loading in Docker (Vite not reachable from host)
@@ -895,6 +924,7 @@ export function DocumentPicker({ documents = [], selectedIds, onToggle, loading 
 
 | Gotcha | Fix |
 |---|---|
+| Restricted SSH command rejected or host pin missing | Match the workflow command to the allowlist, explicitly select the intended key, and use a verified durable host pin (ERR-075) |
 | GitHub CLI is absent on the workstation | Use GitHub's web/API status surface for read-only workflow checks; do not install it solely for one check (ERR-073) |
 | Tool sandbox cannot create Git's index lock | Use the approved Git execution context; do not delete lock files or alter repository permissions (ERR-072) |
 | Local tool sandbox cannot access Docker configuration/socket | Treat it as a local verification boundary; validate Docker builds on the real Docker host or GitHub-hosted runner without weakening socket permissions (ERR-071) |

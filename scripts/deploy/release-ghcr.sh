@@ -13,6 +13,11 @@ readonly web_image="ghcr.io/tengis01/rag-web:$release_tag"
 readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
+if [[ -e state/drain ]]; then
+  printf 'Release blocked: existing maintenance requires operator review.\n' >&2
+  exit 1
+fi
+
 export DOCKER_CONFIG="${DOCKER_CONFIG:-$HOME/.config/rag-chatbot/ghcr-docker}"
 readonly lock_path="$repo_root/state/.release.lock"
 mkdir -p "$repo_root/state"
@@ -50,12 +55,21 @@ scripts/deploy/drain.sh
 scripts/deploy/backup.sh
 
 rollback_previous() {
-  set +e
+  touch state/drain
   printf 'Release failed; restoring previous API/Web images.\n' >&2
-  API_IMAGE="$old_api_image" \
+  if ! API_IMAGE="$old_api_image" \
   WEB_IMAGE="$old_web_image" \
   APP_REVISION_OVERRIDE="$old_revision" \
-    scripts/deploy/compose.sh up -d --no-deps --wait api web
+    scripts/deploy/compose.sh up -d --no-deps --wait api web; then
+    printf 'Rollback failed; maintenance remains enabled.\n' >&2
+    return 1
+  fi
+  local restored_health
+  if ! restored_health="$(curl -fsS --max-time 20 -H 'Host: api.ragchatbot.dev' http://127.0.0.1:8080/health)" ||
+    [[ "$restored_health" != *"\"revision\":\"$old_revision\""* ]]; then
+    printf 'Rollback health failed; maintenance remains enabled.\n' >&2
+    return 1
+  fi
   rm -f state/drain
 }
 

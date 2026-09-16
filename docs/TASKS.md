@@ -28,7 +28,8 @@ Current plan: `docs/DEPLOYMENT_PLAN.md`. It supersedes the historical Monarch/gi
 - [x] Run the initial GitHub Actions workflow successfully (user confirmed, 2026-09-16).
 - [x] Create a read-only GHCR Docker credential on Jarvis, verify pull/labels for two SHA-tagged images, and manually deploy the exact artifacts with drain/backup (2026-09-16).
 - [x] Add restricted SSH release script/entrypoint and `workflow_dispatch` workflow with pinned host key input, serialized release lock, drain/backup/health and failure rollback (2026-09-16).
-- [ ] Create the separate deployment key and GitHub production secrets, verify runner-to-VM reachability, then run `workflow_dispatch`; keep main auto-deploy disabled until that passes.
+- [x] Create/install separate deployment key; verify host fingerprint and arbitrary-command rejection from laptop.
+- [ ] Configure GitHub production secrets, verify runner-to-VM reachability, then run `workflow_dispatch`; keep main auto-deploy disabled until that passes.
 - [ ] Record monitoring/demo evidence; rehearse restore in final week and export final backups before expiry.
 
 ## Git recovery after laptop transfer — 2026-09-14

@@ -21,6 +21,13 @@ Document RAG Chatbot MVP
 
 ## Current Status
 
+### Restricted SSH preparation follow-up (2026-09-16)
+
+- Dedicated key exists at `/home/tengis/.ssh/ragchatbot-deploy`; its public key is installed with forced-command restrictions. Explicit-key SSH verified arbitrary commands are rejected with exit 64. Operator access should explicitly use `-o IdentitiesOnly=yes -i ~/.ssh/id_ed25519` because the default connection offered the restricted key.
+- Verified Jarvis ED25519 host fingerprint over operator SSH: `SHA256:dTBJlqsSGUp80Zz7sjI03YTbzq7X8E8AXteMKhPRtyQ`. Use the matching existing known_hosts entry; the old `/tmp` host-key file no longer exists.
+- Fixed workflow command mismatch and serialized manual workflows. Rollback now retains maintenance if restoration or revision verification fails; synced corrected release script to Jarvis. Syntax and SSH rejection pass; full workflow dispatch/failure recovery remain untested. Production remains healthy at `sha-37e3fca3f10de6b0ab1ebab79201c27b85f4fd38`.
+- Next user action: configure GitHub `production` environment secrets JARVIS_HOST, JARVIS_USER, JARVIS_DEPLOY_KEY and JARVIS_KNOWN_HOSTS. No authenticated GitHub account surface is available here; do not claim secrets or dispatch are complete. Automated rollback still needs migration-compatibility review before use.
+
 ### Public HTTPS web/API working (2026-09-16)
 
 - User saved the apex tunnel CNAME after the screenshot confirmed an old A record to 91.195.240.94. Subsequent laptop and VM probes return web/API HTTP 200 with valid TLS; expected Vite HTML and JavaScript asset load correctly. ERR-064 fixed.
