@@ -52,12 +52,25 @@ Images are private by default. On Jarvis, create a GitHub **classic** personal a
 ```bash
 mkdir -p -m 700 ~/.config/rag-chatbot/ghcr-docker
 export DOCKER_CONFIG="$HOME/.config/rag-chatbot/ghcr-docker"
-printf '%s' 'PASTE_TOKEN_PRIVATELY_HERE' | docker login ghcr.io --username Tengis01 --password-stdin
+read -rsp 'GitHub PAT (read:packages): ' ghcr_token
+printf '\n'
+printf '%s' "$ghcr_token" | docker login ghcr.io --username Tengis01 --password-stdin
+unset ghcr_token
 cd /home/tengis/rag-chatbot
 scripts/deploy/pull-ghcr.sh EXACT_40_CHARACTER_COMMIT_SHA
 ```
 
 The helper pulls `ghcr.io/tengis01/rag-api:sha-<commit>` and `rag-web:sha-<commit>`, then requires both OCI revision labels to match. It deliberately does **not** restart or deploy any container. Keep `DOCKER_CONFIG` set for future GHCR pulls, or export it again in the same shell. After the pull check, use the normal drain/backup procedure and explicitly review the image switch; image pull is not automatic deployment.
+
+## Restricted manual deploy workflow
+
+The repository now includes `.github/workflows/deploy.yml`, but it is `workflow_dispatch` only. Before enabling a run, create a separate Ed25519 deployment key on the laptop; never reuse the personal `jarvis` login key. Add its public key to Jarvis with the forced command and forwarding restrictions below, using the already installed entrypoint:
+
+```text
+command="/home/tengis/rag-chatbot/scripts/deploy/ssh-release-entrypoint.sh",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty ssh-ed25519 AAAA... rag-deploy
+```
+
+Save these GitHub Actions **production environment** secrets: `JARVIS_HOST` (VM address), `JARVIS_USER` (`tengis`), `JARVIS_DEPLOY_KEY` (private key) and `JARVIS_KNOWN_HOSTS` (the exact hashed `ssh-keyscan` line for the VM). Review the environment before the first `workflow_dispatch`; the workflow validates a full SHA, uses the pinned host key, invokes only the forced release entrypoint, and checks public revision after deployment. Confirm GitHub runner-to-VM SSH reachability first; do not widen Azure NSG/UFW rules silently.
 
 ## Cloudflare + Name.com (user account step)
 
@@ -95,10 +108,10 @@ Copy both dump and checksum off the VM (private laptop directory). A dump remain
 
 After a successful drain/backup and migration compatibility review, change only the selected image references, then `scripts/deploy/compose.sh up -d --no-deps --wait api web`. Check health/revision and smoke tests, then remove `state/drain`. Keep current and previous images. PostgreSQL stays running with the same volume.
 
-Rollback uses the previous API/web references only if the existing schema is compatible. If a migration is destructive/incompatible, stop and plan recovery explicitly; do not automatically restore a database over new user data. The first deployment has no previous working release yet, so rollback is not yet demonstrated. Never `down -v`, globally prune Docker, or modify Valheim resources.
+Rollback uses the previous API/web references only if the existing schema is compatible. If a migration is destructive/incompatible, stop and plan recovery explicitly; do not automatically restore a database over new user data. The same-source operational rollback and the first GHCR release are now demonstrated. Never `down -v`, globally prune Docker, or modify Valheim resources.
 
 ## Remaining automation and exit
 
-After HTTPS/manual acceptance: GitHub Actions checks/builds → GHCR images with SHA/digests → manual release workflow → automatic main releases using the same proven procedure. Dedicated restricted deployment SSH credentials, runner reachability/NSG review, lock/rollback tests and automatic deployment remain to be implemented.
+After HTTPS/manual acceptance: GitHub Actions checks/builds → GHCR images with SHA/digests → manual release workflow → automatic main releases using the same proven procedure. Restricted deployment scripts/workflow are prepared; deployment key setup, runner reachability/NSG review, workflow dispatch and automatic deployment remain to be implemented.
 
 Confirm exact Azure expiry. During the last week, rehearse restore again; export DB, needed secrets/configs and image references off VM 2–3 days before expiry. Verify Valheim world backup separately. Azure resource deletion or subscription changes require a separate user instruction.

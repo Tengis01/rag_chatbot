@@ -2034,7 +2034,7 @@ Capture layout lengths before applying formatting commands that can reset them, 
 ### ERR-054 — Bulk Git history downloads timed out during laptop recovery
 
 **Date**: 2026-09-14
-**Status**: ⚠️ Workaround
+**Status**: ✅ Fixed
 
 #### What happened
 
@@ -2659,7 +2659,7 @@ GHCR packages created from the private repository require authentication. The VM
 
 #### Fix
 
-Prepare a Jarvis-only Docker credential directory and use a GitHub classic PAT limited to `read:packages`. Then run `pull-ghcr.sh` with the full commit SHA before any drained deployment.
+Created a Jarvis-only mode-700 Docker credential directory and authenticated with a GitHub classic PAT limited to `read:packages`. `pull-ghcr.sh` then pulled both full-SHA images and verified their labels before the drained deployment.
 
 #### Lesson
 

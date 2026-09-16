@@ -10,6 +10,8 @@ Use only GitHub's `GITHUB_TOKEN` with job-scoped `packages: write`, not a person
 
 Jarvis uses a separate mode-700 `~/.config/rag-chatbot/ghcr-docker` Docker credential directory with a GitHub classic PAT limited to `read:packages`. The VM does not need repository write or Actions permissions. The `pull-ghcr.sh` helper accepts only a full lowercase Git SHA, pulls both immutable images and verifies their revision labels; it cannot deploy them.
 
+Use a separate Ed25519 deployment key with a forced command, no agent/port/X11 forwarding and no PTY. The initial GitHub deploy workflow is `workflow_dispatch` only, validates a full SHA and a pinned known-hosts value, and invokes the VM release script that serializes releases with `flock`, drains admission, backs up the database, checks the candidate revision, and restores the previous image on a failed replacement. Enable automatic `main` deployment only after this manual path has passed.
+
 ## 2026-09-16 — Rollback scope and revision evidence
 
 Use a filesystem drain marker, a fresh verified database dump, and API/web image replacement for one-VM RAG rollback. Do not automatically restore PostgreSQL for an image rollback; database restore is a separately chosen recovery action. The first test rebuilt the same source archive under a candidate tag and restored the existing manual image, proving the operational sequence while leaving Postgres, Cloudflare Tunnel, and Valheim untouched. A future GHCR rollout must repeat the check with two schema-compatible versioned images.

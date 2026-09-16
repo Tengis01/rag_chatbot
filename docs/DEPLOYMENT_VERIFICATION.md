@@ -8,9 +8,9 @@ Tunnel `jarvis-rag` is running with zero restarts and four registered QUIC conne
 
 The existing synthetic smoke script also passed through the public HTTPS API: health/config, signup/session and secure cookies, hostile-origin rejection, user isolation, oversized upload 413, malformed PDF 422 and admission cleanup. The script was transformed in memory to use `node:https` and the public API base, then run in the VM API container; no script source changed. Its synthetic data was cleaned up and no Gemini calls were made. The user also completed a real web acceptance test without issues. Mobile session and live RAG acceptance remain pending.
 
-Manual production deployment runs on `jarvis` under `/home/tengis/rag-chatbot`, Compose `rag-prod`. Cloudflare zone activation and nameservers `marek.ns.cloudflare.com` / `mckinley.ns.cloudflare.com` are confirmed. User reported the initial SHA-pinned CI/GHCR workflow run completed without issue. Jarvis has not yet authenticated to private GHCR packages or deployed from GHCR.
+Manual production deployment runs on `jarvis` under `/home/tengis/rag-chatbot`, Compose `rag-prod`. Cloudflare zone activation and nameservers `marek.ns.cloudflare.com` / `mckinley.ns.cloudflare.com` are confirmed. User reported the initial SHA-pinned CI/GHCR workflow run completed without issue. Jarvis has authenticated to private GHCR packages and now runs the first verified GHCR release.
 
-- API: `rag-api:manual-60653da1fc21`, web: `rag-web:manual-60653da1fc21` after the rollback test.
+- API/Web: `ghcr.io/tengis01/{rag-api,rag-web}:sha-37e3fca3f10de6b0ab1ebab79201c27b85f4fd38` after the manual GHCR release. The earlier `manual-60653da1fc21` images remain available for rollback.
 - Source archive SHA-256: `60653da1fc21a4b88036bb8a989aa87d27070aca0a766b1fa87e5ea78cb9a5b5`, 94 selected source files, 191,657 bytes. Contains no env, dependencies, Git metadata or report. Built **on the VM**. This is a worktree archive, not a committed Git revision. Compose's tmpfs/network fixes and later verification scripts were transferred separately.
 - Build evidence copied on VM to `/home/tengis/rag-chatbot/evidence/rag-api-build.log` and `rag-web-build.log`; `evidence/deployment-config.sha256` records the corrected Compose and helper scripts. Temporary originals under `/tmp` are not the durable copies.
 - First API image manifest list: `sha256:6fe064e4046c880aa89652c8992124ac006c76d2e9c60ab61ff6bd90db06e978`; web: `sha256:d434964b4464071cc809fcc2c40f53c8d86d8b7c49daca72f0b0fc99df0a4ec4`. These are local built images, not GHCR-published artifacts.
@@ -36,6 +36,8 @@ Manual production deployment runs on `jarvis` under `/home/tengis/rag-chatbot`, 
 | Valheim | Container stays up (4 days), original UDP 2456–2457 bindings intact; no edits/restarts/data changes |
 | Operational rollback | Drained API, made pre-deploy `rag-20260916T055152-590682.dump`, rebuilt the identical VM archive as `rollback-test-20260916-1e81efb`, switched API/web, then restored `manual-60653da1fc21`. Candidate and final ingress health were DB-connected; final web returned HTTP 200. Postgres, tunnel and Valheim were not restarted. |
 | GHCR access boundary | Anonymous `docker pull` for API/web tag `sha-7395fe0...` returned `unauthorized`; use a Jarvis-only classic token limited to `read:packages`, then pull and verify labels before deployment. |
+| Manual GHCR release | Pulled and OCI-label-verified API/Web SHA images, drained admission, created `rag-20260916T072841-627051.dump`, recreated only API/Web, and confirmed internal/public health at revision `sha-37e3fca3f10de6b0ab1ebab79201c27b85f4fd38`. Postgres, Cloudflare and Valheim were unchanged. |
+| Restricted deploy preparation | `release-ghcr.sh`, forced-command SSH entrypoint and `workflow_dispatch` workflow are committed. Deployment key, production secrets, runner reachability and first dispatch remain pending; `main` auto-deploy is disabled. |
 
 Snapshot after checks: API ~86 MiB / 1.5 GiB cap, PostgreSQL ~25 MiB / 2 GiB, Nginx ~6 MiB / 256 MiB; Valheim ~1.48 GiB. Root disk ~13 GB used, 49 GB free. These are idle snapshots, not load-test results.
 
@@ -53,6 +55,6 @@ Private laptop copies belong under the Git-ignored `backups/` directory with the
 - Real mobile session/cookie check; small live document ingestion/chat/source test using the verified Gemini credential. The user reports the real web acceptance test passed. Credential acceptance alone does not prove selected model availability, embedding quota or RAG correctness.
 - Demonstrate maintenance rejection during active work and a compatible version-to-version rollback after two GHCR releases exist. The same-source operational rollback has passed; no claim of zero downtime.
 - Configure daily backup/retention, offsite cadence and final-week restore/export. Confirm exact Azure expiry and NSG rules.
-- Create the package-read-only Jarvis credential, pull both exact SHA-tagged GHCR images and manually deploy them with drain/backup. Then implement a restricted SSH release workflow. Failed-CI/publish and version-to-version rollback demonstrations remain.
+- Create the separate deployment key/secrets, run the restricted workflow once, and demonstrate its failure rollback. Failed-CI/publish and version-to-version rollback demonstrations remain; mobile/live RAG acceptance is still deferred.
 
 Report sources and PDF are unchanged. No GitHub configuration, domain purchase, account credentials disclosure or Azure firewall/subscription mutation was performed.
