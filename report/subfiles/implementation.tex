@@ -346,14 +346,16 @@ Fastify руу дамжуулна. PostgreSQL болон API контейнер�
 
 Нийтийн HTTPS хандалтыг Cloudflare Tunnel-ээр холбосон. Tunnel нь серверээс
 гадаад руу тогтмол холболт нээдэг тул API болон өгөгдлийн сангийн порт нээх
-шаардлагагүй. \texttt{ragchatbot.dev} нь вэб клиент, \texttt{api.ragchatbot.dev}
+шаардлагагүй. \url{https://ragchatbot.dev} нь вэб клиент, \url{https://api.ragchatbot.dev}
 нь API хаяг бөгөөд Nginx хүсэлтийн Host толгойгоор хоёр урсгалыг ялгана.
 Нийтийн API-ийн \texttt{/health} endpoint-оор өгөгдлийн сантай холбогдсон
 төлөв болон байршуулсан хувилбарыг шалгасан.
 
-Хувилбар хүргэлтийн ажиллагаанд GitHub Actions ашигласан. Workflow нь Node.js
-24 болон pnpm орчинд frozen lockfile суулгалт, typecheck, build, API болон
-вэбийн production image build-ийг ажиллуулна. Амжилттай image-үүдийг GitHub
+Хувилбар хүргэлтийн ажиллагаанд GitHub Actions ашигласан. Системийн нээлттэй эх
+код нь \url{https://github.com/Tengis01/rag_chatbot} репозиторид байршина.
+Workflow нь Node.js 24 болон pnpm орчинд frozen lockfile суулгалт, typecheck,
+build, API болон вэбийн production image build-ийг ажиллуулна. Амжилттай
+image-үүдийг GitHub
 Container Registry (GHCR)-д commit SHA-аар тэмдэглэж хадгалдаг. Сервер талд
 image-ийн OCI revision label-ийг татаж шалгасны дараа хязгаарлагдмал SSH
 release командаар шинэ хувилбарыг сонгон хүргэдэг. Энэ зам нь source кодыг
